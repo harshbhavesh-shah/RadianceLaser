@@ -19,7 +19,7 @@ export default function NewPatientPage() {
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
       <form action={formAction} className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field label="Full Name" name="name" required />
           <Field label="Contact Number" name="phone" type="tel" required />
           <Field label="Email" name="email" type="email" />

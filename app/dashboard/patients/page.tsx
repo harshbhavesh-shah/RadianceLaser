@@ -11,7 +11,7 @@ export default async function PatientsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-end justify-between">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-medium text-brown-900">Patients</h1>
           <div className="mt-2 h-[2px] w-8 bg-gold-500" />
@@ -35,8 +35,8 @@ export default async function PatientsPage() {
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+          <table className="w-full min-w-[600px] text-left text-sm">
             <thead>
               <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">
                 <th className="px-5 py-3 font-medium">Patient</th>

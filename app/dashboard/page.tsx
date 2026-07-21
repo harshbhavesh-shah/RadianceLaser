@@ -54,15 +54,15 @@ export default async function DashboardPage() {
       <p className="mt-1 text-sm text-brown-600">{today}</p>
       <div className="mt-3 mb-8 h-[2px] w-8 bg-gold-500" />
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Visits Today" value={todayStats.visitsToday} />
         <StatCard label="New Patients Today" value={todayStats.newPatientsToday} />
         <StatCard label="Revenue Today" value={formatCurrency(todayStats.revenueToday)} accent />
         <StatCard label="Total Patients" value={todayStats.totalPatients} />
       </div>
 
-      <div className="mt-8 grid grid-cols-3 gap-6">
-        <div className={canSeeRevenueAnalytics ? "col-span-2" : "col-span-3"}>
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className={canSeeRevenueAnalytics ? "lg:col-span-2" : "lg:col-span-3"}>
           <h2 className="font-display text-lg font-medium text-brown-900">Recent Activity</h2>
           <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
 

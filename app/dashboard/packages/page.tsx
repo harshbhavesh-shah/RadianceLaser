@@ -53,8 +53,8 @@ export default async function PackagesPage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+          <table className="w-full min-w-[700px] text-left text-sm">
             <thead>
               <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">
                 <th className="px-5 py-3 font-medium">Patient</th>

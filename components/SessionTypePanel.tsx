@@ -98,7 +98,7 @@ export default function SessionTypePanel({
             {packages.length === 0 ? (
               <p className="text-sm text-brown-400">No {config.label} packages purchased.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {packages.map((pkg) => (
                   <PackageCard
                     key={pkg.id}

@@ -16,9 +16,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const clinicName = clinicSnap.exists ? (clinicSnap.data()?.name as string) : "Your Clinic";
 
   return (
-    <div className="flex min-h-screen bg-canvas">
+    <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
       <Sidebar clinicName={clinicName} session={session} />
-      <main className="flex-1 p-8">{children}</main>
+      <main className="flex-1 overflow-x-hidden p-4 md:p-8">{children}</main>
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
         ← Back to Patients
       </Link>
 
-      <div className="mt-3 mb-8 flex items-end justify-between">
+      <div className="mt-3 mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-medium text-brown-900">{patient.name}</h1>
           <div className="mt-2 h-[2px] w-8 bg-gold-500" />
@@ -35,7 +35,7 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
       </div>
 
       <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <InfoField label="Contact" value={patient.phone} />
           <InfoField label="Email" value={patient.email || "—"} />
           <InfoField label="Age" value={patient.age?.toString() || "—"} />
