@@ -1,0 +1,22 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env files — never commit real secrets
+.env
+.env.local
+.env*.local
+
+# firebase admin service account (if you drop the JSON file locally instead of using env vars)
+serviceAccountKey.json
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
