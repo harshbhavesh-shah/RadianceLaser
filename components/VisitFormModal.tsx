@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, deleteField, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { SESSION_TYPE_CONFIG, NUMERIC_FIELD_KEYS } from "@/lib/sessionTypes";
-import type { SessionType, Visit } from "@/types";
+import type { Package, SessionType, Visit } from "@/types";
 
 function todayLocalStr(): string {
   const d = new Date();
@@ -16,6 +16,8 @@ export default function VisitFormModal({
   patientId,
   sessionType,
   visit,
+  activePackages = [],
+  presetPackageId,
   onClose,
   onSaved,
   onDeleted,
@@ -24,6 +26,8 @@ export default function VisitFormModal({
   patientId: string;
   sessionType: SessionType;
   visit?: Visit | null; // omit/null = creating a new visit; pass one = editing
+  activePackages?: Package[]; // packages with sessions remaining, matching this sessionType
+  presetPackageId?: string; // pre-select a package, e.g. opened via "Redeem Session"
   onClose: () => void;
   onSaved: (visit: Visit) => void;
   onDeleted?: (visitId: string) => void;
@@ -32,6 +36,7 @@ export default function VisitFormModal({
   const isEditing = !!visit;
 
   const [date, setDate] = useState(visit?.date || "");
+  const [packageId, setPackageId] = useState(visit?.packageId || presetPackageId || "");
   const [fields, setFields] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     for (const col of config.columns) {
@@ -44,8 +49,17 @@ export default function VisitFormModal({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedPackage = activePackages.find((p) => p.id === packageId);
+
   function updateField(key: string, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handlePackageChange(value: string) {
+    setPackageId(value);
+    // Covered by the package — no separate charge, otherwise it'd double
+    // count against the package purchase's own revenue.
+    if (value) updateField("fee", "0");
   }
 
   async function handleSave() {
@@ -61,26 +75,25 @@ export default function VisitFormModal({
 
     try {
       if (isEditing && visit) {
-        await updateDoc(doc(db, "visits", visit.id), { date, fields: parsedFields });
-        onSaved({ ...visit, date, fields: parsedFields });
+        const updatePayload: Record<string, unknown> = { date, fields: parsedFields };
+        // Firestore rejects `undefined` field values — clearing a package
+        // link (switching back to "None") needs an explicit deleteField(),
+        // otherwise the stale packageId would silently stay on the document.
+        updatePayload.packageId = packageId ? packageId : deleteField();
+        await updateDoc(doc(db, "visits", visit.id), updatePayload);
+        onSaved({ ...visit, date, fields: parsedFields, packageId: packageId || undefined });
       } else {
-        const docRef = await addDoc(collection(db, "visits"), {
+        const createPayload = {
           clinicId,
           patientId,
           sessionType,
           date,
           fields: parsedFields,
+          ...(packageId ? { packageId } : {}),
           createdAt: Date.now(),
-        });
-        onSaved({
-          id: docRef.id,
-          clinicId,
-          patientId,
-          sessionType,
-          date,
-          fields: parsedFields,
-          createdAt: Date.now(),
-        });
+        };
+        const docRef = await addDoc(collection(db, "visits"), createPayload);
+        onSaved({ id: docRef.id, ...createPayload });
       }
     } catch (err) {
       console.error("Failed to save visit:", err);
@@ -145,33 +158,60 @@ export default function VisitFormModal({
           </div>
         </div>
 
+        {activePackages.length > 0 && (
+          <div className="mb-4">
+            <label className="mb-1.5 block text-sm font-medium text-brown-700">Package</label>
+            <select
+              value={packageId}
+              onChange={(e) => handlePackageChange(e.target.value)}
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+            >
+              <option value="">None — pay per visit</option>
+              {activePackages.map((pkg) => (
+                <option key={pkg.id} value={pkg.id}>
+                  {pkg.label}
+                </option>
+              ))}
+            </select>
+            {selectedPackage && (
+              <p className="mt-1.5 text-xs text-gold-600">
+                Covered by {selectedPackage.label} — no separate fee for this visit.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
-          {config.columns.map((col) => (
-            <div key={col.key}>
-              <label className="mb-1.5 block text-sm font-medium text-brown-700">{col.label}</label>
-              {col.type === "select" ? (
-                <select
-                  value={fields[col.key]}
-                  onChange={(e) => updateField(col.key, e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-                >
-                  <option value="">— Select —</option>
-                  {col.options?.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={col.type === "number" ? "number" : "text"}
-                  value={fields[col.key]}
-                  onChange={(e) => updateField(col.key, e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-                />
-              )}
-            </div>
-          ))}
+          {config.columns.map((col) => {
+            const isFeeLockedByPackage = col.key === "fee" && !!packageId;
+            return (
+              <div key={col.key}>
+                <label className="mb-1.5 block text-sm font-medium text-brown-700">{col.label}</label>
+                {col.type === "select" ? (
+                  <select
+                    value={fields[col.key]}
+                    onChange={(e) => updateField(col.key, e.target.value)}
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  >
+                    <option value="">— Select —</option>
+                    {col.options?.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={col.type === "number" ? "number" : "text"}
+                    value={fields[col.key]}
+                    onChange={(e) => updateField(col.key, e.target.value)}
+                    disabled={isFeeLockedByPackage}
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500 disabled:bg-beige-200 disabled:text-brown-400"
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {error && <p className="mt-4 text-sm text-red-700">{error}</p>}

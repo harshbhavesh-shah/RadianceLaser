@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import VisitTimeline from "@/components/VisitTimeline";
+import SessionTypePanel from "@/components/SessionTypePanel";
 import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
-import type { SessionType, Visit } from "@/types";
+import type { Package, SessionType, Visit } from "@/types";
 
 const TABS: SessionType[] = ["qs", "lhr"];
 
@@ -11,10 +11,12 @@ export default function PatientVisitTabs({
   clinicId,
   patientId,
   visits,
+  packages,
 }: {
   clinicId: string;
   patientId: string;
   visits: Visit[];
+  packages: Package[];
 }) {
   const [active, setActive] = useState<SessionType>("qs");
 
@@ -48,11 +50,12 @@ export default function PatientVisitTabs({
 
       {TABS.map((type) => (
         <div key={type} className={active === type ? "block" : "hidden"}>
-          <VisitTimeline
+          <SessionTypePanel
             clinicId={clinicId}
             patientId={patientId}
             sessionType={type}
             initialVisits={visits.filter((v) => v.sessionType === type)}
+            initialPackages={packages.filter((p) => p.sessionType === type)}
           />
         </div>
       ))}

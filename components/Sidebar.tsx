@@ -6,13 +6,13 @@ const NAV_ITEMS = [
   { label: "Overview", href: "/dashboard" },
   { label: "Patients", href: "/dashboard/patients" },
   { label: "Appointments", href: "/dashboard/appointments", soon: true },
-  { label: "Packages", href: "/dashboard/packages", soon: true },
+  { label: "Packages", href: "/dashboard/packages" },
   { label: "Consent Forms", href: "/dashboard/forms", soon: true },
 ];
 
 export default function Sidebar({ clinicName, session }: { clinicName: string; session: Session }) {
   return (
-    <aside className="flex h-screen w-60 flex-shrink-0 flex-col bg-brown-900 text-beige-200">
+    <aside className="flex min-h-screen w-60 flex-shrink-0 flex-col bg-brown-900 text-beige-200">
       <div className="px-6 pt-7 pb-6">
         <div className="font-display text-xl font-medium text-white">{clinicName}</div>
         <div className="mt-2 h-[2px] w-8 bg-gold-500" />

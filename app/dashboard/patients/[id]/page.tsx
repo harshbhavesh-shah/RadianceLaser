@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/firestore/patients";
 import { getPatientVisits } from "@/lib/firestore/visits";
+import { getPatientPackages } from "@/lib/firestore/packages";
 import PatientVisitTabs from "@/components/PatientVisitTabs";
 
 export default async function PatientDetailPage({ params }: { params: { id: string } }) {
@@ -12,7 +13,10 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
   const patient = await getPatient(session.clinicId, params.id);
   if (!patient) notFound();
 
-  const visits = await getPatientVisits(session.clinicId, patient.id);
+  const [visits, packages] = await Promise.all([
+    getPatientVisits(session.clinicId, patient.id),
+    getPatientPackages(session.clinicId, patient.id),
+  ]);
 
   return (
     <div className="max-w-5xl">
@@ -53,7 +57,12 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
       <div className="mt-8">
         <h2 className="font-display text-lg font-medium text-brown-900">Visit History</h2>
         <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
-        <PatientVisitTabs clinicId={session.clinicId} patientId={patient.id} visits={visits} />
+        <PatientVisitTabs
+          clinicId={session.clinicId}
+          patientId={patient.id}
+          visits={visits}
+          packages={packages}
+        />
       </div>
     </div>
   );

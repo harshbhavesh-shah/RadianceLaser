@@ -65,6 +65,11 @@ export interface Visit extends TenantScoped {
   sessionType: SessionType;
   date: string; // YYYY-MM-DD, empty string until a date is actually set
   fields: Record<string, string | number>;
+  // Set when this visit is a redemption against a Package rather than a
+  // pay-per-visit session. When set, fields.fee should be 0 — the money was
+  // already counted as revenue when the package was purchased, so charging
+  // again here would double-count it. See lib/analytics.ts.
+  packageId?: string;
   createdAt: number;
 }
 
@@ -76,3 +81,23 @@ export interface SessionColumnDef {
   type: SessionFieldType;
   options?: string[]; // for type: "select"
 }
+
+// A prepaid bundle of sessions a patient buys upfront at a discounted
+// per-session rate. Usage (the "ledger") is deliberately NOT stored here —
+// it's computed by querying Visits where visit.packageId === this package's
+// id, so the ledger can never drift out of sync with what actually
+// happened. See lib/firestore/packages.ts for that computation.
+export interface Package extends TenantScoped {
+  id: string;
+  patientId: string;
+  sessionType: SessionType;
+  label: string; // e.g. "10-Session Underarms Package"
+  totalSessions: number;
+  totalAmount: number;
+  purchaseDate: string; // YYYY-MM-DD
+  expiryDate?: string; // YYYY-MM-DD, optional
+  createdAt: number;
+}
+
+// Derived, not stored — see computePackageStatus in lib/firestore/packages.ts.
+export type PackageStatus = "active" | "completed" | "expired";

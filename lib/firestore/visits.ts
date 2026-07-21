@@ -19,3 +19,16 @@ export async function getPatientVisits(clinicId: string, patientId: string): Pro
     .map((doc) => ({ id: doc.id, ...doc.data() }) as Visit)
     .filter((visit) => visit.clinicId === clinicId); // defense in depth
 }
+
+/**
+ * Fetches every visit across the whole clinic — used by the Overview page
+ * for stats/analytics. Same reasoning as above: single equality query on
+ * clinicId, no orderBy/date-range, so no composite index required. Date
+ * filtering (today/this month/etc.) happens in lib/analytics.ts after the
+ * fetch, which is cheap at the scale of one clinic's visit history.
+ */
+export async function getClinicVisits(clinicId: string): Promise<Visit[]> {
+  const snap = await adminDb().collection("visits").where("clinicId", "==", clinicId).get();
+
+  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Visit);
+}

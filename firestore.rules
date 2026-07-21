@@ -35,28 +35,45 @@ service cloud.firestore {
     }
 
     // Every tenant-scoped collection follows the same pattern. Add more
-    // collections here as the product grows (appointments, patients,
-    // sessions, counters, etc.) — each one just needs a clinicId field on
-    // its documents and this same rule shape.
+    // collections here as the product grows — each one just needs a
+    // clinicId field on its documents and this same rule shape.
+    //
+    // NOTE on delete: request.resource doesn't exist for a delete operation
+    // (there's no new document being written), so a delete rule can only
+    // check resource.data (the document as it existed before removal) — not
+    // request.resource.data. Checking request.resource.data on delete always
+    // evaluates to false, silently blocking every delete. Keep update and
+    // delete as separate allow statements, not combined, to avoid this.
     match /appointments/{appointmentId} {
       allow read: if belongsToClinic(resource.data);
       allow create: if belongsToClinic(request.resource.data);
-      allow update, delete: if belongsToClinic(resource.data)
+      allow update: if belongsToClinic(resource.data)
         && belongsToClinic(request.resource.data); // can't change clinicId on update
+      allow delete: if belongsToClinic(resource.data);
     }
 
     match /patients/{patientId} {
       allow read: if belongsToClinic(resource.data);
       allow create: if belongsToClinic(request.resource.data);
-      allow update, delete: if belongsToClinic(resource.data)
+      allow update: if belongsToClinic(resource.data)
         && belongsToClinic(request.resource.data);
+      allow delete: if belongsToClinic(resource.data);
     }
 
     match /visits/{visitId} {
       allow read: if belongsToClinic(resource.data);
       allow create: if belongsToClinic(request.resource.data);
-      allow update, delete: if belongsToClinic(resource.data)
+      allow update: if belongsToClinic(resource.data)
         && belongsToClinic(request.resource.data);
+      allow delete: if belongsToClinic(resource.data);
+    }
+
+    match /packages/{packageId} {
+      allow read: if belongsToClinic(resource.data);
+      allow create: if belongsToClinic(request.resource.data);
+      allow update: if belongsToClinic(resource.data)
+        && belongsToClinic(request.resource.data);
+      allow delete: if belongsToClinic(resource.data);
     }
 
     match /counters/{counterId} {

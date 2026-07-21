@@ -1,8 +1,4 @@
-"use client";
-
-import { useState } from "react";
 import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
-import VisitFormModal from "@/components/VisitFormModal";
 import type { SessionType, Visit } from "@/types";
 
 function formatDate(dateStr: string): string {
@@ -18,65 +14,37 @@ function formatFieldValue(key: string, value: string | number): string {
 }
 
 export default function VisitTimeline({
-  clinicId,
-  patientId,
   sessionType,
-  initialVisits,
+  visits,
+  onAddNew,
+  onEdit,
 }: {
-  clinicId: string;
-  patientId: string;
   sessionType: SessionType;
-  initialVisits: Visit[];
+  visits: Visit[];
+  onAddNew: () => void;
+  onEdit: (visit: Visit) => void;
 }) {
   const config = SESSION_TYPE_CONFIG[sessionType];
-  const [visits, setVisits] = useState<Visit[]>(
-    [...initialVisits].sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-  );
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingVisit, setEditingVisit] = useState<Visit | null>(null);
-
-  function openCreateModal() {
-    setEditingVisit(null);
-    setModalOpen(true);
-  }
-
-  function openEditModal(visit: Visit) {
-    setEditingVisit(visit);
-    setModalOpen(true);
-  }
-
-  function handleSaved(saved: Visit) {
-    setVisits((prev) => {
-      const exists = prev.some((v) => v.id === saved.id);
-      const next = exists ? prev.map((v) => (v.id === saved.id ? saved : v)) : [saved, ...prev];
-      return next.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-    });
-    setModalOpen(false);
-  }
-
-  function handleDeleted(visitId: string) {
-    setVisits((prev) => prev.filter((v) => v.id !== visitId));
-    setModalOpen(false);
-  }
+  const sorted = [...visits].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   return (
     <div>
       <div className="mb-4 flex justify-end">
         <button
-          onClick={openCreateModal}
+          onClick={onAddNew}
           className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
         >
           + Log New Visit
         </button>
       </div>
 
-      {visits.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="rounded-xl bg-surface p-10 text-center shadow-soft ring-1 ring-beige-300">
           <p className="text-sm text-brown-600">No {config.label} visits logged yet.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {visits.map((visit) => {
+          {sorted.map((visit) => {
             const filledEntries = config.columns
               .map((col) => [col, visit.fields?.[col.key]] as const)
               .filter(([, value]) => value !== undefined && value !== "" && value !== null);
@@ -84,12 +52,19 @@ export default function VisitTimeline({
             return (
               <button
                 key={visit.id}
-                onClick={() => openEditModal(visit)}
+                onClick={() => onEdit(visit)}
                 className="group block w-full rounded-xl bg-surface p-4 text-left shadow-soft ring-1 ring-beige-300 transition-shadow hover:shadow-card"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-display text-base font-medium text-brown-900">
-                    {formatDate(visit.date)}
+                  <span className="flex items-center gap-2">
+                    <span className="font-display text-base font-medium text-brown-900">
+                      {formatDate(visit.date)}
+                    </span>
+                    {visit.packageId && (
+                      <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold-600">
+                        Package
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs font-medium text-brown-400 opacity-0 transition-opacity group-hover:opacity-100">
                     Edit →
@@ -112,18 +87,6 @@ export default function VisitTimeline({
             );
           })}
         </div>
-      )}
-
-      {modalOpen && (
-        <VisitFormModal
-          clinicId={clinicId}
-          patientId={patientId}
-          sessionType={sessionType}
-          visit={editingVisit}
-          onClose={() => setModalOpen(false)}
-          onSaved={handleSaved}
-          onDeleted={handleDeleted}
-        />
       )}
     </div>
   );
