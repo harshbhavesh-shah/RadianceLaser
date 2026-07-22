@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { adminDb } from "@/lib/firebase/admin";
+import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { buildSessionTypeConfig } from "@/lib/sessionTypes";
+import { SessionTypeConfigProvider } from "@/lib/sessionTypeConfigContext";
 import Sidebar from "@/components/Sidebar";
 import { SidebarProvider } from "@/components/SidebarContext";
 
@@ -13,15 +16,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
-  const clinicSnap = await adminDb().collection("clinics").doc(session.clinicId).get();
+  const [clinicSnap, sessionTypeDefs] = await Promise.all([
+    adminDb().collection("clinics").doc(session.clinicId).get(),
+    getClinicSessionTypeDefs(session.clinicId),
+  ]);
   const clinicName = clinicSnap.exists ? (clinicSnap.data()?.name as string) : "Your Clinic";
+  const sessionTypeConfig = buildSessionTypeConfig(sessionTypeDefs);
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen flex-col overflow-hidden bg-canvas md:flex-row">
-        <Sidebar clinicName={clinicName} session={session} />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
-      </div>
+      <SessionTypeConfigProvider initialConfig={sessionTypeConfig}>
+        <div className="flex h-screen flex-col overflow-hidden bg-canvas md:flex-row">
+          <Sidebar clinicName={clinicName} session={session} />
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
+        </div>
+      </SessionTypeConfigProvider>
     </SidebarProvider>
   );
 }

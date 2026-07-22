@@ -5,9 +5,15 @@
  * on for tenant isolation. There's no self-serve signup UI yet, so this is
  * how you create clinic #1, #2, #3... for now.
  *
+ * Also creates the user's Firestore staff mirror doc (see
+ * app/dashboard/settings/actions.ts) so this first owner shows up correctly
+ * in their own Settings → Staff list, same as anyone added later from the
+ * app itself.
+ *
  * Usage:
  *   node scripts/createClinic.mjs \
  *     --clinicName "Advanced Skin Clinic" \
+ *     --name "Dr. Bhavesh Shah" \
  *     --email owner@example.com \
  *     --password "some-temporary-password" \
  *     --role owner
@@ -33,7 +39,8 @@ function parseArgs() {
 }
 
 async function main() {
-  const { clinicName, email, password, role = "owner" } = parseArgs();
+  const { clinicName, email, password, role = "owner", name } = parseArgs();
+  const staffName = name || email?.split("@")[0] || "Clinic Owner";
 
   if (!clinicName || !email || !password) {
     console.error(
@@ -71,7 +78,7 @@ async function main() {
   console.log(`✓ Created clinic "${clinicName}" (id: ${clinicRef.id})`);
 
   // 2. Create the Firebase Auth user for the first staff account.
-  const userRecord = await auth.createUser({ email, password });
+  const userRecord = await auth.createUser({ email, password, displayName: staffName });
   console.log(`✓ Created user ${email} (uid: ${userRecord.uid})`);
 
   // 3. Set custom claims — this is what ties the user to this clinic and
@@ -81,6 +88,19 @@ async function main() {
     role,
   });
   console.log(`✓ Set custom claims: { clinicId: "${clinicRef.id}", role: "${role}" }`);
+
+  // 4. Mirror the staff record into Firestore so this user shows up
+  //    correctly in Settings → Staff, exactly like anyone added later
+  //    through the app itself.
+  await db.collection("staff").doc(userRecord.uid).set({
+    clinicId: clinicRef.id,
+    uid: userRecord.uid,
+    name: staffName,
+    email,
+    role,
+    createdAt: Date.now(),
+  });
+  console.log(`✓ Created staff record for "${staffName}"`);
 
   console.log("\nDone. This user can now log in at /login with the email/password above.");
   console.log(

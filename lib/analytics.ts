@@ -1,18 +1,29 @@
 import "server-only";
-import type { Package, Patient, SessionType, Visit } from "@/types";
+import type { Package, Patient, SessionType, StatsWindow, Visit } from "@/types";
 
 export function todayLocalStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function isSameLocalDay(epochMs: number, dateStr: string): boolean {
-  const d = new Date(epochMs);
-  const asStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  return asStr === dateStr;
+function isOnOrAfterLocalDate(epochMs: number, dateStr: string): boolean {
+  return epochMs >= new Date(`${dateStr}T00:00:00`).getTime();
 }
 
-function feeOf(visit: Visit): number {
+/** Start date (inclusive, YYYY-MM-DD) of the given window, ending today. */
+function windowStartStr(window: StatsWindow): string {
+  const now = new Date();
+  if (window === "today") return todayLocalStr();
+  if (window === "week") {
+    const start = new Date(now);
+    start.setDate(start.getDate() - start.getDay()); // Sunday start, matches lib/calendar.ts
+    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+  }
+  // month
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+export function feeOf(visit: Visit): number {
   // Package-redeemed visits are always fee 0 (see VisitFormModal) — the
   // money was already counted as revenue on the package's purchase date,
   // so this deliberately does NOT need special-casing here to avoid
@@ -21,35 +32,37 @@ function feeOf(visit: Visit): number {
   return typeof fee === "number" ? fee : Number(fee) || 0;
 }
 
-export interface TodayStats {
-  visitsToday: number;
-  newPatientsToday: number;
-  revenueToday: number;
+export interface WindowStats {
+  window: StatsWindow;
+  visitsInWindow: number;
+  newPatientsInWindow: number;
+  revenueInWindow: number;
   totalPatients: number;
 }
 
 /**
- * The stats every role sees, regardless of permissions — deliberately just
- * a same-day snapshot, not a breakdown. Defaults to "today"; once a
- * settings page exists, the window (today/week/month) should become a
- * per-clinic preference read here instead of hardcoded.
+ * The stats every role sees, regardless of permissions — a snapshot over
+ * the clinic's configured window (Settings → Dashboard Preferences),
+ * defaulting to "today" if never set.
  */
-export function computeTodayStats(
+export function computeWindowStats(
   patients: Patient[],
   visits: Visit[],
-  packages: Package[] = []
-): TodayStats {
-  const today = todayLocalStr();
-  const visitsToday = visits.filter((v) => v.date === today);
-  const newPatientsToday = patients.filter((p) => isSameLocalDay(p.createdAt, today));
-  const packagesToday = packages.filter((p) => p.purchaseDate === today);
+  packages: Package[] = [],
+  window: StatsWindow = "today"
+): WindowStats {
+  const startStr = windowStartStr(window);
+  const visitsInWindow = visits.filter((v) => v.date >= startStr);
+  const newPatientsInWindow = patients.filter((p) => isOnOrAfterLocalDate(p.createdAt, startStr));
+  const packagesInWindow = packages.filter((p) => p.purchaseDate >= startStr);
 
   return {
-    visitsToday: visitsToday.length,
-    newPatientsToday: newPatientsToday.length,
-    revenueToday:
-      visitsToday.reduce((sum, v) => sum + feeOf(v), 0) +
-      packagesToday.reduce((sum, p) => sum + p.totalAmount, 0),
+    window,
+    visitsInWindow: visitsInWindow.length,
+    newPatientsInWindow: newPatientsInWindow.length,
+    revenueInWindow:
+      visitsInWindow.reduce((sum, v) => sum + feeOf(v), 0) +
+      packagesInWindow.reduce((sum, p) => sum + p.totalAmount, 0),
     totalPatients: patients.length,
   };
 }
@@ -104,6 +117,9 @@ export function computeMonthlyRevenue(visits: Visit[], packages: Package[] = [])
   const monthPackages = packages.filter((p) => p.purchaseDate?.startsWith(monthPrefix));
 
   const byDayMap = new Map<number, number>();
+  // Seeded with the two built-ins so they always show in the "By Treatment
+  // Type" breakdown even with zero revenue; clinic-defined machine types
+  // (e.g. "co2") get added dynamically below as they show up in the data.
   const byType: Record<SessionType, number> = { qs: 0, lhr: 0 };
 
   for (const v of monthVisits) {

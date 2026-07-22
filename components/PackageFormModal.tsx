@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { todayLocalStr } from "@/lib/packages";
 import type { Package, SessionType } from "@/types";
 
@@ -20,6 +20,7 @@ export default function PackageFormModal({
   onClose: () => void;
   onCreated: (pkg: Package) => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
 
   const [label, setLabel] = useState(`${config.label} Package`);

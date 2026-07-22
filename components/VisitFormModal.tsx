@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { addDoc, collection, deleteDoc, deleteField, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { SESSION_TYPE_CONFIG, NUMERIC_FIELD_KEYS } from "@/lib/sessionTypes";
-import type { Package, SessionType, Visit } from "@/types";
+import { numericFieldKeysFor } from "@/lib/sessionTypes";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import type { Machine, Package, SessionType, StaffMember, Visit } from "@/types";
 
 function todayLocalStr(): string {
   const d = new Date();
@@ -18,6 +19,8 @@ export default function VisitFormModal({
   visit,
   activePackages = [],
   presetPackageId,
+  machines = [],
+  staff = [],
   onClose,
   onSaved,
   onDeleted,
@@ -28,15 +31,24 @@ export default function VisitFormModal({
   visit?: Visit | null; // omit/null = creating a new visit; pass one = editing
   activePackages?: Package[]; // packages with sessions remaining, matching this sessionType
   presetPackageId?: string; // pre-select a package, e.g. opened via "Redeem Session"
+  machines?: Machine[]; // for the Analytics "revenue/time per machine" breakdown
+  staff?: StaffMember[]; // for the Analytics "who performed this" breakdown
   onClose: () => void;
   onSaved: (visit: Visit) => void;
   onDeleted?: (visitId: string) => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
+  const NUMERIC_FIELD_KEYS = numericFieldKeysFor(SESSION_TYPE_CONFIG);
   const isEditing = !!visit;
 
   const [date, setDate] = useState(visit?.date || "");
   const [packageId, setPackageId] = useState(visit?.packageId || presetPackageId || "");
+  const [machineId, setMachineId] = useState(visit?.machineId || "");
+  const [performedByUid, setPerformedByUid] = useState(visit?.performedByUid || "");
+  const [durationMinutes, setDurationMinutes] = useState(
+    visit?.durationMinutes ? String(visit.durationMinutes) : ""
+  );
   const [fields, setFields] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     for (const col of config.columns) {
@@ -50,6 +62,7 @@ export default function VisitFormModal({
   const [error, setError] = useState<string | null>(null);
 
   const selectedPackage = activePackages.find((p) => p.id === packageId);
+  const machinesForType = machines.filter((m) => m.sessionType === sessionType);
 
   function updateField(key: string, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -73,15 +86,30 @@ export default function VisitFormModal({
       parsedFields[col.key] = NUMERIC_FIELD_KEYS.has(col.key) ? Number(raw) : raw;
     }
 
+    const performedByStaff = staff.find((s) => s.uid === performedByUid);
+
     try {
       if (isEditing && visit) {
         const updatePayload: Record<string, unknown> = { date, fields: parsedFields };
-        // Firestore rejects `undefined` field values — clearing a package
-        // link (switching back to "None") needs an explicit deleteField(),
-        // otherwise the stale packageId would silently stay on the document.
+        // Firestore rejects `undefined` field values — clearing an optional
+        // link (package, machine, staff) needs an explicit deleteField(),
+        // otherwise the stale value would silently stay on the document.
         updatePayload.packageId = packageId ? packageId : deleteField();
+        updatePayload.machineId = machineId ? machineId : deleteField();
+        updatePayload.performedByUid = performedByUid ? performedByUid : deleteField();
+        updatePayload.performedByName = performedByStaff ? performedByStaff.name : deleteField();
+        updatePayload.durationMinutes = durationMinutes ? Number(durationMinutes) : deleteField();
         await updateDoc(doc(db, "visits", visit.id), updatePayload);
-        onSaved({ ...visit, date, fields: parsedFields, packageId: packageId || undefined });
+        onSaved({
+          ...visit,
+          date,
+          fields: parsedFields,
+          packageId: packageId || undefined,
+          machineId: machineId || undefined,
+          performedByUid: performedByUid || undefined,
+          performedByName: performedByStaff?.name,
+          durationMinutes: durationMinutes ? Number(durationMinutes) : undefined,
+        });
       } else {
         const createPayload = {
           clinicId,
@@ -90,6 +118,9 @@ export default function VisitFormModal({
           date,
           fields: parsedFields,
           ...(packageId ? { packageId } : {}),
+          ...(machineId ? { machineId } : {}),
+          ...(performedByUid ? { performedByUid, performedByName: performedByStaff?.name } : {}),
+          ...(durationMinutes ? { durationMinutes: Number(durationMinutes) } : {}),
           createdAt: Date.now(),
         };
         const docRef = await addDoc(collection(db, "visits"), createPayload);
@@ -178,6 +209,55 @@ export default function VisitFormModal({
                 Covered by {selectedPackage.label} — no separate fee for this visit.
               </p>
             )}
+          </div>
+        )}
+
+        {(machinesForType.length > 0 || staff.length > 0) && (
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {machinesForType.length > 0 && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-brown-700">Machine</label>
+                <select
+                  value={machineId}
+                  onChange={(e) => setMachineId(e.target.value)}
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                >
+                  <option value="">— None —</option>
+                  {machinesForType.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {staff.length > 0 && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-brown-700">Performed By</label>
+                <select
+                  value={performedByUid}
+                  onChange={(e) => setPerformedByUid(e.target.value)}
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                >
+                  <option value="">— None —</option>
+                  {staff.map((s) => (
+                    <option key={s.uid} value={s.uid}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-brown-700">Duration (min)</label>
+              <input
+                type="number"
+                min={0}
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(e.target.value)}
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              />
+            </div>
           </div>
         )}
 

@@ -11,7 +11,7 @@ import {
   toDateStr,
   todayLocalStr,
 } from "@/lib/calendar";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { STATUS_STYLES } from "./statusStyles";
 import type { Appointment } from "@/types";
 
@@ -32,6 +32,7 @@ export default function CalendarWeekView({
   onEdit: (appt: Appointment) => void;
   onCreateAt: (date: string, time: string) => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const today = todayLocalStr();
 
   function handleGridClick(e: React.MouseEvent<HTMLDivElement>, dateStr: string) {

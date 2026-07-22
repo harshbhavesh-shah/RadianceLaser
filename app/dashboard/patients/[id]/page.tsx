@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/firestore/patients";
 import { getPatientVisits } from "@/lib/firestore/visits";
 import { getPatientPackages } from "@/lib/firestore/packages";
+import { getClinicMachines } from "@/lib/firestore/machines";
+import { getClinicStaff } from "@/lib/firestore/staff";
 import PatientVisitTabs from "@/components/PatientVisitTabs";
 
 export default async function PatientDetailPage({ params }: { params: { id: string } }) {
@@ -13,9 +15,11 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
   const patient = await getPatient(session.clinicId, params.id);
   if (!patient) notFound();
 
-  const [visits, packages] = await Promise.all([
+  const [visits, packages, machines, staff] = await Promise.all([
     getPatientVisits(session.clinicId, patient.id),
     getPatientPackages(session.clinicId, patient.id),
+    getClinicMachines(session.clinicId),
+    getClinicStaff(session.clinicId),
   ]);
 
   return (
@@ -62,6 +66,8 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
           patientId={patient.id}
           visits={visits}
           packages={packages}
+          machines={machines}
+          staff={staff}
         />
       </div>
     </div>

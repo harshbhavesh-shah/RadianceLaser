@@ -1,4 +1,6 @@
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+"use client";
+
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { formatTime12h, parseDateStr, timeToMinutes } from "@/lib/calendar";
 import { STATUS_STYLES, STATUS_LABELS } from "./statusStyles";
 import type { Appointment } from "@/types";
@@ -10,6 +12,7 @@ export default function AppointmentListView({
   appointments: Appointment[];
   onEdit: (appt: Appointment) => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const grouped = new Map<string, Appointment[]>();
   for (const appt of appointments) {
     if (!grouped.has(appt.date)) grouped.set(appt.date, []);

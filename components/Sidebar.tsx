@@ -9,7 +9,9 @@ import {
   Users,
   Calendar,
   Package,
+  BarChart3,
   FileText,
+  Settings,
   Menu,
   X,
   PanelLeftClose,
@@ -17,14 +19,22 @@ import {
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
-import type { Session } from "@/types";
+import type { Session, UserRole } from "@/types";
 
-const NAV_ITEMS = [
+const NAV_ITEMS: {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  soon?: boolean;
+  roles?: UserRole[]; // omit = visible to everyone
+}[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Patients", href: "/dashboard/patients", icon: Users },
   { label: "Appointments", href: "/dashboard/appointments", icon: Calendar },
   { label: "Packages", href: "/dashboard/packages", icon: Package },
+  { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
   { label: "Consent Forms", href: "/dashboard/forms", icon: FileText, soon: true },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function Sidebar({ clinicName, session }: { clinicName: string; session: Session }) {
@@ -38,9 +48,10 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
   }, [pathname]);
 
   function NavLinks({ showLabels }: { showLabels: boolean }) {
+    const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(session.role));
     return (
       <nav className="flex-1 space-y-0.5 px-3">
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
 

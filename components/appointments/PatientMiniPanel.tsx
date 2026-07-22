@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { X } from "lucide-react";
 import { computePackageLedger } from "@/lib/packages";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { formatTime12h, parseDateStr } from "@/lib/calendar";
 import { STATUS_STYLES, STATUS_LABELS } from "./statusStyles";
 import type { Appointment, Package, Patient, Visit } from "@/types";
@@ -25,6 +27,7 @@ export default function PatientMiniPanel({
   onClose: () => void;
   onEditAppointment: () => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const recentVisits = [...visits].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
   const activePackages = packages.filter((p) => computePackageLedger(p, visits).status === "active");
   const apptCfg = SESSION_TYPE_CONFIG[appointment.sessionType];

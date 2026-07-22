@@ -1,13 +1,17 @@
+"use client";
+
 import type { MonthlyRevenue } from "@/lib/analytics";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 
 function formatCurrency(n: number): string {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
 export default function RevenueChart({ data }: { data: MonthlyRevenue }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const maxDay = Math.max(...data.byDay.map((d) => d.total), 1);
-  const typeTotal = data.byType.qs + data.byType.lhr || 1;
+  const types = Object.keys(SESSION_TYPE_CONFIG);
+  const typeTotal = types.reduce((sum, type) => sum + (data.byType[type] || 0), 0) || 1;
 
   return (
     <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
@@ -42,15 +46,16 @@ export default function RevenueChart({ data }: { data: MonthlyRevenue }) {
         <span>{data.byDay.length}</span>
       </div>
 
-      {/* QS vs LHR split */}
+      {/* Split by treatment type — every session type with revenue this month,
+          built-in Q-Switch/LHR plus any clinic-defined machine types. */}
       <div className="mt-6 border-t border-beige-300 pt-5">
         <div className="mb-2.5 text-xs font-medium uppercase tracking-wide text-brown-400">
           By Treatment Type
         </div>
         <div className="space-y-3">
-          {(["qs", "lhr"] as const).map((type) => {
+          {types.map((type) => {
             const cfg = SESSION_TYPE_CONFIG[type];
-            const amount = data.byType[type];
+            const amount = data.byType[type] || 0;
             const pct = Math.round((amount / typeTotal) * 100);
             return (
               <div key={type}>

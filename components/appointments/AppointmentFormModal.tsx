@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { todayLocalStr } from "@/lib/calendar";
 import type { Appointment, AppointmentStatus, Patient, SessionType } from "@/types";
 
@@ -34,6 +34,7 @@ export default function AppointmentFormModal({
   onSaved: (appt: Appointment) => void;
   onDeleted?: (id: string) => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const isEditing = !!appointment;
 
   const [patientQuery, setPatientQuery] = useState(appointment?.patientName || "");

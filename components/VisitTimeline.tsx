@@ -1,4 +1,6 @@
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+"use client";
+
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import type { SessionType, Visit } from "@/types";
 
 function formatDate(dateStr: string): string {
@@ -24,6 +26,7 @@ export default function VisitTimeline({
   onAddNew: () => void;
   onEdit: (visit: Visit) => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
   const sorted = [...visits].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 

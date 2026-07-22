@@ -5,7 +5,8 @@ import { getPatients } from "@/lib/firestore/patients";
 import { getClinicPackages } from "@/lib/firestore/packages";
 import { getClinicVisits } from "@/lib/firestore/visits";
 import { computePackageLedger } from "@/lib/packages";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-gold-100 text-gold-600",
@@ -21,11 +22,13 @@ export default async function PackagesPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [packages, visits, patients] = await Promise.all([
+  const [packages, visits, patients, sessionTypeDefs] = await Promise.all([
     getClinicPackages(session.clinicId),
     getClinicVisits(session.clinicId),
     getPatients(session.clinicId),
+    getClinicSessionTypeDefs(session.clinicId),
   ]);
+  const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
 
   const patientsById = new Map(patients.map((p) => [p.id, p]));
 

@@ -2,23 +2,30 @@
 
 import { useState } from "react";
 import SessionTypePanel from "@/components/SessionTypePanel";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
-import type { Package, SessionType, Visit } from "@/types";
-
-const TABS: SessionType[] = ["qs", "lhr"];
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import type { Machine, Package, SessionType, StaffMember, Visit } from "@/types";
 
 export default function PatientVisitTabs({
   clinicId,
   patientId,
   visits,
   packages,
+  machines,
+  staff,
 }: {
   clinicId: string;
   patientId: string;
   visits: Visit[];
   packages: Package[];
+  machines: Machine[];
+  staff: StaffMember[];
 }) {
-  const [active, setActive] = useState<SessionType>("qs");
+  // Every session type the clinic has — the two built-ins plus any
+  // clinic-defined machine types (e.g. "CO2 Laser") — each gets its own tab
+  // here automatically, in the order they were created.
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
+  const TABS: SessionType[] = Object.keys(SESSION_TYPE_CONFIG);
+  const [active, setActive] = useState<SessionType>(TABS[0] || "qs");
 
   return (
     <div>
@@ -56,6 +63,8 @@ export default function PatientVisitTabs({
             sessionType={type}
             initialVisits={visits.filter((v) => v.sessionType === type)}
             initialPackages={packages.filter((p) => p.sessionType === type)}
+            machines={machines}
+            staff={staff}
           />
         </div>
       ))}

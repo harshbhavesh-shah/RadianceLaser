@@ -6,8 +6,8 @@ import PackageFormModal from "@/components/PackageFormModal";
 import VisitTimeline from "@/components/VisitTimeline";
 import VisitFormModal from "@/components/VisitFormModal";
 import { computePackageLedger } from "@/lib/packages";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
-import type { Package, SessionType, Visit } from "@/types";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import type { Machine, Package, SessionType, StaffMember, Visit } from "@/types";
 
 type ModalState =
   | { mode: "closed" }
@@ -20,13 +20,18 @@ export default function SessionTypePanel({
   sessionType,
   initialVisits,
   initialPackages,
+  machines,
+  staff,
 }: {
   clinicId: string;
   patientId: string;
   sessionType: SessionType;
   initialVisits: Visit[];
   initialPackages: Package[];
+  machines: Machine[];
+  staff: StaffMember[];
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
   const [visits, setVisits] = useState<Visit[]>(initialVisits);
   const [packages, setPackages] = useState<Package[]>(initialPackages);
@@ -128,6 +133,8 @@ export default function SessionTypePanel({
           visit={visitModal.mode === "edit" ? visitModal.visit : null}
           activePackages={activePackages}
           presetPackageId={visitModal.mode === "create" ? visitModal.presetPackageId : undefined}
+          machines={machines}
+          staff={staff}
           onClose={() => setVisitModal({ mode: "closed" })}
           onSaved={handleVisitSaved}
           onDeleted={handleVisitDeleted}

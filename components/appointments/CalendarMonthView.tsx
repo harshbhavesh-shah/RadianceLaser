@@ -1,7 +1,7 @@
 "use client";
 
 import { getMonthGridDays, toDateStr, todayLocalStr, formatTime12h } from "@/lib/calendar";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { STATUS_STYLES } from "./statusStyles";
 import type { Appointment } from "@/types";
 
@@ -21,6 +21,7 @@ export default function CalendarMonthView({
   onCreateAt: (date: string, time: string) => void;
   onShowDay: (date: Date) => void;
 }) {
+  const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const days = getMonthGridDays(anchor);
   const currentMonth = anchor.getMonth();
   const today = todayLocalStr();

@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { getClinic } from "@/lib/firestore/clinics";
 import { getPatients } from "@/lib/firestore/patients";
 import { getClinicVisits } from "@/lib/firestore/visits";
 import { getClinicPackages } from "@/lib/firestore/packages";
-import { computeTodayStats, computeRecentActivity, computeMonthlyRevenue } from "@/lib/analytics";
-import { SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { computeWindowStats, computeRecentActivity, computeMonthlyRevenue } from "@/lib/analytics";
+import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import StatCard from "@/components/StatCard";
 import RevenueChart from "@/components/RevenueChart";
+
+const WINDOW_LABELS = { today: "Today", week: "This Week", month: "This Month" };
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -24,18 +28,24 @@ export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [patients, visits, packages] = await Promise.all([
+  const [clinic, patients, visits, packages, sessionTypeDefs] = await Promise.all([
+    getClinic(session.clinicId),
     getPatients(session.clinicId),
     getClinicVisits(session.clinicId),
     getClinicPackages(session.clinicId),
+    getClinicSessionTypeDefs(session.clinicId),
   ]);
+  const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
+
+  const statsWindow = clinic?.statsWindow || "today";
+  const windowLabel = WINDOW_LABELS[statsWindow];
 
   const patientsById = new Map(patients.map((p) => [p.id, p]));
-  const todayStats = computeTodayStats(patients, visits, packages);
+  const stats = computeWindowStats(patients, visits, packages, statsWindow);
   const recentActivity = computeRecentActivity(visits, patientsById);
 
   // Detailed monthly revenue analytics are doctor/owner-only — reception
-  // still sees the simple same-day total in the stats row above, just not
+  // still sees the simple stats-window total in the row above, just not
   // the breakdown/charts.
   const canSeeRevenueAnalytics = session.role === "doctor" || session.role === "owner";
   const monthlyRevenue = canSeeRevenueAnalytics ? computeMonthlyRevenue(visits, packages) : null;
@@ -55,10 +65,10 @@ export default async function DashboardPage() {
       <div className="mt-3 mb-8 h-[2px] w-8 bg-gold-500" />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Visits Today" value={todayStats.visitsToday} />
-        <StatCard label="New Patients Today" value={todayStats.newPatientsToday} />
-        <StatCard label="Revenue Today" value={formatCurrency(todayStats.revenueToday)} accent />
-        <StatCard label="Total Patients" value={todayStats.totalPatients} />
+        <StatCard label={`Visits ${windowLabel}`} value={stats.visitsInWindow} />
+        <StatCard label={`New Patients ${windowLabel}`} value={stats.newPatientsInWindow} />
+        <StatCard label={`Revenue ${windowLabel}`} value={formatCurrency(stats.revenueInWindow)} accent />
+        <StatCard label="Total Patients" value={stats.totalPatients} />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
