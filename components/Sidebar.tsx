@@ -15,35 +15,21 @@ import {
   PanelLeft,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
+import { useSidebarCollapse } from "@/components/SidebarContext";
 import type { Session } from "@/types";
 
 const NAV_ITEMS = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Patients", href: "/dashboard/patients", icon: Users },
-  { label: "Appointments", href: "/dashboard/appointments", icon: Calendar, soon: true },
+  { label: "Appointments", href: "/dashboard/appointments", icon: Calendar },
   { label: "Packages", href: "/dashboard/packages", icon: Package },
   { label: "Consent Forms", href: "/dashboard/forms", icon: FileText, soon: true },
 ];
 
-const COLLAPSE_STORAGE_KEY = "sidebar-collapsed";
-
 export default function Sidebar({ clinicName, session }: { clinicName: string; session: Session }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false); // desktop icon-rail mode
+  const { collapsed, toggleUserPreference } = useSidebarCollapse();
   const [mobileOpen, setMobileOpen] = useState(false); // mobile off-canvas drawer
-
-  // Remember the desktop collapse preference across visits.
-  useEffect(() => {
-    if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true") setCollapsed(true);
-  }, []);
-
-  function toggleCollapsed() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem(COLLAPSE_STORAGE_KEY, String(next));
-      return next;
-    });
-  }
 
   // Close the mobile drawer automatically on navigation.
   useEffect(() => {
@@ -146,7 +132,7 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
 
       {/* Desktop sidebar — hidden below md, collapsible between full/icon-rail */}
       <aside
-        className={`hidden min-h-screen flex-shrink-0 flex-col bg-brown-900 text-beige-200 transition-all duration-200 md:flex ${
+        className={`hidden min-h-screen flex-shrink-0 flex-col bg-brown-900 text-beige-200 transition-[width] duration-300 ease-in-out md:flex ${
           collapsed ? "w-16" : "w-60"
         }`}
       >
@@ -165,7 +151,7 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
 
         <div className="px-3 pb-2">
           <button
-            onClick={toggleCollapsed}
+            onClick={toggleUserPreference}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-brown-400 transition-colors hover:bg-brown-700/60 hover:text-white ${
               collapsed ? "justify-center" : ""

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { adminDb } from "@/lib/firebase/admin";
 import Sidebar from "@/components/Sidebar";
+import { SidebarProvider } from "@/components/SidebarContext";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   // This is the REAL auth check — middleware.ts only checked that a cookie
@@ -16,9 +17,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const clinicName = clinicSnap.exists ? (clinicSnap.data()?.name as string) : "Your Clinic";
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
-      <Sidebar clinicName={clinicName} session={session} />
-      <main className="flex-1 overflow-x-hidden p-4 md:p-8">{children}</main>
-    </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
+        <Sidebar clinicName={clinicName} session={session} />
+        <main className="flex-1 overflow-x-hidden p-4 md:p-8">{children}</main>
+      </div>
+    </SidebarProvider>
   );
 }

@@ -101,3 +101,23 @@ export interface Package extends TenantScoped {
 
 // Derived, not stored — see computePackageStatus in lib/firestore/packages.ts.
 export type PackageStatus = "active" | "completed" | "expired";
+
+export type AppointmentStatus = "booked" | "completed" | "cancelled" | "no-show";
+
+export interface Appointment extends TenantScoped {
+  id: string;
+  patientId: string;
+  // Denormalized from the Patient record at booking time — same pattern as
+  // Visit — so rendering the calendar/list never needs an extra join per
+  // appointment. If a patient's name changes later, past appointments keep
+  // showing what it was at the time, which is usually what you want anyway.
+  patientName: string;
+  patientPhone: string;
+  sessionType: SessionType;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM, 24-hour
+  durationMinutes: number;
+  status: AppointmentStatus;
+  notes?: string;
+  createdAt: number;
+}
