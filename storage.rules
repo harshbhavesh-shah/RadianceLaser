@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// NOT CURRENTLY DEPLOYED — this project runs on the free Firebase Spark
+// plan, which doesn't include Cloud Storage (that needs the paid Blaze
+// plan), so photos/signatures are embedded directly in Firestore instead
+// (see lib/imageCompression.ts). Kept here in case the clinic upgrades to
+// Blaze later and wants to move large media out of Firestore and into
+// Storage instead — if so, re-add the "storage" section to firebase.json
+// pointing at this file, then deploy with:
+// firebase deploy --only storage:rules
+//
+// Mirrors the multi-tenant isolation model in firestore.rules: every staff
+// member's auth token carries a clinicId custom claim, and every patient
+// file (photos, signed-consent signature images, etc.) lives under a path
+// namespaced by clinicId, so one clinic's staff can never read or write
+// another clinic's files, even with a guessed path.
+//
+// Deploy with: firebase deploy --only storage:rules
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Covers clinics/{clinicId}/patients/{patientId}/photos/{photoId} (before/
+    // after photos) and clinics/{clinicId}/patients/{patientId}/consents/{id}
+    // (e-signature PNGs) — any patient-scoped file under this clinic.
+    match /clinics/{clinicId}/patients/{patientId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.token.clinicId == clinicId;
+    }
+  }
+}

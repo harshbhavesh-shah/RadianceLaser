@@ -8,6 +8,7 @@ import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";
 import MachinesSection from "@/components/settings/MachinesSection";
 import MachineTypesSection from "@/components/settings/MachineTypesSection";
+import PatientImportSection from "@/components/settings/PatientImportSection";
 import PreferencesSection from "@/components/settings/PreferencesSection";
 
 export default async function SettingsPage() {
@@ -29,7 +30,11 @@ export default async function SettingsPage() {
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
       <div className="space-y-6">
-        <ClinicProfileSection initialName={clinic?.name || ""} isOwner={isOwner} />
+        <ClinicProfileSection
+          initialName={clinic?.name || ""}
+          initialAddress={clinic?.address || ""}
+          isOwner={isOwner}
+        />
 
         <StaffSection initialStaff={staff} currentUid={session.uid} isOwner={isOwner} />
 
@@ -40,6 +45,8 @@ export default async function SettingsPage() {
         />
 
         <MachinesSection clinicId={session.clinicId} initialMachines={machines} canEdit={isOwner} />
+
+        <PatientImportSection canEdit={isOwner} />
 
         <PreferencesSection initialWindow={clinic?.statsWindow || "today"} isOwner={isOwner} />
       </div>

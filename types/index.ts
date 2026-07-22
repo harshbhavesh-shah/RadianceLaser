@@ -14,6 +14,7 @@ export interface Clinic {
   id: string;
   name: string;
   createdAt: number; // ms epoch
+  address?: string; // shown on printed documents (receipts) — see Settings > Clinic Profile
   // Per-clinic preferences, editable from Settings — see app/dashboard/settings.
   statsWindow?: StatsWindow; // defaults to "today" if unset
 }
@@ -182,5 +183,112 @@ export interface SessionTypeDef extends TenantScoped {
   badgeClassName: string; // Tailwind classes for the badge chip
   chartColor: string; // hex color used in revenue-by-type charts
   columns: SessionColumnDef[]; // session data-entry fields for this type
+  createdAt: number;
+}
+
+// A single before/after (or progress) photo on a patient's record. Usually
+// tied to the specific Visit it was taken at (so it naturally inherits that
+// session's date/type/area), but visitId is optional — a photo can also be
+// logged standalone (e.g. an initial-consult photo before any session has
+// been entered yet).
+//
+// Image bytes are embedded directly as a base64 data URL rather than stored
+// in Firebase Storage — this project runs on the free Spark plan, which
+// doesn't include Storage (that needs the paid Blaze plan). Photos are
+// resized/compressed client-side (see lib/imageCompression.ts) to stay
+// comfortably under Firestore's 1MiB-per-document limit before being saved.
+// Firestore path: patientPhotos/{id}
+export interface PatientPhoto extends TenantScoped {
+  id: string;
+  patientId: string;
+  visitId?: string; // the Visit this photo documents, if any
+  sessionType?: SessionType; // denormalized from the visit, for filtering without a join
+  area?: string; // denormalized from the visit's Area field, if set
+  date?: string; // YYYY-MM-DD, denormalized from the visit's date, if any
+  dataUrl: string; // base64 data: URL — the image itself, resized/compressed client-side
+  label?: string; // free text tag, e.g. "Before", "After", "Front", "Side"
+  sensitive: boolean; // blurred by default in the gallery grid until revealed
+  uploadedByUid: string;
+  uploadedByName: string;
+  createdAt: number;
+}
+
+// A clinic-authored consent form template. `body` is free text with
+// {{variable}} placeholders (patientName, clinicName, date, treatmentType,
+// area — see lib/consentForms.ts) substituted in when a patient signs it.
+// Optionally scoped to a session type (e.g. a CO2-laser-specific consent);
+// leave sessionType unset for a general-purpose form. Firestore path:
+// consentFormTemplates/{id}
+export interface ConsentFormTemplate extends TenantScoped {
+  id: string;
+  title: string; // e.g. "Laser Hair Removal Consent"
+  body: string;
+  sessionType?: SessionType; // if set, this template is suggested for that treatment type
+  createdAt: number;
+}
+
+// A *signed* instance of a template for a specific patient. `renderedBody`
+// is a frozen snapshot of the template text with variables already
+// substituted at signing time — deliberately not re-rendered from the live
+// template later, so editing a template never rewrites what a patient
+// actually agreed to and signed. The signature image is embedded as a base64
+// data URL for the same reason as PatientPhoto.dataUrl above (no Firebase
+// Storage on the free plan) — signatures are simple line drawings so this
+// stays tiny (tens of KB), nowhere near Firestore's 1MiB limit.
+// Firestore path: consentForms/{id}
+export interface ConsentForm extends TenantScoped {
+  id: string;
+  patientId: string;
+  templateId: string;
+  templateTitle: string; // denormalized, survives the template being edited/renamed later
+  visitId?: string; // the Visit this consent covers, if any
+  renderedBody: string;
+  signatureDataUrl: string; // base64 data: URL of the signature PNG
+  signedByName: string; // name typed/confirmed at signing — patient, or a guardian signing on their behalf
+  witnessUid?: string; // staff member present at signing
+  witnessName?: string;
+  signedAt: number;
+  createdAt: number;
+}
+
+// A single line on a Receipt — usually auto-filled from a Visit's fee or a
+// Package's total amount, but can also be a free-form custom line (e.g. a
+// product sale). `discount`, if set, is subtracted from `amount` (the listed
+// price) when computing the line's contribution to the receipt total — see
+// components/documents/ReceiptFormModal.tsx.
+export interface ReceiptItem {
+  description: string;
+  amount: number; // listed price for this line, before discount
+  discount?: number;
+}
+
+// A patient-wise receipt, generated from the Documents section (see
+// app/dashboard/documents/page.tsx) rather than the patient page itself,
+// since a receipt is a clinic-wide document type alongside consent forms.
+// `receiptNumber` is allocated atomically from a per-clinic counter (see
+// lib/receiptNumber.ts) so numbers are sequential and never reused, even
+// with two staff members issuing receipts at the same time. Patient contact
+// details are snapshotted at generation time (same reasoning as
+// ConsentForm.renderedBody) so a printed receipt never silently changes if
+// the patient's record is edited later.
+// Firestore path: receipts/{id}
+export interface Receipt extends TenantScoped {
+  id: string;
+  patientId: string;
+  patientName: string; // denormalized, same reasoning as Appointment.patientName
+  patientPhone?: string;
+  patientAge?: number;
+  patientGender?: string;
+  patientAddress?: string;
+  consultingDoctor?: string;
+  receiptNumber: string; // e.g. "RCPT-000123"
+  date: string; // YYYY-MM-DD
+  items: ReceiptItem[];
+  amount: number; // sum of (item.amount - item.discount), denormalized for quick list rendering
+  visitId?: string; // if this receipt was generated from a specific visit
+  packageId?: string; // if this receipt was generated from a specific package purchase
+  notes?: string;
+  issuedByUid: string;
+  issuedByName: string;
   createdAt: number;
 }

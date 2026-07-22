@@ -1,3 +1,94 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  /* Bars/columns grow up from their baseline on mount — the bar's own
+     inline height/width style sets the true target size, this just scales
+     it in from zero so the same rule works for any data-driven value. */
+  @keyframes grow-y {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-grow-y {
+    transform-origin: bottom;
+    animation: grow-y 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-grow-x {
+    transform-origin: left;
+    animation: grow-x 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-fade-up {
+    animation: fade-up 0.5s ease-out both;
+  }
+  .animate-scale-in {
+    animation: scale-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-grow-y,
+  .animate-grow-x,
+  .animate-fade-up,
+  .animate-scale-in {
+    animation: none !important;
+  }
+}
+
+/* Printable documents (receipts, consent forms) render inside a modal
+   overlay — without this, window.print() would print the whole app behind
+   it too (sidebar, page content, the darkened backdrop). Any element marked
+   .print-area becomes the *only* thing that prints: everything else on the
+   page is hidden, and the marked element is pulled out of the modal's
+   centered-flex layout to sit flush at the top of the printed page. Applied
+   in addition to (not instead of) each modal's existing print:hidden /
+   print:block Tailwind variants, which control what's shown *within* the
+   printable area (e.g. hiding the on-screen close/print buttons). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+  }
+}

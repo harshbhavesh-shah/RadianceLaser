@@ -33,7 +33,7 @@ const NAV_ITEMS: {
   { label: "Appointments", href: "/dashboard/appointments", icon: Calendar },
   { label: "Packages", href: "/dashboard/packages", icon: Package },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
-  { label: "Consent Forms", href: "/dashboard/forms", icon: FileText, soon: true },
+  { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

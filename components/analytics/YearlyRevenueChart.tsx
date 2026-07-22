@@ -10,15 +10,18 @@ export default function YearlyRevenueChart({ data }: { data: MonthPoint[] }) {
   return (
     <div>
       <div className="flex h-40 items-end gap-2">
-        {data.map((point) => (
+        {data.map((point, i) => (
           <div
             key={point.monthLabel}
             title={`${point.monthLabel}: ${formatCurrency(point.total)}`}
             className="group flex-1"
           >
             <div
-              className="w-full rounded-t-sm bg-gold-500 transition-colors group-hover:bg-gold-600"
-              style={{ height: `${Math.max((point.total / max) * 100, point.total > 0 ? 4 : 1)}%` }}
+              className="animate-grow-y w-full rounded-t-sm bg-gold-500 transition-colors group-hover:bg-gold-600"
+              style={{
+                height: `${Math.max((point.total / max) * 100, point.total > 0 ? 4 : 1)}%`,
+                animationDelay: `${i * 40}ms`,
+              }}
             />
           </div>
         ))}

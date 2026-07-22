@@ -1,5 +1,11 @@
 // Firebase CLIENT SDK — used in the browser (login page, client components).
 // Never import this into server-only code; use lib/firebase/admin.ts there instead.
+//
+// NOTE: no Firebase Storage export here — this project runs on the free
+// Spark plan, which doesn't include Storage (that requires the paid Blaze
+// plan). Photos and signatures are instead embedded as compressed base64
+// data URLs directly in Firestore documents — see lib/imageCompression.ts
+// and PatientPhoto/ConsentForm in types/index.ts.
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";

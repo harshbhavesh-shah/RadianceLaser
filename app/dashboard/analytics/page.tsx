@@ -12,7 +12,7 @@ import {
 } from "@/lib/analyticsPage";
 import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
-import StatCard from "@/components/StatCard";
+import StatsStrip from "@/components/StatsStrip";
 import PieChart from "@/components/analytics/PieChart";
 import YearlyRevenueChart from "@/components/analytics/YearlyRevenueChart";
 
@@ -64,12 +64,14 @@ export default async function AnalyticsPage() {
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
       {/* Revenue summary — day/week/month/year */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <RevenueSummaryCard label="Today" entry={revenue.day} />
-        <RevenueSummaryCard label="This Week" entry={revenue.week} />
-        <RevenueSummaryCard label="This Month" entry={revenue.month} />
-        <RevenueSummaryCard label="This Year" entry={revenue.year} />
-      </div>
+      <StatsStrip
+        items={[
+          { label: "Today", ...revenueStripItem(revenue.day) },
+          { label: "This Week", ...revenueStripItem(revenue.week) },
+          { label: "This Month", ...revenueStripItem(revenue.month) },
+          { label: "This Year", ...revenueStripItem(revenue.year) },
+        ]}
+      />
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Yearly trend chart */}
@@ -112,7 +114,8 @@ export default async function AnalyticsPage() {
               {staffMachineStats.map((stat, i) => (
                 <div
                   key={i}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-beige-300 px-4 py-3 text-sm"
+                  className="animate-fade-up flex flex-wrap items-center justify-between gap-2 rounded-lg border border-beige-300 px-4 py-3 text-sm"
+                  style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <div>
                     <div className="font-medium text-brown-900">{stat.staffName}</div>
@@ -139,7 +142,7 @@ export default async function AnalyticsPage() {
             <p className="text-sm text-brown-400">No visits with an Area logged yet.</p>
           ) : (
             <div className="space-y-3">
-              {areaStats.map((stat) => (
+              {areaStats.map((stat, i) => (
                 <div key={stat.area}>
                   <div className="mb-1 flex justify-between text-sm">
                     <span className="text-brown-700">{stat.area}</span>
@@ -147,8 +150,11 @@ export default async function AnalyticsPage() {
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-beige-200">
                     <div
-                      className="h-full rounded-full bg-gold-500"
-                      style={{ width: `${(stat.count / maxAreaCount) * 100}%` }}
+                      className="animate-grow-x h-full rounded-full bg-gold-500"
+                      style={{
+                        width: `${(stat.count / maxAreaCount) * 100}%`,
+                        animationDelay: `${i * 60}ms`,
+                      }}
                     />
                   </div>
                 </div>
@@ -161,23 +167,10 @@ export default async function AnalyticsPage() {
   );
 }
 
-function RevenueSummaryCard({
-  label,
-  entry,
-}: {
-  label: string;
-  entry: { total: number; packageRevenue: number; directRevenue: number };
-}) {
-  return (
-    <div className="rounded-xl bg-surface p-5 shadow-soft ring-1 ring-beige-300">
-      <div className="text-xs font-medium uppercase tracking-wide text-brown-400">{label}</div>
-      <div className="mt-1.5 font-display text-2xl font-medium text-gold-600">
-        {formatCurrency(entry.total)}
-      </div>
-      <div className="mt-2 text-[11px] text-brown-400">
-        {formatCurrency(entry.directRevenue)} direct · {formatCurrency(entry.packageRevenue)} via
-        packages
-      </div>
-    </div>
-  );
+function revenueStripItem(entry: { total: number; packageRevenue: number; directRevenue: number }) {
+  return {
+    value: formatCurrency(entry.total),
+    sublabel: `${formatCurrency(entry.directRevenue)} direct · ${formatCurrency(entry.packageRevenue)} via packages`,
+    accent: true,
+  };
 }

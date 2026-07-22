@@ -28,15 +28,18 @@ export default function RevenueChart({ data }: { data: MonthlyRevenue }) {
 
       {/* Daily bar chart */}
       <div className="mt-6 flex h-32 items-end gap-[3px]">
-        {data.byDay.map((d) => (
+        {data.byDay.map((d, i) => (
           <div
             key={d.day}
             title={`${d.day}: ${formatCurrency(d.total)}`}
             className="group relative min-w-0 flex-1"
           >
             <div
-              className="w-full rounded-t-sm bg-gold-500 transition-colors group-hover:bg-gold-600"
-              style={{ height: `${Math.max((d.total / maxDay) * 100, d.total > 0 ? 4 : 1)}px` }}
+              className="animate-grow-y w-full rounded-t-sm bg-gold-500 transition-colors group-hover:bg-gold-600"
+              style={{
+                height: `${Math.max((d.total / maxDay) * 100, d.total > 0 ? 4 : 1)}px`,
+                animationDelay: `${i * 12}ms`,
+              }}
             />
           </div>
         ))}
@@ -53,7 +56,7 @@ export default function RevenueChart({ data }: { data: MonthlyRevenue }) {
           By Treatment Type
         </div>
         <div className="space-y-3">
-          {types.map((type) => {
+          {types.map((type, i) => {
             const cfg = SESSION_TYPE_CONFIG[type];
             const amount = data.byType[type] || 0;
             const pct = Math.round((amount / typeTotal) * 100);
@@ -72,8 +75,8 @@ export default function RevenueChart({ data }: { data: MonthlyRevenue }) {
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-beige-200">
                   <div
-                    className="h-full rounded-full bg-gold-500"
-                    style={{ width: `${pct}%` }}
+                    className="animate-grow-x h-full rounded-full bg-gold-500"
+                    style={{ width: `${pct}%`, animationDelay: `${i * 80}ms` }}
                   />
                 </div>
               </div>

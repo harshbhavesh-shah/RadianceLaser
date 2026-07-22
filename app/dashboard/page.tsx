@@ -8,7 +8,7 @@ import { getClinicPackages } from "@/lib/firestore/packages";
 import { computeWindowStats, computeRecentActivity, computeMonthlyRevenue } from "@/lib/analytics";
 import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
-import StatCard from "@/components/StatCard";
+import StatsStrip from "@/components/StatsStrip";
 import RevenueChart from "@/components/RevenueChart";
 
 const WINDOW_LABELS = { today: "Today", week: "This Week", month: "This Month" };
@@ -64,12 +64,14 @@ export default async function DashboardPage() {
       <p className="mt-1 text-sm text-brown-600">{today}</p>
       <div className="mt-3 mb-8 h-[2px] w-8 bg-gold-500" />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label={`Visits ${windowLabel}`} value={stats.visitsInWindow} />
-        <StatCard label={`New Patients ${windowLabel}`} value={stats.newPatientsInWindow} />
-        <StatCard label={`Revenue ${windowLabel}`} value={formatCurrency(stats.revenueInWindow)} accent />
-        <StatCard label="Total Patients" value={stats.totalPatients} />
-      </div>
+      <StatsStrip
+        items={[
+          { label: `Visits ${windowLabel}`, value: stats.visitsInWindow },
+          { label: `New Patients ${windowLabel}`, value: stats.newPatientsInWindow },
+          { label: `Revenue ${windowLabel}`, value: formatCurrency(stats.revenueInWindow), accent: true },
+          { label: "Total Patients", value: stats.totalPatients },
+        ]}
+      />
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className={canSeeRevenueAnalytics ? "lg:col-span-2" : "lg:col-span-3"}>

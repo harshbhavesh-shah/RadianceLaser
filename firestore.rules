@@ -77,7 +77,14 @@ service cloud.firestore {
     }
 
     match /counters/{counterId} {
-      allow read: if belongsToClinic(resource.data);
+      // resource == null when the counter doc doesn't exist yet (e.g. the
+      // very first receipt a clinic ever issues) — without this check,
+      // resource.data on a nonexistent doc throws and the read is denied,
+      // which aborts the allocateReceiptNumber() transaction in
+      // lib/receiptNumber.ts before it ever gets to create the doc. Safe to
+      // allow: a nonexistent doc has no data to protect, and counter IDs are
+      // derived from the caller's own clinicId anyway.
+      allow read: if resource == null || belongsToClinic(resource.data);
       allow write: if belongsToClinic(request.resource.data);
     }
 
@@ -107,6 +114,49 @@ service cloud.firestore {
       allow create: if belongsToClinic(request.resource.data);
       allow update: if belongsToClinic(resource.data)
         && belongsToClinic(request.resource.data);
+      allow delete: if belongsToClinic(resource.data);
+    }
+
+    // Before/after photo metadata — see types/index.ts PatientPhoto. The
+    // actual image bytes live in Firebase Storage (see storage.rules);
+    // this is just the per-photo record (who took it, which visit, the
+    // download URL, the sensitive flag).
+    match /patientPhotos/{photoId} {
+      allow read: if belongsToClinic(resource.data);
+      allow create: if belongsToClinic(request.resource.data);
+      allow update: if belongsToClinic(resource.data)
+        && belongsToClinic(request.resource.data);
+      allow delete: if belongsToClinic(resource.data);
+    }
+
+    // Clinic-authored consent form templates — see types/index.ts
+    // ConsentFormTemplate and components/settings/ConsentTemplateFormModal.tsx.
+    match /consentFormTemplates/{templateId} {
+      allow read: if belongsToClinic(resource.data);
+      allow create: if belongsToClinic(request.resource.data);
+      allow update: if belongsToClinic(resource.data)
+        && belongsToClinic(request.resource.data);
+      allow delete: if belongsToClinic(resource.data);
+    }
+
+    // Signed consent forms — see types/index.ts ConsentForm. Deliberately no
+    // update rule: once signed, a consent record shouldn't be editable, only
+    // created or removed (e.g. if logged in error). The signature image
+    // itself lives in Firebase Storage — see storage.rules.
+    match /consentForms/{consentFormId} {
+      allow read: if belongsToClinic(resource.data);
+      allow create: if belongsToClinic(request.resource.data);
+      allow delete: if belongsToClinic(resource.data);
+    }
+
+    // Patient-wise receipts, generated from the Documents section — see
+    // types/index.ts Receipt. No update rule: once issued a receipt is
+    // immutable, only created or removed (e.g. if issued in error) — same
+    // reasoning as consentForms above. receiptNumber is allocated from the
+    // counters collection below before this document is written.
+    match /receipts/{receiptId} {
+      allow read: if belongsToClinic(resource.data);
+      allow create: if belongsToClinic(request.resource.data);
       allow delete: if belongsToClinic(resource.data);
     }
 

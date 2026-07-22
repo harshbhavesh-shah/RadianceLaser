@@ -127,6 +127,21 @@ export async function updateClinicName(name: string): Promise<{ error?: string }
   }
 }
 
+export async function updateClinicAddress(address: string): Promise<{ error?: string }> {
+  try {
+    const session = await requireOwner();
+    await adminDb()
+      .collection("clinics")
+      .doc(session.clinicId)
+      .update({ address: address.trim() });
+    revalidatePath("/dashboard");
+    return {};
+  } catch (err) {
+    console.error("Failed to update clinic address:", err);
+    return { error: "Couldn't update the clinic address." };
+  }
+}
+
 export async function updateStatsWindow(window: StatsWindow): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();

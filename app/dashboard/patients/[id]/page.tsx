@@ -6,7 +6,12 @@ import { getPatientVisits } from "@/lib/firestore/visits";
 import { getPatientPackages } from "@/lib/firestore/packages";
 import { getClinicMachines } from "@/lib/firestore/machines";
 import { getClinicStaff } from "@/lib/firestore/staff";
+import { getPatientPhotos } from "@/lib/firestore/patientPhotos";
+import { getClinic } from "@/lib/firestore/clinics";
+import { getClinicConsentTemplates, getPatientConsentForms } from "@/lib/firestore/consentForms";
 import PatientVisitTabs from "@/components/PatientVisitTabs";
+import PatientPhotoGallery from "@/components/PatientPhotoGallery";
+import PatientConsentForms from "@/components/PatientConsentForms";
 
 export default async function PatientDetailPage({ params }: { params: { id: string } }) {
   const session = await getSession();
@@ -15,12 +20,20 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
   const patient = await getPatient(session.clinicId, params.id);
   if (!patient) notFound();
 
-  const [visits, packages, machines, staff] = await Promise.all([
-    getPatientVisits(session.clinicId, patient.id),
-    getPatientPackages(session.clinicId, patient.id),
-    getClinicMachines(session.clinicId),
-    getClinicStaff(session.clinicId),
-  ]);
+  const [visits, packages, machines, staff, photos, clinic, consentTemplates, consentForms] =
+    await Promise.all([
+      getPatientVisits(session.clinicId, patient.id),
+      getPatientPackages(session.clinicId, patient.id),
+      getClinicMachines(session.clinicId),
+      getClinicStaff(session.clinicId),
+      getPatientPhotos(session.clinicId, patient.id),
+      getClinic(session.clinicId),
+      getClinicConsentTemplates(session.clinicId),
+      getPatientConsentForms(session.clinicId, patient.id),
+    ]);
+
+  const currentStaff = staff.find((s) => s.uid === session.uid);
+  const currentName = currentStaff?.name || session.email || "Staff";
 
   return (
     <div className="max-w-5xl">
@@ -56,6 +69,31 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
             <p className="mt-1 text-sm text-brown-700">{patient.contraindications}</p>
           </div>
         )}
+      </div>
+
+      <div className="mt-8">
+        <PatientPhotoGallery
+          clinicId={session.clinicId}
+          patientId={patient.id}
+          visits={visits}
+          initialPhotos={photos}
+          currentUid={session.uid}
+          currentName={currentName}
+        />
+      </div>
+
+      <div className="mt-8">
+        <PatientConsentForms
+          clinicId={session.clinicId}
+          patientId={patient.id}
+          patientName={patient.name}
+          clinicName={clinic?.name || "Your Clinic"}
+          templates={consentTemplates}
+          visits={visits}
+          initialForms={consentForms}
+          currentUid={session.uid}
+          currentName={currentName}
+        />
       </div>
 
       <div className="mt-8">
