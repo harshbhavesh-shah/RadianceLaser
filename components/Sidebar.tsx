@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -98,7 +99,10 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
         >
           <Menu size={22} />
         </button>
-        <div className="font-display text-lg font-medium text-brown-900">{clinicName}</div>
+        <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="" width={28} height={28} />
+          <span className="font-display text-lg font-medium text-brown-900">{clinicName}</span>
+        </div>
         <div className="w-[34px]" /> {/* balances the hamburger button for centering */}
       </div>
 
@@ -108,9 +112,12 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
           <div className="absolute inset-0 bg-brown-900/50" onClick={() => setMobileOpen(false)} />
           <aside className="relative flex h-full w-72 flex-col bg-brown-900 text-beige-200 shadow-2xl">
             <div className="flex items-center justify-between px-6 pt-6 pb-6">
-              <div>
-                <div className="font-display text-xl font-medium text-white">{clinicName}</div>
-                <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+              <div className="flex items-center gap-3">
+                <Image src="/logo.png" alt="" width={36} height={36} />
+                <div>
+                  <div className="font-display text-xl font-medium text-white">{clinicName}</div>
+                  <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+                </div>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
@@ -132,18 +139,20 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
 
       {/* Desktop sidebar — hidden below md, collapsible between full/icon-rail */}
       <aside
-        className={`hidden min-h-screen flex-shrink-0 flex-col bg-brown-900 text-beige-200 transition-[width] duration-300 ease-in-out md:flex ${
-          collapsed ? "w-16" : "w-60"
-        }`}
+        className="hidden h-full flex-shrink-0 flex-col overflow-y-auto bg-brown-900 text-beige-200 md:flex"
+        style={{ width: collapsed ? 64 : 240, transition: "width 300ms ease-in-out" }}
       >
-        <div className={`flex items-center pt-7 pb-6 ${collapsed ? "justify-center px-2" : "px-6"}`}>
+        <div className={`flex items-center pt-7 pb-6 ${collapsed ? "justify-center px-2" : "gap-3 px-6"}`}>
           {collapsed ? (
-            <div className="h-2.5 w-2.5 rounded-full bg-gold-500" />
+            <Image src="/logo.png" alt="" width={32} height={32} />
           ) : (
-            <div>
-              <div className="font-display text-xl font-medium text-white">{clinicName}</div>
-              <div className="mt-2 h-[2px] w-8 bg-gold-500" />
-            </div>
+            <>
+              <Image src="/logo.png" alt="" width={40} height={40} className="flex-shrink-0" />
+              <div>
+                <div className="font-display text-xl font-medium text-white">{clinicName}</div>
+                <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+              </div>
+            </>
           )}
         </div>
 

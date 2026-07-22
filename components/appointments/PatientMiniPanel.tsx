@@ -31,7 +31,7 @@ export default function PatientMiniPanel({
   const apptStatusStyle = STATUS_STYLES[appointment.status];
 
   return (
-    <aside className="h-full w-80 overflow-y-auto border-l border-beige-300 bg-surface p-5 shadow-[-12px_0_28px_-16px_rgba(44,29,20,0.25)]">
+    <aside className="max-h-[85vh] w-80 overflow-y-auto rounded-xl bg-surface p-5 shadow-card ring-1 ring-beige-300">
       <div className="flex items-start justify-between">
         <div>
           <div className="font-display text-lg font-medium text-brown-900">{patient.name}</div>

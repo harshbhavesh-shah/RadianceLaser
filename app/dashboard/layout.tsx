@@ -18,9 +18,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen flex-col bg-canvas md:flex-row">
+      <div className="flex h-screen flex-col overflow-hidden bg-canvas md:flex-row">
         <Sidebar clinicName={clinicName} session={session} />
-        <main className="flex-1 overflow-x-hidden p-4 md:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
       </div>
     </SidebarProvider>
   );

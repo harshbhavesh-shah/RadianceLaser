@@ -149,7 +149,7 @@ export default function AppointmentsClient({
     : null;
 
   return (
-    <div className="flex">
+    <div className="flex items-start gap-5">
       <div className="min-w-0 flex-1">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -266,14 +266,15 @@ export default function AppointmentsClient({
       </div>
 
       <div
-        className={`hidden flex-shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out md:block ${
-          isPanelOpen ? "w-80" : "w-0"
-        }`}
+        className="hidden flex-shrink-0 overflow-hidden md:block"
+        style={{ width: isPanelOpen ? 320 : 0, transition: "width 300ms ease-in-out" }}
       >
         <div
-          className={`h-full w-80 transition-opacity duration-200 ease-in-out ${
-            isPanelOpen ? "opacity-100 delay-100" : "opacity-0"
-          }`}
+          style={{
+            width: 320,
+            opacity: isPanelOpen ? 1 : 0,
+            transition: `opacity 200ms ease-in-out ${isPanelOpen ? "100ms" : "0ms"}`,
+          }}
         >
           {renderedPanelAppointment && renderedPanelPatient && (
             <PatientMiniPanel
