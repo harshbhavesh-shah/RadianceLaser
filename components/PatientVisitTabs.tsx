@@ -12,6 +12,8 @@ export default function PatientVisitTabs({
   packages,
   machines,
   staff,
+  initialActiveTab,
+  autoOpenVisitForAppointmentId,
 }: {
   clinicId: string;
   patientId: string;
@@ -19,13 +21,20 @@ export default function PatientVisitTabs({
   packages: Package[];
   machines: Machine[];
   staff: StaffMember[];
+  // Both set together when arriving via a "Log Visit" deep link from an
+  // appointment (see components/overview/TodayAgenda.tsx) — opens straight
+  // to the right tab with the visit form already open and pre-linked.
+  initialActiveTab?: SessionType;
+  autoOpenVisitForAppointmentId?: string;
 }) {
   // Every session type the clinic has — the two built-ins plus any
   // clinic-defined machine types (e.g. "CO2 Laser") — each gets its own tab
   // here automatically, in the order they were created.
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const TABS: SessionType[] = Object.keys(SESSION_TYPE_CONFIG);
-  const [active, setActive] = useState<SessionType>(TABS[0] || "qs");
+  const [active, setActive] = useState<SessionType>(
+    (initialActiveTab && SESSION_TYPE_CONFIG[initialActiveTab] ? initialActiveTab : TABS[0]) || "qs"
+  );
 
   return (
     <div>
@@ -65,6 +74,7 @@ export default function PatientVisitTabs({
             initialPackages={packages.filter((p) => p.sessionType === type)}
             machines={machines}
             staff={staff}
+            autoOpenAppointmentId={type === initialActiveTab ? autoOpenVisitForAppointmentId : undefined}
           />
         </div>
       ))}

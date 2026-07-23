@@ -28,9 +28,12 @@ const NAV_ITEMS: {
   soon?: boolean;
   roles?: UserRole[]; // omit = visible to everyone
 }[] = [
-  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  // "Today" (not "Overview" / "Dashboard") on purpose — this is meant to be
+  // the one page someone opens each morning and gets everything about their
+  // day from, so the label should say what it's for, not just where it is.
+  { label: "Today", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Schedule", href: "/dashboard/appointments", icon: Calendar },
   { label: "Patients", href: "/dashboard/patients", icon: Users },
-  { label: "Appointments", href: "/dashboard/appointments", icon: Calendar },
   { label: "Packages", href: "/dashboard/packages", icon: Package },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },

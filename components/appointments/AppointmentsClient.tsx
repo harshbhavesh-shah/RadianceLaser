@@ -37,12 +37,16 @@ export default function AppointmentsClient({
   initialAppointments,
   visits,
   packages,
+  visitIdByAppointmentId,
+  receiptedAppointmentIds,
 }: {
   clinicId: string;
   patients: Patient[];
   initialAppointments: Appointment[];
   visits: Visit[];
   packages: Package[];
+  visitIdByAppointmentId: Record<string, string>;
+  receiptedAppointmentIds: Record<string, true>;
 }) {
   const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
@@ -149,11 +153,11 @@ export default function AppointmentsClient({
     : null;
 
   return (
-    <div className="flex items-start gap-5">
+    <div className="flex items-stretch gap-5">
       <div className="min-w-0 flex-1">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl font-medium text-brown-900">Appointments</h1>
+            <h1 className="font-display text-2xl font-medium text-brown-900">Schedule</h1>
             <div className="mt-2 h-[2px] w-8 bg-gold-500" />
           </div>
           <button
@@ -230,7 +234,12 @@ export default function AppointmentsClient({
         </div>
 
         {viewMode === "list" && (
-          <AppointmentListView appointments={appointments} onEdit={handleAppointmentClick} />
+          <AppointmentListView
+            appointments={appointments}
+            onEdit={handleAppointmentClick}
+            visitIdByAppointmentId={visitIdByAppointmentId}
+            receiptedAppointmentIds={receiptedAppointmentIds}
+          />
         )}
 
         {viewMode === "calendar" && calendarMode === "day" && (
@@ -266,10 +275,11 @@ export default function AppointmentsClient({
       </div>
 
       <div
-        className="hidden flex-shrink-0 overflow-hidden md:block"
+        className="hidden h-full flex-shrink-0 overflow-hidden md:block"
         style={{ width: isPanelOpen ? 320 : 0, transition: "width 300ms ease-in-out" }}
       >
         <div
+          className="h-full"
           style={{
             width: 320,
             opacity: isPanelOpen ? 1 : 0,
@@ -282,6 +292,8 @@ export default function AppointmentsClient({
               appointment={renderedPanelAppointment}
               visits={visits.filter((v) => v.patientId === renderedPanelPatient.id)}
               packages={packages.filter((p) => p.patientId === renderedPanelPatient.id)}
+              visitIdByAppointmentId={visitIdByAppointmentId}
+              receiptedAppointmentIds={receiptedAppointmentIds}
               onClose={closePatientPanel}
               onEditAppointment={() =>
                 setModalState({ mode: "edit", appointment: renderedPanelAppointment })

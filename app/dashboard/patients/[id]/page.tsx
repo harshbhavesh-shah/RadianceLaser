@@ -9,18 +9,30 @@ import { getClinicStaff } from "@/lib/firestore/staff";
 import { getPatientPhotos } from "@/lib/firestore/patientPhotos";
 import { getClinic } from "@/lib/firestore/clinics";
 import { getClinicConsentTemplates, getPatientConsentForms } from "@/lib/firestore/consentForms";
+import { getPatientReceipts } from "@/lib/firestore/receipts";
 import PatientVisitTabs from "@/components/PatientVisitTabs";
 import PatientPhotoGallery from "@/components/PatientPhotoGallery";
 import PatientConsentForms from "@/components/PatientConsentForms";
+import PatientReceipts from "@/components/PatientReceipts";
 
-export default async function PatientDetailPage({ params }: { params: { id: string } }) {
+export default async function PatientDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  // Set by "Log Visit" links on an appointment (see
+  // components/overview/TodayAgenda.tsx and
+  // components/appointments/AppointmentListView.tsx) to deep-link straight
+  // into the right session-type tab with the visit form already open.
+  searchParams: { logVisit?: string; sessionType?: string; appointmentId?: string };
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
 
   const patient = await getPatient(session.clinicId, params.id);
   if (!patient) notFound();
 
-  const [visits, packages, machines, staff, photos, clinic, consentTemplates, consentForms] =
+  const [visits, packages, machines, staff, photos, clinic, consentTemplates, consentForms, receipts] =
     await Promise.all([
       getPatientVisits(session.clinicId, patient.id),
       getPatientPackages(session.clinicId, patient.id),
@@ -30,6 +42,7 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
       getClinic(session.clinicId),
       getClinicConsentTemplates(session.clinicId),
       getPatientConsentForms(session.clinicId, patient.id),
+      getPatientReceipts(session.clinicId, patient.id),
     ]);
 
   const currentStaff = staff.find((s) => s.uid === session.uid);
@@ -72,6 +85,24 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
       </div>
 
       <div className="mt-8">
+        <h2 className="font-display text-lg font-medium text-brown-900">Visit History</h2>
+        <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
+        <PatientVisitTabs
+          clinicId={session.clinicId}
+          patientId={patient.id}
+          visits={visits}
+          packages={packages}
+          machines={machines}
+          staff={staff}
+          initialActiveTab={searchParams.logVisit === "1" ? searchParams.sessionType : undefined}
+          autoOpenVisitForAppointmentId={searchParams.logVisit === "1" ? searchParams.appointmentId : undefined}
+        />
+      </div>
+
+      {/* Photos, consent forms, and receipts are all secondary records that
+          reference the clinical history above — kept below it rather than
+          competing with it for the first thing you see on the page. */}
+      <div className="mt-10">
         <PatientPhotoGallery
           clinicId={session.clinicId}
           patientId={patient.id}
@@ -97,15 +128,16 @@ export default async function PatientDetailPage({ params }: { params: { id: stri
       </div>
 
       <div className="mt-8">
-        <h2 className="font-display text-lg font-medium text-brown-900">Visit History</h2>
-        <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
-        <PatientVisitTabs
+        <PatientReceipts
           clinicId={session.clinicId}
-          patientId={patient.id}
+          clinicName={clinic?.name || "Your Clinic"}
+          clinicAddress={clinic?.address}
+          patient={patient}
           visits={visits}
           packages={packages}
-          machines={machines}
-          staff={staff}
+          initialReceipts={receipts}
+          currentUid={session.uid}
+          currentName={currentName}
         />
       </div>
     </div>

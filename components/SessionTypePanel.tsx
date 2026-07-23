@@ -11,7 +11,7 @@ import type { Machine, Package, SessionType, StaffMember, Visit } from "@/types"
 
 type ModalState =
   | { mode: "closed" }
-  | { mode: "create"; presetPackageId?: string }
+  | { mode: "create"; presetPackageId?: string; presetAppointmentId?: string }
   | { mode: "edit"; visit: Visit };
 
 export default function SessionTypePanel({
@@ -22,6 +22,7 @@ export default function SessionTypePanel({
   initialPackages,
   machines,
   staff,
+  autoOpenAppointmentId,
 }: {
   clinicId: string;
   patientId: string;
@@ -30,12 +31,17 @@ export default function SessionTypePanel({
   initialPackages: Package[];
   machines: Machine[];
   staff: StaffMember[];
+  // Set only on the tab a "Log Visit" deep link targets — opens the visit
+  // form pre-linked to that appointment as soon as this tab is visible.
+  autoOpenAppointmentId?: string;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
   const [visits, setVisits] = useState<Visit[]>(initialVisits);
   const [packages, setPackages] = useState<Package[]>(initialPackages);
-  const [visitModal, setVisitModal] = useState<ModalState>({ mode: "closed" });
+  const [visitModal, setVisitModal] = useState<ModalState>(
+    autoOpenAppointmentId ? { mode: "create", presetAppointmentId: autoOpenAppointmentId } : { mode: "closed" }
+  );
   const [packageModalOpen, setPackageModalOpen] = useState(false);
   const [packagesExpanded, setPackagesExpanded] = useState(false);
 
@@ -133,6 +139,7 @@ export default function SessionTypePanel({
           visit={visitModal.mode === "edit" ? visitModal.visit : null}
           activePackages={activePackages}
           presetPackageId={visitModal.mode === "create" ? visitModal.presetPackageId : undefined}
+          appointmentId={visitModal.mode === "create" ? visitModal.presetAppointmentId : undefined}
           machines={machines}
           staff={staff}
           onClose={() => setVisitModal({ mode: "closed" })}

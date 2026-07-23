@@ -9,7 +9,14 @@ import { getClinicConsentTemplates, getClinicConsentForms } from "@/lib/firestor
 import { getClinicReceipts } from "@/lib/firestore/receipts";
 import DocumentsTabs from "@/components/documents/DocumentsTabs";
 
-export default async function DocumentsPage() {
+export default async function DocumentsPage({
+  searchParams,
+}: {
+  // Set by the "Generate Receipt" pipeline shortcut on an appointment (see
+  // lib/pipeline.ts and components/overview/TodayAgenda.tsx) to land
+  // directly on the Receipts tab with that patient/visit pre-loaded.
+  searchParams: { tab?: string; newReceiptForPatient?: string; visitId?: string };
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
 
@@ -46,6 +53,9 @@ export default async function DocumentsPage() {
         currentUid={session.uid}
         currentName={currentName}
         canManageTemplates={session.role === "owner"}
+        initialTab={searchParams.tab === "receipts" ? "receipts" : undefined}
+        autoOpenReceiptPatientId={searchParams.newReceiptForPatient}
+        autoAddReceiptVisitId={searchParams.visitId}
       />
     </div>
   );

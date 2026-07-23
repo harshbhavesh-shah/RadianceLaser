@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { Plus, Trash2 } from "lucide-react";
 import { db } from "@/lib/firebase/client";
 import { allocateReceiptNumber } from "@/lib/receiptNumber";
+import { maybeAutoCompleteAppointment } from "@/lib/pipeline";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import type { Patient, Package, Receipt, ReceiptItem, Visit } from "@/types";
 
@@ -23,6 +24,7 @@ export default function ReceiptFormModal({
   packages,
   currentUid,
   currentName,
+  autoAddVisitId,
   onClose,
   onCreated,
 }: {
@@ -32,6 +34,10 @@ export default function ReceiptFormModal({
   packages: Package[]; // this patient's packages only
   currentUid: string;
   currentName: string;
+  // Set when opened via the "Generate Receipt" pipeline shortcut on an
+  // appointment (see lib/pipeline.ts) — pre-adds that visit's fee as a line
+  // item as soon as the form opens, instead of making staff pick it again.
+  autoAddVisitId?: string;
   onClose: () => void;
   onCreated: (receipt: Receipt) => void;
 }) {
@@ -42,6 +48,10 @@ export default function ReceiptFormModal({
   const [notes, setNotes] = useState("");
   const [sourceVisitId, setSourceVisitId] = useState<string | undefined>();
   const [sourcePackageId, setSourcePackageId] = useState<string | undefined>();
+  // Carried along only when the quick-added visit line came from a booked
+  // appointment — lets this receipt complete the pipeline for that
+  // appointment (see lib/pipeline.ts) once saved.
+  const [sourceAppointmentId, setSourceAppointmentId] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,19 +76,32 @@ export default function ReceiptFormModal({
     setItems((prev) => [...prev, { description: desc, amount: Number(v.fields.fee) || 0, discount: 0 }]);
     setSourceVisitId(v.id);
     setSourcePackageId(undefined);
+    setSourceAppointmentId(v.appointmentId);
   }
 
   function addPackageLine(p: Package) {
     setItems((prev) => [...prev, { description: `Package: ${p.label}`, amount: p.totalAmount, discount: 0 }]);
     setSourcePackageId(p.id);
     setSourceVisitId(undefined);
+    setSourceAppointmentId(undefined);
   }
 
   function addCustomLine() {
     setItems((prev) => [...prev, { description: "", amount: 0, discount: 0 }]);
     setSourceVisitId(undefined);
     setSourcePackageId(undefined);
+    setSourceAppointmentId(undefined);
   }
+
+  const autoAddedRef = useRef(false);
+  useEffect(() => {
+    if (!autoAddVisitId || autoAddedRef.current) return;
+    autoAddedRef.current = true;
+    const v = visits.find((visit) => visit.id === autoAddVisitId);
+    if (v) addVisitLine(v);
+    // Runs once on mount only — autoAddVisitId is set once per modal instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function updateItem(i: number, patch: Partial<ReceiptItem>) {
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
@@ -121,6 +144,7 @@ export default function ReceiptFormModal({
         amount,
         ...(sourceVisitId ? { visitId: sourceVisitId } : {}),
         ...(sourcePackageId ? { packageId: sourcePackageId } : {}),
+        ...(sourceAppointmentId ? { appointmentId: sourceAppointmentId } : {}),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
         issuedByUid: currentUid,
         issuedByName: currentName,
@@ -128,6 +152,7 @@ export default function ReceiptFormModal({
       };
       await setDoc(doc(db, "receipts", id), payload);
       onCreated({ id, ...payload });
+      if (sourceAppointmentId) void maybeAutoCompleteAppointment(sourceAppointmentId);
     } catch (err) {
       console.error("Failed to save receipt:", err);
       const code = (err as { code?: string })?.code;

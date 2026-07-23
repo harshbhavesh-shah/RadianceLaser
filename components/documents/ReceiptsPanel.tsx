@@ -30,6 +30,8 @@ export default function ReceiptsPanel({
   initialReceipts,
   currentUid,
   currentName,
+  autoOpenPatientId,
+  autoAddVisitId,
 }: {
   clinicId: string;
   clinicName: string;
@@ -40,10 +42,17 @@ export default function ReceiptsPanel({
   initialReceipts: Receipt[];
   currentUid: string;
   currentName: string;
+  // Set by the "Generate Receipt" deep link from an appointment (see
+  // app/dashboard/documents/page.tsx) — skips the patient picker and jumps
+  // straight into the receipt form with that visit pre-added.
+  autoOpenPatientId?: string;
+  autoAddVisitId?: string;
 }) {
   const [receipts, setReceipts] = useState<Receipt[]>(initialReceipts);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [billingPatient, setBillingPatient] = useState<Patient | null>(null);
+  const [billingPatient, setBillingPatient] = useState<Patient | null>(
+    () => patients.find((p) => p.id === autoOpenPatientId) || null
+  );
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
   const [search, setSearch] = useState("");
 
@@ -145,6 +154,7 @@ export default function ReceiptsPanel({
           packages={packages.filter((p) => p.patientId === billingPatient.id)}
           currentUid={currentUid}
           currentName={currentName}
+          autoAddVisitId={billingPatient.id === autoOpenPatientId ? autoAddVisitId : undefined}
           onClose={() => setBillingPatient(null)}
           onCreated={handleCreated}
         />

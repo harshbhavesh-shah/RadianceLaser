@@ -75,6 +75,12 @@ export interface Visit extends TenantScoped {
   sessionType: SessionType;
   date: string; // YYYY-MM-DD, empty string until a date is actually set
   fields: Record<string, string | number>;
+  // Set when this visit fulfills a booked Appointment — lets "Log Visit"
+  // deep-link straight into the right form from Schedule/Today, and lets
+  // the appointment auto-complete once both a Visit and a Receipt exist for
+  // it (see lib/pipeline.ts). Visits logged without going through an
+  // appointment (walk-ins, backdated entries) simply omit this.
+  appointmentId?: string;
   // Set when this visit is a redemption against a Package rather than a
   // pay-per-visit session. When set, fields.fee should be 0 — the money was
   // already counted as revenue when the package was purchased, so charging
@@ -287,6 +293,7 @@ export interface Receipt extends TenantScoped {
   amount: number; // sum of (item.amount - item.discount), denormalized for quick list rendering
   visitId?: string; // if this receipt was generated from a specific visit
   packageId?: string; // if this receipt was generated from a specific package purchase
+  appointmentId?: string; // denormalized from the source visit, for the same auto-complete reasoning as Visit.appointmentId
   notes?: string;
   issuedByUid: string;
   issuedByName: string;

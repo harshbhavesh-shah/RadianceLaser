@@ -4,6 +4,7 @@ import { useState } from "react";
 import { addDoc, collection, deleteDoc, deleteField, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { numericFieldKeysFor } from "@/lib/sessionTypes";
+import { maybeAutoCompleteAppointment } from "@/lib/pipeline";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import type { Machine, Package, SessionType, StaffMember, Visit } from "@/types";
 
@@ -19,6 +20,7 @@ export default function VisitFormModal({
   visit,
   activePackages = [],
   presetPackageId,
+  appointmentId,
   machines = [],
   staff = [],
   onClose,
@@ -31,6 +33,7 @@ export default function VisitFormModal({
   visit?: Visit | null; // omit/null = creating a new visit; pass one = editing
   activePackages?: Package[]; // packages with sessions remaining, matching this sessionType
   presetPackageId?: string; // pre-select a package, e.g. opened via "Redeem Session"
+  appointmentId?: string; // set when opened via "Log Visit" from an appointment — see lib/pipeline.ts
   machines?: Machine[]; // for the Analytics "revenue/time per machine" breakdown
   staff?: StaffMember[]; // for the Analytics "who performed this" breakdown
   onClose: () => void;
@@ -121,10 +124,14 @@ export default function VisitFormModal({
           ...(machineId ? { machineId } : {}),
           ...(performedByUid ? { performedByUid, performedByName: performedByStaff?.name } : {}),
           ...(durationMinutes ? { durationMinutes: Number(durationMinutes) } : {}),
+          ...(appointmentId ? { appointmentId } : {}),
           createdAt: Date.now(),
         };
         const docRef = await addDoc(collection(db, "visits"), createPayload);
         onSaved({ id: docRef.id, ...createPayload });
+        // Best-effort, non-blocking — if a receipt already exists for this
+        // appointment too, this flips it to Completed automatically.
+        if (appointmentId) void maybeAutoCompleteAppointment(appointmentId);
       }
     } catch (err) {
       console.error("Failed to save visit:", err);

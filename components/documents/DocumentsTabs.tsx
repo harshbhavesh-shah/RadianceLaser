@@ -20,6 +20,9 @@ export default function DocumentsTabs({
   currentUid,
   currentName,
   canManageTemplates,
+  initialTab,
+  autoOpenReceiptPatientId,
+  autoAddReceiptVisitId,
 }: {
   clinicId: string;
   clinicName: string;
@@ -33,8 +36,14 @@ export default function DocumentsTabs({
   currentUid: string;
   currentName: string;
   canManageTemplates: boolean;
+  // Set by the "Generate Receipt" pipeline shortcut on an appointment (see
+  // lib/pipeline.ts) — lands on the Receipts tab with that patient/visit
+  // already loaded instead of the default Consent Forms tab.
+  initialTab?: Tab;
+  autoOpenReceiptPatientId?: string;
+  autoAddReceiptVisitId?: string;
 }) {
-  const [tab, setTab] = useState<Tab>("consent");
+  const [tab, setTab] = useState<Tab>(initialTab || "consent");
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "consent", label: "Consent Forms" },
@@ -82,6 +91,8 @@ export default function DocumentsTabs({
           initialReceipts={initialReceipts}
           currentUid={currentUid}
           currentName={currentName}
+          autoOpenPatientId={autoOpenReceiptPatientId}
+          autoAddVisitId={autoAddReceiptVisitId}
         />
       )}
     </div>
