@@ -64,11 +64,21 @@ export async function importPatientsAction(
   // overwrite. Updated as rows are processed, so two duplicate rows in the
   // same file are handled consistently against each other, not just against
   // what was already in Firestore before this import started.
-  const byPhone = new Map(
-    existingPatients.filter((p) => normalizePhone(p.phone)).map((p) => [normalizePhone(p.phone), p.id])
+  // Explicit [string, string] return types below are required, not
+  // stylistic — without them, TS infers `.map()`'s array-literal return as
+  // the widened `string[]` rather than a tuple, and chaining `.filter()`
+  // afterward loses whatever contextual tuple typing `new Map()` might
+  // otherwise have inferred. That mismatch (string[] vs. the tuple shape
+  // Map's constructor expects) is exactly what broke the Vercel build.
+  const byPhone = new Map<string, string>(
+    existingPatients
+      .filter((p) => normalizePhone(p.phone))
+      .map((p): [string, string] => [normalizePhone(p.phone), p.id])
   );
-  const byCode = new Map(
-    existingPatients.map((p) => [p.patientCode.trim().toUpperCase(), p.id]).filter(([code]) => code)
+  const byCode = new Map<string, string>(
+    existingPatients
+      .map((p): [string, string] => [p.patientCode.trim().toUpperCase(), p.id])
+      .filter(([code]) => code)
   );
 
   let imported = 0;
