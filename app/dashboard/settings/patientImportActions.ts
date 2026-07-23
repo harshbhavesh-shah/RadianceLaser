@@ -43,6 +43,12 @@ export async function importPatientsAction(rows: ImportPatientRow[]): Promise<Im
   const limited = rows.slice(0, MAX_ROWS_PER_IMPORT);
   const existingPatients = await getPatients(session.clinicId);
   const seenPhones = new Set(existingPatients.map((p) => normalizePhone(p.phone)));
+  // A clinic's own patient IDs (e.g. from their old system) must stay unique
+  // here too, or two imported rows — or an imported row and an existing
+  // patient — could end up sharing the same code.
+  const seenCodes = new Set(
+    existingPatients.map((p) => p.patientCode.trim().toUpperCase()).filter(Boolean)
+  );
 
   let imported = 0;
   let skippedDuplicates = 0;
@@ -54,14 +60,19 @@ export async function importPatientsAction(rows: ImportPatientRow[]): Promise<Im
     const results = await Promise.allSettled(
       batch.map(async (row) => {
         const normalizedPhone = normalizePhone(row.phone);
+        const normalizedCode = row.patientCode?.trim().toUpperCase();
         if (!normalizedPhone || seenPhones.has(normalizedPhone)) {
+          return "duplicate" as const;
+        }
+        if (normalizedCode && seenCodes.has(normalizedCode)) {
           return "duplicate" as const;
         }
         // Marked as seen synchronously, before the create below actually
         // awaits — safe because every row's map callback runs up to its
         // first `await` in order, so two rows with the same phone number
-        // within this batch can't both slip past the check.
+        // (or patient ID) within this batch can't both slip past the check.
         seenPhones.add(normalizedPhone);
+        if (normalizedCode) seenCodes.add(normalizedCode);
         await createPatient({ clinicId: session.clinicId, ...row });
         return "imported" as const;
       })

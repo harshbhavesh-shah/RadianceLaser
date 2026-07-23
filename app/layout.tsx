@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "LaserClinic",
+  title: "RadianceLaser",
   description: "Multi-tenant clinic management platform",
 };
 

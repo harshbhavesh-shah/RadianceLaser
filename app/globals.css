@@ -57,13 +57,33 @@
   .animate-scale-in {
     animation: scale-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+
+  /* Soft drifting glow blobs for the login page — "Radiance" in name, so a
+     gentle wash of pastel light felt like the right first impression rather
+     than a plain card on a flat background. Slow and subtle on purpose:
+     this sits behind a login form, not a marketing page. */
+  @keyframes glow-drift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.55;
+    }
+    50% {
+      transform: translate(24px, -18px) scale(1.08);
+      opacity: 0.85;
+    }
+  }
+  .animate-glow-drift {
+    animation: glow-drift 16s ease-in-out infinite;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-grow-y,
   .animate-grow-x,
   .animate-fade-up,
-  .animate-scale-in {
+  .animate-scale-in,
+  .animate-glow-drift {
     animation: none !important;
   }
 }

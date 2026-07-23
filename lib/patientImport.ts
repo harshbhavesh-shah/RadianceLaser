@@ -8,6 +8,7 @@ import type { SkinType } from "@/types";
 export type ImportFieldKey =
   | "name"
   | "phone"
+  | "patientCode"
   | "email"
   | "age"
   | "gender"
@@ -29,6 +30,22 @@ export const IMPORT_FIELDS: ImportFieldDef[] = [
     label: "Phone",
     required: true,
     synonyms: ["phone", "mobile", "contact", "phone number", "mobile number", "contact number"],
+  },
+  {
+    key: "patientCode",
+    label: "Patient ID",
+    required: false,
+    synonyms: [
+      "patient id",
+      "patientid",
+      "patient code",
+      "patientcode",
+      "id",
+      "mrn",
+      "record number",
+      "medical record number",
+      "uhid",
+    ],
   },
   { key: "email", label: "Email", required: false, synonyms: ["email", "email address", "e-mail"] },
   { key: "age", label: "Age", required: false, synonyms: ["age"] },
@@ -100,6 +117,7 @@ export async function parseSpreadsheetFile(file: File): Promise<ParsedSpreadshee
 export interface ImportPatientRow {
   name: string;
   phone: string;
+  patientCode?: string;
   email?: string;
   age?: number;
   gender?: string;
@@ -157,6 +175,7 @@ export function mapImportRow(
   const ageRaw = get("age");
   const age = ageRaw && !isNaN(Number(ageRaw)) ? Number(ageRaw) : undefined;
   const skinType = normalizeSkinType(get("skinType"));
+  const patientCode = get("patientCode");
   const email = get("email");
   const gender = get("gender");
   const address = get("address");
@@ -168,6 +187,7 @@ export function mapImportRow(
     row: {
       name,
       phone,
+      ...(patientCode ? { patientCode } : {}),
       ...(email ? { email } : {}),
       ...(age !== undefined ? { age } : {}),
       ...(gender ? { gender } : {}),

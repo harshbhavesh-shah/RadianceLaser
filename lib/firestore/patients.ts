@@ -62,6 +62,11 @@ export interface CreatePatientInput {
   clinicId: string;
   name: string;
   phone: string;
+  /** Lets an import (or, in principle, any caller) supply the clinic's own
+   * existing patient ID/MRN instead of generating a fresh "PT-XXXXXX" code —
+   * clinics migrating records often need the new system to keep matching
+   * their old one. Falls back to the auto-generated code when omitted. */
+  patientCode?: string;
   email?: string;
   age?: number;
   gender?: string;
@@ -77,7 +82,7 @@ export async function createPatient(input: CreatePatientInput): Promise<string> 
     clinicId: input.clinicId,
     name: input.name,
     phone: input.phone,
-    patientCode: generatePatientCode(),
+    patientCode: input.patientCode?.trim() || generatePatientCode(),
     createdAt: Date.now(),
     ...(input.email ? { email: input.email } : {}),
     ...(input.age !== undefined ? { age: input.age } : {}),

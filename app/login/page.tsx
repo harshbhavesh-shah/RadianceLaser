@@ -53,10 +53,43 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+    <div className="relative min-h-screen overflow-hidden bg-canvas">
+      {/* Soft glowing pastel lights, top of the page — a nod to "Radiance."
+          Purely decorative: aria-hidden, and pointer-events-none so it never
+          gets in the way of the form below it. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden">
+        {/* Horizontal placement uses margin-left (in px), not a translate-x
+            utility — the glow-drift keyframe below sets `transform` directly
+            for the wobble, and a CSS animation owns the whole `transform`
+            property for its duration, so any translate-x baked in via a
+            utility class would get silently discarded the instant the
+            animation started, bunching every blob back to center. */}
+        <div
+          className="animate-glow-drift absolute left-1/2 top-[-200px] h-[420px] w-[420px] rounded-full bg-gold-100 blur-3xl"
+          style={{ animationDelay: "0s", marginLeft: "-357px" }}
+        />
+        <div
+          className="animate-glow-drift absolute left-1/2 top-[-160px] h-[380px] w-[380px] rounded-full bg-rose-200/70 blur-3xl"
+          style={{ animationDelay: "-5s", marginLeft: "-38px" }}
+        />
+        <div
+          className="animate-glow-drift absolute left-1/2 top-[-220px] h-[440px] w-[440px] rounded-full bg-violet-200/60 blur-3xl"
+          style={{ animationDelay: "-10s", marginLeft: "88px" }}
+        />
+        <div
+          className="animate-glow-drift absolute left-1/2 top-[-140px] h-[360px] w-[360px] rounded-full bg-sky-200/60 blur-3xl"
+          style={{ animationDelay: "-7s", marginLeft: "-504px" }}
+        />
+        <div
+          className="animate-glow-drift absolute left-1/2 top-[-180px] h-[340px] w-[340px] rounded-full bg-emerald-100/60 blur-3xl"
+          style={{ animationDelay: "-12s", marginLeft: "220px" }}
+        />
+      </div>
+
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-card ring-1 ring-beige-300">
         <h1 className="text-center font-display text-3xl font-medium text-brown-900">
-          LaserClinic
+          RadianceLaser
         </h1>
         <div className="mx-auto mt-3 mb-5 h-[2px] w-10 bg-gold-500" />
         <p className="mb-7 text-center text-sm text-brown-600">
@@ -102,6 +135,7 @@ function LoginForm() {
             {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
+      </div>
       </div>
     </div>
   );
