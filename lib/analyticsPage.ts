@@ -166,8 +166,15 @@ export function computeAreaPopularity(visits: Visit[], limit = 10): AreaStat[] {
   for (const v of visits) {
     const raw = v.fields?.area;
     if (typeof raw !== "string" || !raw.trim()) continue;
-    const normalized = normalizeArea(raw);
-    counts.set(normalized, (counts.get(normalized) || 0) + 1);
+    // A multi-area visit's rolled-up `fields.area` is a comma-joined list
+    // (e.g. "Chin, Upper Lips" — see lib/visitAreas.ts) — split it back out
+    // so each treated area still counts individually here, rather than the
+    // whole combination being tallied as one distinct "area".
+    for (const part of raw.split(",")) {
+      if (!part.trim()) continue;
+      const normalized = normalizeArea(part);
+      counts.set(normalized, (counts.get(normalized) || 0) + 1);
+    }
   }
 
   return [...counts.entries()]

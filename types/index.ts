@@ -67,6 +67,16 @@ export interface Patient extends TenantScoped {
 // definitions that drive both the table UI and validation.
 export type SessionType = string;
 
+// One treated area within a session — e.g. "Chin" with its own HP/Eng/Pass/
+// Repeat/Fee, distinct from "Upper Lips" with different values for the same
+// columns, both logged under one Visit. Uses the same column keys as the
+// session type's own SessionColumnDef[] (see lib/sessionTypes.ts), including
+// its own "area" and "fee" entries — there's nothing area-specific baked
+// into the shape itself, it's just one full copy of that type's fields.
+export interface VisitAreaEntry {
+  fields: Record<string, string | number>;
+}
+
 // A single logged visit/session. Deliberately named `Visit` rather than
 // "Session" to avoid colliding with the auth `Session` type above.
 export interface Visit extends TenantScoped {
@@ -74,7 +84,21 @@ export interface Visit extends TenantScoped {
   patientId: string;
   sessionType: SessionType;
   date: string; // YYYY-MM-DD, empty string until a date is actually set
+  // A visit can cover multiple treated areas in one sitting (e.g. Chin +
+  // Upper Lips in the same session, each with its own parameters) — see
+  // `areas` below. `fields` always stays populated as a computed rollup of
+  // whatever's in `areas` (area names joined, fee summed, other values
+  // combined) — see lib/visitAreas.ts — so every existing reader of
+  // `visit.fields` (receipts, analytics, photo gallery, package ledger,
+  // consent forms) keeps working without change, even for multi-area
+  // visits. Visits logged before this feature existed have `fields` set and
+  // no `areas` at all, which is equivalent to a single-area visit.
   fields: Record<string, string | number>;
+  // Present once a visit has gone through the multi-area form at least
+  // once (including a single area — the form always writes this now).
+  // Absent on visits logged before this feature, which only ever have
+  // `fields`.
+  areas?: VisitAreaEntry[];
   // Set when this visit fulfills a booked Appointment — lets "Log Visit"
   // deep-link straight into the right form from Schedule/Today, and lets
   // the appointment auto-complete once both a Visit and a Receipt exist for

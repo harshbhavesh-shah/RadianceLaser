@@ -3,18 +3,27 @@
 import { useMemo, useState } from "react";
 import {
   VISIT_BASE_FIELDS,
-  guessVisitColumnMapping,
+  guessPartColumnMapping,
+  guessVisitBaseMapping,
   mapImportVisitRow,
   type ImportVisitRow,
   type MappedVisitRowResult,
+  type PartColumnMapping,
   type VisitColumnMapping,
 } from "@/lib/visitImport";
 import { parseSpreadsheetFile, type ParsedSpreadsheet } from "@/lib/patientImport";
-import { importVisitsAction, type ImportVisitsResult } from "@/app/dashboard/settings/visitImportActions";
+import {
+  importVisitsAction,
+  type DuplicateAction,
+  type ImportVisitsResult,
+} from "@/app/dashboard/settings/visitImportActions";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import type { SessionType } from "@/types";
 
 type Step = "type" | "pick" | "map" | "preview" | "importing" | "result";
+type IdentifyBy = "phone" | "patientCode" | "either";
+
+const MAX_PARTS = 6;
 
 export default function VisitImportModal({ onClose }: { onClose: () => void }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
@@ -24,9 +33,24 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
   const [sessionType, setSessionType] = useState<SessionType>(sessionTypes[0] || "");
   const [fileName, setFileName] = useState("");
   const [parsed, setParsed] = useState<ParsedSpreadsheet | null>(null);
-  const [mapping, setMapping] = useState<VisitColumnMapping>({});
+  const [baseMapping, setBaseMapping] = useState<VisitColumnMapping>({});
+  // One mapping per part/area a row can carry — e.g. partMappings[0] covers
+  // "Area"/"Fee"/etc. for part 1, partMappings[1] for part 2, and so on.
+  // Almost every clinic's file will just be one part (one area per row); the
+  // stepper below only needs raising for a file that logs multiple treated
+  // areas per row (see components/VisitFormModal.tsx for the same idea in
+  // the manual entry form).
+  const [partCount, setPartCount] = useState(1);
+  const [partMappings, setPartMappings] = useState<PartColumnMapping[]>([{}]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportVisitsResult | null>(null);
+  const [duplicateAction, setDuplicateAction] = useState<DuplicateAction>("skip");
+  // Which field(s) identify the patient on each row. Many clinics migrating
+  // from an old system only ever export an internal Patient ID, no phone
+  // number at all — "patientCode" mode hides the (irrelevant) phone mapping
+  // entirely rather than just leaving it optional-and-unused, so it's
+  // unambiguous that ID-only matching is fully supported.
+  const [identifyBy, setIdentifyBy] = useState<IdentifyBy>("either");
 
   const config = SESSION_TYPE_CONFIG[sessionType];
   const columns = useMemo(() => config?.columns || [], [config]);
@@ -41,7 +65,9 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
         return;
       }
       setParsed(data);
-      setMapping(guessVisitColumnMapping(data.headers, columns));
+      setBaseMapping(guessVisitBaseMapping(data.headers));
+      setPartCount(1);
+      setPartMappings([guessPartColumnMapping(data.headers, columns, 1, 1)]);
       setStep("map");
     } catch (err) {
       console.error("Failed to parse import file:", err);
@@ -49,14 +75,35 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const hasPatientIdentifier = !!mapping.patientPhone || !!mapping.patientCode;
-  const hasDate = !!mapping.date;
+  // Re-guesses every part's mapping when the part count changes, so bumping
+  // from 1 to 3 parts doesn't leave parts 2 and 3 unmapped when the file's
+  // headers would've matched them automatically (e.g. "Area 2", "Fee 3").
+  function changePartCount(next: number) {
+    const clamped = Math.max(1, Math.min(MAX_PARTS, next));
+    setPartCount(clamped);
+    if (!parsed) {
+      setPartMappings(Array.from({ length: clamped }, () => ({})));
+      return;
+    }
+    setPartMappings((prev) =>
+      Array.from({ length: clamped }, (_, i) => prev[i] || guessPartColumnMapping(parsed.headers, columns, i + 1, clamped))
+    );
+  }
+
+  function updatePartMapping(partIndex: number, columnKey: string, header: string) {
+    setPartMappings((prev) =>
+      prev.map((m, i) => (i === partIndex ? { ...m, [columnKey]: header || undefined } : m))
+    );
+  }
+
+  const hasPatientIdentifier = !!baseMapping.patientPhone || !!baseMapping.patientCode;
+  const hasDate = !!baseMapping.date;
   const requiredMapped = hasPatientIdentifier && hasDate;
 
   const mappedRows = useMemo(() => {
     if (!parsed) return [];
-    return parsed.rows.map((row, i) => mapImportVisitRow(row, mapping, columns, i));
-  }, [parsed, mapping, columns]);
+    return parsed.rows.map((row, i) => mapImportVisitRow(row, baseMapping, partMappings, columns, i));
+  }, [parsed, baseMapping, partMappings, columns]);
 
   const readyRows = mappedRows.filter(
     (r): r is MappedVisitRowResult & { row: ImportVisitRow } => !!r.row
@@ -66,13 +113,14 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
   async function handleImport() {
     setStep("importing");
     try {
-      const res = await importVisitsAction(sessionType, readyRows.map((r) => r.row));
+      const res = await importVisitsAction(sessionType, readyRows.map((r) => r.row), duplicateAction);
       setResult(res);
       setStep("result");
     } catch (err) {
       console.error("Failed to import session history:", err);
       setResult({
         imported: 0,
+        updated: 0,
         skippedDuplicates: 0,
         unmatchedPatient: 0,
         failed: readyRows.length,
@@ -87,8 +135,9 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">Import Session History</h2>
         <p className="mt-1 text-sm text-brown-400">
-          Bring in past visits — last visit date, area, fee, and every other field for a session type —
-          from a CSV or Excel file. Each patient must already exist in Patients.
+          Bring in past visits — last visit date, area, fee, and every other field for a session type,
+          including sessions that treated more than one area — from a CSV or Excel file. Each patient must
+          already exist in Patients.
         </p>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
 
@@ -181,17 +230,68 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-brown-400">
               Identify the patient &amp; visit
             </p>
+
+            <div className="mb-3">
+              <p className="mb-1.5 text-sm text-brown-700">Match each row to a patient using:</p>
+              <div className="flex gap-2">
+                {(
+                  [
+                    { value: "either", label: "Either one" },
+                    { value: "phone", label: "Phone Number" },
+                    { value: "patientCode", label: "Patient ID only" },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setIdentifyBy(opt.value);
+                      // Clear out the mapping for whichever field(s) this
+                      // mode no longer uses, so a stale mapping from before
+                      // can't silently sneak into the import.
+                      if (opt.value === "phone") {
+                        setBaseMapping((prev) => ({ ...prev, patientCode: undefined }));
+                      } else if (opt.value === "patientCode") {
+                        setBaseMapping((prev) => ({ ...prev, patientPhone: undefined }));
+                      }
+                    }}
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                      identifyBy === opt.value
+                        ? "border-gold-500 bg-gold-100/40 text-brown-900"
+                        : "border-beige-300 text-brown-600 hover:border-gold-500"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-brown-400">
+                {identifyBy === "patientCode"
+                  ? "Only the clinic's Patient ID is needed — no phone number required, useful when migrating from a system that never recorded one."
+                  : identifyBy === "phone"
+                    ? "Only the phone number is used to match patients."
+                    : "Either field works — handy if your file has one but not consistently the other."}
+              </p>
+            </div>
+
             <div className="space-y-2">
-              {VISIT_BASE_FIELDS.map((field) => (
+              {VISIT_BASE_FIELDS.filter(
+                (field) =>
+                  field.key === "date" ||
+                  (field.key === "patientPhone" && identifyBy !== "patientCode") ||
+                  (field.key === "patientCode" && identifyBy !== "phone")
+              ).map((field) => (
                 <div key={field.key} className="grid grid-cols-2 items-center gap-3">
                   <label className="text-sm text-brown-700">
                     {field.label}
-                    {field.required && <span className="ml-1 text-red-600">*</span>}
+                    {(field.required || field.key !== "date") && identifyBy !== "either" && (
+                      <span className="ml-1 text-red-600">*</span>
+                    )}
                   </label>
                   <select
-                    value={mapping[field.key] || ""}
+                    value={baseMapping[field.key] || ""}
                     onChange={(e) =>
-                      setMapping((prev) => ({ ...prev, [field.key]: e.target.value || undefined }))
+                      setBaseMapping((prev) => ({ ...prev, [field.key]: e.target.value || undefined }))
                     }
                     className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
                   >
@@ -207,31 +307,73 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
             </div>
             {!hasPatientIdentifier && (
               <p className="mt-2 text-xs text-red-700">
-                Map either Patient Phone or Patient ID so each row can be matched to an existing patient.
+                Map a column for {identifyBy === "phone" ? "Patient Phone" : identifyBy === "patientCode" ? "Patient ID" : "Patient Phone or Patient ID"}{" "}
+                so each row can be matched to an existing patient.
               </p>
             )}
 
-            <p className="mb-1.5 mt-5 text-xs font-semibold uppercase tracking-wide text-brown-400">
-              {SESSION_TYPE_CONFIG[sessionType]?.label} fields
-            </p>
-            <div className="space-y-2">
-              {columns.map((col) => (
-                <div key={col.key} className="grid grid-cols-2 items-center gap-3">
-                  <label className="text-sm text-brown-700">{col.label}</label>
-                  <select
-                    value={mapping[col.key] || ""}
-                    onChange={(e) =>
-                      setMapping((prev) => ({ ...prev, [col.key]: e.target.value || undefined }))
-                    }
-                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+            <div className="mt-5 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brown-400">
+                {SESSION_TYPE_CONFIG[sessionType]?.label} fields
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-brown-600">Treated areas per row:</span>
+                <div className="flex items-center rounded-md border border-beige-300">
+                  <button
+                    type="button"
+                    onClick={() => changePartCount(partCount - 1)}
+                    disabled={partCount <= 1}
+                    className="px-2 py-1 text-sm text-brown-600 hover:bg-beige-200 disabled:opacity-40"
                   >
-                    <option value="">— Don&apos;t import —</option>
-                    {parsed.headers.map((h) => (
-                      <option key={h} value={h}>
-                        {h}
-                      </option>
+                    −
+                  </button>
+                  <span className="w-6 text-center text-sm font-medium text-brown-900">{partCount}</span>
+                  <button
+                    type="button"
+                    onClick={() => changePartCount(partCount + 1)}
+                    disabled={partCount >= MAX_PARTS}
+                    className="px-2 py-1 text-sm text-brown-600 hover:bg-beige-200 disabled:opacity-40"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+            {partCount > 1 && (
+              <p className="mb-2 mt-1 text-xs text-brown-400">
+                A row with more than one part logs several treated areas in the same visit — e.g. Chin and
+                Upper Lips together. Map each part&apos;s columns below (like &quot;Area 1&quot;, &quot;Area
+                2&quot;); an empty part for a given row is simply left out of that visit.
+              </p>
+            )}
+
+            <div className="space-y-4">
+              {partMappings.map((partMapping, partIndex) => (
+                <div key={partIndex} className={partCount > 1 ? "rounded-lg border border-beige-300 p-3" : ""}>
+                  {partCount > 1 && (
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brown-600">
+                      Part {partIndex + 1}
+                    </p>
+                  )}
+                  <div className="space-y-2">
+                    {columns.map((col) => (
+                      <div key={col.key} className="grid grid-cols-2 items-center gap-3">
+                        <label className="text-sm text-brown-700">{col.label}</label>
+                        <select
+                          value={partMapping[col.key] || ""}
+                          onChange={(e) => updatePartMapping(partIndex, col.key, e.target.value)}
+                          className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                        >
+                          <option value="">— Don&apos;t import —</option>
+                          {parsed.headers.map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     ))}
-                  </select>
+                  </div>
                 </div>
               ))}
             </div>
@@ -274,9 +416,10 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                     <tr className="border-b border-beige-300 bg-beige-200/50 uppercase tracking-wide text-brown-600">
                       <th className="px-3 py-2 font-medium">Patient</th>
                       <th className="px-3 py-2 font-medium">Date</th>
-                      {columns.slice(0, 3).map((col) => (
+                      <th className="px-3 py-2 font-medium">Areas</th>
+                      {columns.slice(0, 2).map((col) => (
                         <th key={col.key} className="px-3 py-2 font-medium">
-                          {col.label}
+                          {col.label} (area 1)
                         </th>
                       ))}
                     </tr>
@@ -288,9 +431,10 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                           {r.row.patientPhone || r.row.patientCode}
                         </td>
                         <td className="px-3 py-2 text-brown-600">{r.row.date}</td>
-                        {columns.slice(0, 3).map((col) => (
+                        <td className="px-3 py-2 text-brown-600">{r.row.areas.length}</td>
+                        {columns.slice(0, 2).map((col) => (
                           <td key={col.key} className="px-3 py-2 text-brown-600">
-                            {r.row.fields[col.key] ?? "—"}
+                            {r.row.areas[0]?.[col.key] ?? "—"}
                           </td>
                         ))}
                       </tr>
@@ -318,9 +462,39 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
 
             <p className="mt-3 text-xs text-brown-400">
               Rows won&apos;t import if their Patient Phone/ID doesn&apos;t match an existing patient — add
-              those patients first, then re-run this file. Visits that exactly match one already on file
-              (same patient, date, and details) are skipped automatically, so it&apos;s safe to re-run.
+              those patients first, then re-run this file. A duplicate is the same patient already having a{" "}
+              {SESSION_TYPE_CONFIG[sessionType]?.label} visit logged on that same date.
             </p>
+
+            <div className="mt-4">
+              <p className="mb-1.5 text-sm font-medium text-brown-700">If a duplicate is found:</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDuplicateAction("skip")}
+                  className={`flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                    duplicateAction === "skip"
+                      ? "border-gold-500 bg-gold-100/40 text-brown-900"
+                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                  }`}
+                >
+                  <span className="font-medium">Skip</span>
+                  <span className="block text-xs text-brown-400">Leave the existing visit as-is</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDuplicateAction("replace")}
+                  className={`flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                    duplicateAction === "replace"
+                      ? "border-gold-500 bg-gold-100/40 text-brown-900"
+                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                  }`}
+                >
+                  <span className="font-medium">Replace</span>
+                  <span className="block text-xs text-brown-400">Overwrite with this file&apos;s data</span>
+                </button>
+              </div>
+            </div>
 
             <div className="mt-6 flex justify-between">
               <button
@@ -351,7 +525,10 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
           <div>
             <div className="space-y-2 rounded-lg border border-beige-300 p-4">
               <SummaryRow label="Imported" value={result.imported} accent />
-              <SummaryRow label="Skipped (already on file)" value={result.skippedDuplicates} />
+              {result.updated > 0 && <SummaryRow label="Updated (replaced)" value={result.updated} />}
+              {result.skippedDuplicates > 0 && (
+                <SummaryRow label="Skipped (already on file)" value={result.skippedDuplicates} />
+              )}
               <SummaryRow label="No matching patient" value={result.unmatchedPatient} />
               <SummaryRow label="Failed" value={result.failed} />
             </div>

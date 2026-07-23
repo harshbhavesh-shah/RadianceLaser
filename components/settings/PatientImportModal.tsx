@@ -11,7 +11,11 @@ import {
   type MappedRowResult,
   type ParsedSpreadsheet,
 } from "@/lib/patientImport";
-import { importPatientsAction, type ImportPatientsResult } from "@/app/dashboard/settings/patientImportActions";
+import {
+  importPatientsAction,
+  type DuplicateAction,
+  type ImportPatientsResult,
+} from "@/app/dashboard/settings/patientImportActions";
 
 type Step = "pick" | "map" | "preview" | "importing" | "result";
 
@@ -22,6 +26,7 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
   const [mapping, setMapping] = useState<ColumnMapping>({});
   const [parseError, setParseError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportPatientsResult | null>(null);
+  const [duplicateAction, setDuplicateAction] = useState<DuplicateAction>("skip");
 
   async function handleFile(file: File) {
     setFileName(file.name);
@@ -56,13 +61,14 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
   async function handleImport() {
     setStep("importing");
     try {
-      const res = await importPatientsAction(readyRows.map((r) => r.row));
+      const res = await importPatientsAction(readyRows.map((r) => r.row), duplicateAction);
       setResult(res);
       setStep("result");
     } catch (err) {
       console.error("Failed to import patients:", err);
       setResult({
         imported: 0,
+        updated: 0,
         skippedDuplicates: 0,
         failed: readyRows.length,
         errorSamples: ["Something went wrong. Please try again."],
@@ -204,9 +210,39 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
 
             <p className="mt-3 text-xs text-brown-400">
               Patients already in your clinic with a matching phone number — or the same Patient ID, if
-              mapped — will be skipped automatically, so it&apos;s safe to re-run this if a file has
-              duplicates. Rows without a Patient ID get one generated automatically.
+              mapped — are treated as duplicates. Rows without a Patient ID get one generated
+              automatically.
             </p>
+
+            <div className="mt-4">
+              <p className="mb-1.5 text-sm font-medium text-brown-700">If a duplicate is found:</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDuplicateAction("skip")}
+                  className={`flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                    duplicateAction === "skip"
+                      ? "border-gold-500 bg-gold-100/40 text-brown-900"
+                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                  }`}
+                >
+                  <span className="font-medium">Skip</span>
+                  <span className="block text-xs text-brown-400">Leave the existing patient as-is</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDuplicateAction("replace")}
+                  className={`flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                    duplicateAction === "replace"
+                      ? "border-gold-500 bg-gold-100/40 text-brown-900"
+                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                  }`}
+                >
+                  <span className="font-medium">Replace</span>
+                  <span className="block text-xs text-brown-400">Overwrite with this file&apos;s data</span>
+                </button>
+              </div>
+            </div>
 
             <div className="mt-6 flex justify-between">
               <button
@@ -237,7 +273,10 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
           <div>
             <div className="space-y-2 rounded-lg border border-beige-300 p-4">
               <SummaryRow label="Imported" value={result.imported} accent />
-              <SummaryRow label="Skipped (duplicates)" value={result.skippedDuplicates} />
+              {result.updated > 0 && <SummaryRow label="Updated (replaced)" value={result.updated} />}
+              {result.skippedDuplicates > 0 && (
+                <SummaryRow label="Skipped (duplicates)" value={result.skippedDuplicates} />
+              )}
               <SummaryRow label="Failed" value={result.failed} />
             </div>
             {result.errorSamples.length > 0 && (

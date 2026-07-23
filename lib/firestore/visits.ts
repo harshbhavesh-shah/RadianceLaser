@@ -1,6 +1,6 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
-import type { SessionType, Visit } from "@/types";
+import type { SessionType, Visit, VisitAreaEntry } from "@/types";
 
 /**
  * Fetches every logged visit for a patient, across all session types.
@@ -38,7 +38,8 @@ export interface CreateVisitInput {
   patientId: string;
   sessionType: SessionType;
   date: string; // YYYY-MM-DD
-  fields: Record<string, string | number>;
+  fields: Record<string, string | number>; // rollup — see lib/visitAreas.ts
+  areas: VisitAreaEntry[]; // one or more treated areas/parts for this visit
 }
 
 /**
@@ -57,8 +58,24 @@ export async function createVisit(input: CreateVisitInput): Promise<string> {
     sessionType: input.sessionType,
     date: input.date,
     fields: input.fields,
+    areas: input.areas,
     createdAt: Date.now(),
   };
   await docRef.set(visit);
   return docRef.id;
+}
+
+/** Overwrites an existing visit's date/areas (and their computed fields
+ * rollup) in place — used by the session/visit import's "Replace" duplicate
+ * option, so re-importing a corrected file updates the record already on
+ * file instead of leaving it untouched (Skip) or piling on a second copy. */
+export async function updateVisit(
+  visitId: string,
+  input: { date: string; fields: Record<string, string | number>; areas: VisitAreaEntry[] }
+): Promise<void> {
+  await adminDb().collection("visits").doc(visitId).update({
+    date: input.date,
+    fields: input.fields,
+    areas: input.areas,
+  });
 }

@@ -48,9 +48,22 @@ export default function VisitTimeline({
       ) : (
         <div className="space-y-3">
           {sorted.map((visit) => {
-            const filledEntries = config.columns
-              .map((col) => [col, visit.fields?.[col.key]] as const)
-              .filter(([, value]) => value !== undefined && value !== "" && value !== null);
+            // Multiple treated areas in one visit each get their own row of
+            // details below the date; a single area (or an older visit
+            // logged before multi-area existed, which only has `fields`)
+            // falls back to one flat row, same as before this feature.
+            const multiArea = (visit.areas?.length || 0) > 1;
+            const areaRows = multiArea
+              ? visit.areas!.map((entry) =>
+                  config.columns
+                    .map((col) => [col, entry.fields[col.key]] as const)
+                    .filter(([, value]) => value !== undefined && value !== "" && value !== null)
+                )
+              : [
+                  config.columns
+                    .map((col) => [col, visit.fields?.[col.key]] as const)
+                    .filter(([, value]) => value !== undefined && value !== "" && value !== null),
+                ];
 
             return (
               <button
@@ -74,17 +87,30 @@ export default function VisitTimeline({
                   </span>
                 </div>
 
-                {filledEntries.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brown-600">
-                    {filledEntries.map(([col, value]) => (
-                      <span key={col.key}>
-                        <span className="text-brown-400">{col.label}:</span>{" "}
-                        <span className="text-brown-900">{formatFieldValue(col.key, value!)}</span>
-                      </span>
+                {areaRows.every((row) => row.length === 0) ? (
+                  <p className="mt-2 text-sm italic text-brown-400">No details recorded</p>
+                ) : (
+                  <div className="mt-2 space-y-1.5">
+                    {areaRows.map((row, i) => (
+                      <div key={i} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-brown-600">
+                        {multiArea && (
+                          <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brown-600">
+                            Area {i + 1}
+                          </span>
+                        )}
+                        {row.length > 0 ? (
+                          row.map(([col, value]) => (
+                            <span key={col.key}>
+                              <span className="text-brown-400">{col.label}:</span>{" "}
+                              <span className="text-brown-900">{formatFieldValue(col.key, value!)}</span>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="italic text-brown-400">No details recorded</span>
+                        )}
+                      </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="mt-2 text-sm italic text-brown-400">No details recorded</p>
                 )}
               </button>
             );
