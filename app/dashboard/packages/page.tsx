@@ -52,8 +52,11 @@ export default async function PackagesPage() {
         <div className="rounded-xl bg-surface p-10 text-center shadow-soft ring-1 ring-beige-300">
           <p className="text-sm text-brown-600">No packages purchased yet.</p>
           <p className="mt-1 text-sm text-brown-400">
-            Packages are created from a patient&apos;s Visit History tab.
+            Packages are created from a patient&apos;s Visit History tab — find the patient first.
           </p>
+          <Link href="/dashboard/patients" className="mt-3 inline-block text-sm font-medium text-gold-600 hover:underline">
+            Go to Patients →
+          </Link>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">

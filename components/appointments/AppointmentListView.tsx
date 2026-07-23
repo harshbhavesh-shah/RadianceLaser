@@ -10,11 +10,13 @@ import type { Appointment } from "@/types";
 export default function AppointmentListView({
   appointments,
   onEdit,
+  onCreateNew,
   visitIdByAppointmentId,
   receiptedAppointmentIds,
 }: {
   appointments: Appointment[];
   onEdit: (appt: Appointment) => void;
+  onCreateNew: () => void;
   visitIdByAppointmentId: Record<string, string>;
   receiptedAppointmentIds: Record<string, true>;
 }) {
@@ -35,6 +37,9 @@ export default function AppointmentListView({
     return (
       <div className="rounded-xl bg-surface p-10 text-center shadow-soft ring-1 ring-beige-300">
         <p className="text-sm text-brown-600">No appointments found.</p>
+        <button onClick={onCreateNew} className="mt-2 text-sm font-medium text-gold-600 hover:underline">
+          + Book one now
+        </button>
       </div>
     );
   }

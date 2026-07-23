@@ -32,7 +32,7 @@ const TOKEN_PATTERN = /\{\{\s*([a-zA-Z]+)\s*\}\}/g;
  * reviews the form before it's signed. */
 export function renderConsentTemplate(body: string, vars: ConsentFormVariables): string {
   return body.replace(TOKEN_PATTERN, (_match, token: string) => {
-    const value = (vars as Record<string, string | undefined>)[token];
+    const value = (vars as unknown as Record<string, string | undefined>)[token];
     return value && value.trim() ? value : "—";
   });
 }

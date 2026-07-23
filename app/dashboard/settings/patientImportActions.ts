@@ -2,6 +2,7 @@
 
 import { getSession } from "@/lib/session";
 import { getPatients, createPatient } from "@/lib/firestore/patients";
+import { normalizePhone } from "@/lib/phone";
 import type { ImportPatientRow } from "@/lib/patientImport";
 
 export interface ImportPatientsResult {
@@ -16,10 +17,6 @@ export interface ImportPatientsResult {
 // realistically have in one file.
 const MAX_ROWS_PER_IMPORT = 2000;
 const BATCH_SIZE = 25; // concurrent writes per batch, to avoid hammering Firestore
-
-function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, ""); // digits only, so "98765 43210" and "+91-9876543210" compare sensibly
-}
 
 /**
  * Bulk-creates patients from rows already parsed and column-mapped on the

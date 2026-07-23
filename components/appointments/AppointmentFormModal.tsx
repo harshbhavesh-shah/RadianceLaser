@@ -18,6 +18,7 @@ const STATUS_OPTIONS: { value: AppointmentStatus; label: string }[] = [
 export default function AppointmentFormModal({
   clinicId,
   patients,
+  appointments,
   appointment,
   presetDate,
   presetTime,
@@ -27,6 +28,7 @@ export default function AppointmentFormModal({
 }: {
   clinicId: string;
   patients: Patient[];
+  appointments: Appointment[]; // every clinic appointment, for double-booking checks
   appointment?: Appointment | null;
   presetDate?: string;
   presetTime?: string;
@@ -53,6 +55,10 @@ export default function AppointmentFormModal({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when another patient already has a booking at this exact date+time —
+  // not blocked outright (a clinic may have more than one chair/machine),
+  // just requires an explicit second click to acknowledge it.
+  const [slotConflict, setSlotConflict] = useState<Appointment | null>(null);
 
   const patientMatches = useMemo(() => {
     const q = patientQuery.trim().toLowerCase();
@@ -68,9 +74,28 @@ export default function AppointmentFormModal({
     setShowPatientResults(false);
   }
 
-  async function handleSave() {
+  async function handleSave(forceBook = false) {
     if (!selectedPatient) return setError("Select a patient first.");
     if (!time) return setError("Set a time.");
+
+    const active = appointments.filter((a) => a.id !== appointment?.id && a.status !== "cancelled");
+
+    const exactDuplicate = active.find(
+      (a) => a.patientId === selectedPatient.id && a.date === date && a.time === time
+    );
+    if (exactDuplicate) {
+      setError(`${selectedPatient.name} already has an appointment at this exact time on ${date}.`);
+      return;
+    }
+
+    if (!forceBook) {
+      const conflict = active.find((a) => a.date === date && a.time === time);
+      if (conflict) {
+        setSlotConflict(conflict);
+        return;
+      }
+    }
+    setSlotConflict(null);
 
     setSaving(true);
     setError(null);
@@ -202,6 +227,7 @@ export default function AppointmentFormModal({
             <input
               type="date"
               value={date}
+              min={isEditing ? undefined : todayLocalStr()}
               onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
             />
@@ -248,6 +274,23 @@ export default function AppointmentFormModal({
 
         {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
 
+        {slotConflict && (
+          <div className="mt-3 rounded-md border border-gold-500/40 bg-gold-100/50 p-3 text-sm">
+            <p className="text-brown-800">
+              {slotConflict.patientName} is already booked at this exact date and time. If your clinic has more
+              than one chair or machine free, this is fine to double-book.
+            </p>
+            <button
+              type="button"
+              onClick={() => handleSave(true)}
+              disabled={saving}
+              className="mt-2 rounded-md border border-gold-500 px-3 py-1.5 text-xs font-medium text-gold-600 transition-colors hover:bg-gold-100 disabled:opacity-60"
+            >
+              {saving ? "Booking…" : "Book Anyway"}
+            </button>
+          </div>
+        )}
+
         <div className="mt-6 flex items-center justify-between">
           <div>
             {isEditing && (
@@ -271,7 +314,7 @@ export default function AppointmentFormModal({
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => handleSave(false)}
               disabled={saving}
               className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
             >

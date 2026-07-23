@@ -86,7 +86,10 @@ export default function VisitFormModal({
     for (const col of config.columns) {
       const raw = fields[col.key];
       if (raw === "") continue;
-      parsedFields[col.key] = NUMERIC_FIELD_KEYS.has(col.key) ? Number(raw) : raw;
+      // Belt-and-suspenders on top of the inputs' min={0} — a pasted or
+      // typed "-5" isn't blocked by that alone, so clamp here too rather
+      // than letting a negative fee/count slip into the record.
+      parsedFields[col.key] = NUMERIC_FIELD_KEYS.has(col.key) ? Math.max(0, Number(raw) || 0) : raw;
     }
 
     const performedByStaff = staff.find((s) => s.uid === performedByUid);
@@ -290,6 +293,7 @@ export default function VisitFormModal({
                 ) : (
                   <input
                     type={col.type === "number" ? "number" : "text"}
+                    min={col.type === "number" ? 0 : undefined}
                     value={fields[col.key]}
                     onChange={(e) => updateField(col.key, e.target.value)}
                     disabled={isFeeLockedByPackage}

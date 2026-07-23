@@ -59,9 +59,17 @@ export default async function PatientDetailPage({
           <h1 className="font-display text-2xl font-medium text-brown-900">{patient.name}</h1>
           <div className="mt-2 h-[2px] w-8 bg-gold-500" />
         </div>
-        <span className="rounded-full bg-beige-200 px-3 py-1 font-mono text-xs text-brown-600">
-          {patient.patientCode}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-beige-200 px-3 py-1 font-mono text-xs text-brown-600">
+            {patient.patientCode}
+          </span>
+          <Link
+            href={`/dashboard/patients/${patient.id}/edit`}
+            className="rounded-md border border-beige-300 px-3 py-1 text-xs font-medium text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600"
+          >
+            Edit
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">

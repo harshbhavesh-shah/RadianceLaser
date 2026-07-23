@@ -2,21 +2,25 @@
 
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { createPatient, findPatientByPhone } from "@/lib/firestore/patients";
+import { getPatient, updatePatient, findPatientByPhone } from "@/lib/firestore/patients";
 import { isValidPhone } from "@/lib/phone";
 import type { SkinType } from "@/types";
 
-export interface CreatePatientState {
+export interface UpdatePatientState {
   error?: string;
   duplicate?: { id: string; name: string; phone: string };
 }
 
-export async function createPatientAction(
-  _prevState: CreatePatientState,
+export async function updatePatientAction(
+  patientId: string,
+  _prevState: UpdatePatientState,
   formData: FormData
-): Promise<CreatePatientState> {
+): Promise<UpdatePatientState> {
   const session = await getSession();
   if (!session) redirect("/login");
+
+  const patient = await getPatient(session.clinicId, patientId);
+  if (!patient) return { error: "Patient not found." };
 
   const name = (formData.get("name") as string)?.trim();
   const phone = (formData.get("phone") as string)?.trim();
@@ -29,7 +33,7 @@ export async function createPatientAction(
   }
 
   if (!confirmDuplicate) {
-    const existing = await findPatientByPhone(session.clinicId, phone);
+    const existing = await findPatientByPhone(session.clinicId, phone, patientId);
     if (existing) {
       return { duplicate: { id: existing.id, name: existing.name, phone: existing.phone } };
     }
@@ -42,10 +46,8 @@ export async function createPatientAction(
   const skinType = (formData.get("skinType") as string)?.trim();
   const contraindications = (formData.get("contraindications") as string)?.trim();
 
-  let patientId: string;
   try {
-    patientId = await createPatient({
-      clinicId: session.clinicId,
+    await updatePatient(session.clinicId, patientId, {
       name,
       phone,
       ...(email ? { email } : {}),
@@ -56,8 +58,8 @@ export async function createPatientAction(
       ...(contraindications ? { contraindications } : {}),
     });
   } catch (err) {
-    console.error("Failed to create patient:", err);
-    return { error: "Something went wrong saving this patient. Please try again." };
+    console.error("Failed to update patient:", err);
+    return { error: "Something went wrong saving these changes. Please try again." };
   }
 
   redirect(`/dashboard/patients/${patientId}`);

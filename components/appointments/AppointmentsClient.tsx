@@ -237,6 +237,7 @@ export default function AppointmentsClient({
           <AppointmentListView
             appointments={appointments}
             onEdit={handleAppointmentClick}
+            onCreateNew={() => setModalState({ mode: "create" })}
             visitIdByAppointmentId={visitIdByAppointmentId}
             receiptedAppointmentIds={receiptedAppointmentIds}
           />
@@ -307,6 +308,7 @@ export default function AppointmentsClient({
         <AppointmentFormModal
           clinicId={clinicId}
           patients={patients}
+          appointments={appointments}
           appointment={modalState.mode === "edit" ? modalState.appointment : null}
           presetDate={modalState.mode === "create" ? modalState.date : undefined}
           presetTime={modalState.mode === "create" ? modalState.time : undefined}

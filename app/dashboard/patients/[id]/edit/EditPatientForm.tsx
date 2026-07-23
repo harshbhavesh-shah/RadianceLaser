@@ -2,43 +2,47 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
-import { createPatientAction, type CreatePatientState } from "./actions";
+import { updatePatientAction, type UpdatePatientState } from "./actions";
+import type { Patient } from "@/types";
 
-const initialState: CreatePatientState = {};
+const initialState: UpdatePatientState = {};
 
-export default function NewPatientPage() {
-  const [state, formAction] = useFormState(createPatientAction, initialState);
+export default function EditPatientForm({ patient }: { patient: Patient }) {
+  const boundAction = updatePatientAction.bind(null, patient.id);
+  const [state, formAction] = useFormState(boundAction, initialState);
 
   return (
     <div className="max-w-2xl">
-      <Link href="/dashboard/patients" className="text-sm text-brown-600 hover:text-gold-600">
-        ← Back to Patients
+      <Link href={`/dashboard/patients/${patient.id}`} className="text-sm text-brown-600 hover:text-gold-600">
+        ← Back to {patient.name}
       </Link>
 
-      <h1 className="mt-3 font-display text-2xl font-medium text-brown-900">New Patient</h1>
+      <h1 className="mt-3 font-display text-2xl font-medium text-brown-900">Edit Patient</h1>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
       <form action={formAction} className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Full Name" name="name" required />
-          <Field label="Contact Number" name="phone" type="tel" required />
-          <Field label="Email" name="email" type="email" />
-          <Field label="Age" name="age" type="number" min={0} />
+          <Field label="Full Name" name="name" required defaultValue={patient.name} />
+          <Field label="Contact Number" name="phone" type="tel" required defaultValue={patient.phone} />
+          <Field label="Email" name="email" type="email" defaultValue={patient.email} />
+          <Field label="Age" name="age" type="number" min={0} defaultValue={patient.age?.toString()} />
           <SelectField
             label="Gender"
             name="gender"
             options={["Female", "Male", "Other"]}
+            defaultValue={patient.gender}
           />
           <SelectField
             label="Fitzpatrick Skin Type"
             name="skinType"
             options={["I", "II", "III", "IV", "V", "VI"]}
             optionLabel={(v) => `Type ${v}`}
+            defaultValue={patient.skinType}
           />
         </div>
 
         <div className="mt-5">
-          <Field label="Address" name="address" />
+          <Field label="Address" name="address" defaultValue={patient.address} />
         </div>
 
         <div className="mt-5">
@@ -49,6 +53,7 @@ export default function NewPatientPage() {
             id="contraindications"
             name="contraindications"
             rows={3}
+            defaultValue={patient.contraindications}
             placeholder="Pregnancy, isotretinoin use, photosensitizing medication, recent sun exposure, etc."
             className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
           />
@@ -56,10 +61,10 @@ export default function NewPatientPage() {
 
         {state.error && <p className="mt-4 text-sm text-red-700">{state.error}</p>}
 
-        {state.duplicate && (
+        {state.duplicate && state.duplicate.id !== patient.id && (
           <div className="mt-4 rounded-md border border-gold-500/40 bg-gold-100/50 p-4 text-sm">
             <p className="text-brown-800">
-              A patient named <span className="font-medium">{state.duplicate.name}</span> already has this
+              A different patient, <span className="font-medium">{state.duplicate.name}</span>, already has this
               phone number ({state.duplicate.phone}).
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-4">
@@ -67,7 +72,7 @@ export default function NewPatientPage() {
                 href={`/dashboard/patients/${state.duplicate.id}`}
                 className="text-sm font-medium text-gold-600 hover:underline"
               >
-                View that patient instead →
+                View that patient →
               </Link>
               <input type="hidden" name="confirmDuplicate" value="1" />
               <SubmitButton label="Save Anyway" />
@@ -77,7 +82,7 @@ export default function NewPatientPage() {
 
         <div className="mt-6 flex justify-end gap-3">
           <Link
-            href="/dashboard/patients"
+            href={`/dashboard/patients/${patient.id}`}
             className="rounded-md px-4 py-2 text-sm font-medium text-brown-600 hover:bg-beige-200"
           >
             Cancel
@@ -89,7 +94,7 @@ export default function NewPatientPage() {
   );
 }
 
-function SubmitButton({ label = "Save Patient" }: { label?: string }) {
+function SubmitButton({ label = "Save Changes" }: { label?: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -108,12 +113,14 @@ function Field({
   type = "text",
   required = false,
   min,
+  defaultValue,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   min?: number;
+  defaultValue?: string;
 }) {
   return (
     <div>
@@ -127,6 +134,7 @@ function Field({
         type={type}
         required={required}
         min={min}
+        defaultValue={defaultValue}
         className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
       />
     </div>
@@ -138,11 +146,13 @@ function SelectField({
   name,
   options,
   optionLabel,
+  defaultValue,
 }: {
   label: string;
   name: string;
   options: string[];
   optionLabel?: (value: string) => string;
+  defaultValue?: string;
 }) {
   return (
     <div>
@@ -152,7 +162,7 @@ function SelectField({
       <select
         id={name}
         name={name}
-        defaultValue=""
+        defaultValue={defaultValue || ""}
         className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
       >
         <option value="">— Select —</option>
