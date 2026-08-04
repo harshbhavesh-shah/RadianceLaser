@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { adminAuth } from "@/lib/firebase/admin";
-import type { Session, UserRole } from "@/types";
+import type { AdminSession, Session, UserRole } from "@/types";
 
 const SESSION_COOKIE_NAME = "__session";
 // Firebase session cookies can live up to 14 days; keep it shorter for a
@@ -61,9 +61,34 @@ export async function getSession(): Promise<Session | null> {
       email: decoded.email ?? null,
       clinicId,
       role,
+      isSuperAdmin: decoded.superAdmin === true,
     };
   } catch {
     // Expired, revoked, or tampered cookie.
+    return null;
+  }
+}
+
+/**
+ * Reads and verifies the session cookie for the platform-level admin panel
+ * (app/admin) — separate from getSession() above because a super-admin
+ * isn't scoped to a clinicId/role at all; requiring those here would lock
+ * out a pure platform-admin account that never had a clinic. This is the
+ * actual security boundary for every app/admin page and server action, the
+ * same way getSession() is for /dashboard — always re-check this inside
+ * server actions too, not just page-level layouts, since actions can be
+ * invoked directly.
+ */
+export async function getAdminSession(): Promise<AdminSession | null> {
+  const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
+  if (!sessionCookie) return null;
+
+  try {
+    const decoded = await adminAuth().verifySessionCookie(sessionCookie, true);
+    if (decoded.superAdmin !== true) return null;
+
+    return { uid: decoded.uid, email: decoded.email ?? null };
+  } catch {
     return null;
   }
 }

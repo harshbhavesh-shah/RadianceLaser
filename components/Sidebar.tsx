@@ -16,6 +16,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeft,
+  ShieldCheck,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
@@ -142,6 +143,17 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
               </button>
             </div>
             <NavLinks showLabels={true} />
+            {session.isSuperAdmin && (
+              <div className="px-3 pb-2">
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-beige-200 transition-colors hover:bg-brown-700/60 hover:text-white"
+                >
+                  <ShieldCheck size={18} className="flex-shrink-0" />
+                  <span>Admin Panel</span>
+                </Link>
+              </div>
+            )}
             <div className="border-t border-brown-700/60 px-6 py-4">
               <div className="truncate text-sm text-beige-200">{session.email}</div>
               <div className="mb-3 text-xs uppercase tracking-wide text-brown-400">{session.role}</div>
@@ -171,6 +183,21 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
         </div>
 
         <NavLinks showLabels={!collapsed} />
+
+        {session.isSuperAdmin && (
+          <div className="px-3 pb-2">
+            <Link
+              href="/admin"
+              title={collapsed ? "Admin Panel" : undefined}
+              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-beige-200 transition-colors hover:bg-brown-700/60 hover:text-white ${
+                collapsed ? "justify-center" : ""
+              }`}
+            >
+              <ShieldCheck size={18} className="flex-shrink-0" />
+              {!collapsed && <span>Admin Panel</span>}
+            </Link>
+          </div>
+        )}
 
         <div className="px-3 pb-2">
           <button

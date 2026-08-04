@@ -42,7 +42,14 @@ function LoginForm() {
         throw new Error("Could not start a session. Please try again.");
       }
 
-      const next = searchParams.get("next") || "/dashboard";
+      // A super-admin-only account (no clinicId at all) has nothing to show
+      // at /dashboard — app/dashboard/layout.tsx's getSession() would
+      // return null for it and bounce straight back to /login. Default it
+      // to /admin instead; an explicit ?next= (e.g. from middleware
+      // redirecting an unauthenticated visit) still wins either way.
+      const claims = (await credential.user.getIdTokenResult()).claims;
+      const isAdminOnly = claims.superAdmin === true && !claims.clinicId;
+      const next = searchParams.get("next") || (isAdminOnly ? "/admin" : "/dashboard");
       router.push(next);
       router.refresh();
     } catch (err) {

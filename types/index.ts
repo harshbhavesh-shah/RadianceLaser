@@ -82,6 +82,24 @@ export interface Session {
   email: string | null;
   clinicId: string;
   role: UserRole;
+  // True if this account also carries the platform-level `superAdmin`
+  // custom claim (see scripts/grantSuperAdmin.mjs) — independent of
+  // clinicId/role, since a super-admin isn't scoped to any one clinic. Lets
+  // the same account be both a clinic's owner AND the platform admin,
+  // without one identity fighting the other. Only used to decide whether to
+  // show a link to /admin (see components/Sidebar.tsx) — the actual /admin
+  // access check is AdminSession/getAdminSession() below, not this flag.
+  isSuperAdmin: boolean;
+}
+
+// The decoded, verified session for the platform-level admin panel
+// (app/admin) — deliberately a separate type from Session above, since a
+// super-admin isn't scoped to a clinicId/role at all. See
+// lib/session.ts getAdminSession() and scripts/grantSuperAdmin.mjs for how
+// an account gets this claim.
+export interface AdminSession {
+  uid: string;
+  email: string | null;
 }
 
 // Fitzpatrick skin type — standard classification used to guide laser

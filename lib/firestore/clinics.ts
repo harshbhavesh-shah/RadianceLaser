@@ -30,3 +30,17 @@ export function getClinic(clinicId: string): Promise<Clinic | null> {
     revalidate: 300,
   })(clinicId);
 }
+
+/**
+ * Every clinic on the platform, in one read — used only by the
+ * super-admin panel (app/admin), never by anything clinic-scoped. Not
+ * cached (admins want to see current status immediately after
+ * extending/terminating something) and not paginated — fine at the scale of
+ * dozens to low hundreds of clinics; worth paginating the same way
+ * lib/firestore/patients.ts does once the platform has enough clinics for a
+ * full scan to matter.
+ */
+export async function getAllClinics(): Promise<Clinic[]> {
+  const snap = await adminDb().collection("clinics").orderBy("createdAt", "desc").get();
+  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Clinic);
+}
