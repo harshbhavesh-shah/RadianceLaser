@@ -9,11 +9,16 @@ export interface TenantScoped {
 export type StatsWindow = "today" | "week" | "month";
 
 // "trialing": within the free trial window (see Clinic.trialEndsAt).
-// "active": has a paid subscription — set once the Razorpay integration
-//   marks a successful payment (not built yet, but the field exists now so
-//   the access-control logic in lib/subscription.ts and firestore.rules
-//   doesn't need to change shape when billing lands).
-// "canceled": was "active", subscription lapsed or was canceled.
+// "active": has paid for the current period (see Clinic.subscriptionRenewsAt)
+//   — set by the Razorpay payment-verification flow (lib/razorpay.ts,
+//   app/dashboard/billing/actions.ts) once a payment is confirmed, either
+//   via the client-side checkout callback or the webhook, whichever lands
+//   first (both are idempotent on the Razorpay payment ID — see
+//   lib/firestore/payments.ts).
+// "canceled": was "active", but subscriptionRenewsAt has passed with no
+//   renewal payment recorded. Nothing currently sets this explicitly — it's
+//   the fallback lib/subscription.ts treats an unrecognized/absent status
+//   as, same as an "active" clinic whose renewsAt has lapsed.
 export type SubscriptionStatus = "trialing" | "active" | "canceled";
 
 // Every clinic (tenant) that signs up for the product.
@@ -36,6 +41,28 @@ export interface Clinic {
   // Epoch ms when the free trial ends. Only meaningful while
   // subscriptionStatus is "trialing".
   trialEndsAt: number;
+  // Epoch ms the current paid period runs through. Only meaningful while
+  // subscriptionStatus is "active" — set/extended by each confirmed annual
+  // payment (see lib/razorpay.ts). Absent until a clinic's first payment.
+  subscriptionRenewsAt?: number;
+}
+
+// One Razorpay payment attempt for a clinic's annual subscription — created
+// as "created" when the checkout order is opened, updated to "paid" once
+// verified (client-side signature check or webhook, whichever arrives
+// first) or left as "created"/"failed" otherwise. Kept even for
+// failed/abandoned attempts so Settings > Billing has an honest history,
+// and so the future admin panel can see payment activity across clinics.
+// Firestore path: payments/{id}
+export interface Payment extends TenantScoped {
+  id: string;
+  razorpayOrderId: string;
+  razorpayPaymentId?: string; // set once a payment is actually made against the order
+  amount: number; // in the smallest currency unit (paise for INR), matching what Razorpay uses
+  currency: string; // e.g. "INR"
+  status: "created" | "paid" | "failed";
+  createdAt: number;
+  paidAt?: number;
 }
 
 // Roles a staff member can have within their clinic. Extend this as the

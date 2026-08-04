@@ -46,7 +46,13 @@ function clinicIsActive(cid) {
   // until caught and fixed). This project only has the one "(default)"
   // Firestore database, so hardcoding it is safe.
   let clinic = get(/databases/(default)/documents/clinics/$(cid)).data;
-  return clinic.subscriptionStatus == 'active'
+  // "active" isn't unconditional forever — it only counts through
+  // subscriptionRenewsAt (the end of the period the last payment covered).
+  // Must mirror lib/subscription.ts getClinicAccess exactly, or the UI and
+  // the actual enforcement here disagree about whether a lapsed-but-still-
+  // marked-"active" clinic can write.
+  return (clinic.subscriptionStatus == 'active'
+            && (!('subscriptionRenewsAt' in clinic) || request.time.toMillis() < clinic.subscriptionRenewsAt))
     || (clinic.subscriptionStatus == 'trialing' && request.time.toMillis() < clinic.trialEndsAt);
 }
 
@@ -131,6 +137,17 @@ service cloud.firestore {
     // rules entirely. A client should never be able to grant itself a role
     // by writing directly to this collection.
     match /staff/{staffId} {
+      allow read: if belongsToClinic(resource.data);
+      allow write: if false;
+    }
+
+    // Razorpay payment records — see types/index.ts Payment and
+    // app/dashboard/billing/actions.ts / app/api/webhooks/razorpay/route.ts.
+    // Deliberately read-only for clients, same reasoning as staff above: a
+    // client should never be able to mark its own payment "paid" (and
+    // thereby unlock itself) by writing directly to this collection —
+    // only the Admin-SDK-backed verification action and webhook can.
+    match /payments/{paymentId} {
       allow read: if belongsToClinic(resource.data);
       allow write: if false;
     }

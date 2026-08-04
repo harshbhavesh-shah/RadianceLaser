@@ -4,6 +4,8 @@ import { getClinic } from "@/lib/firestore/clinics";
 import { getClinicStaff } from "@/lib/firestore/staff";
 import { getClinicMachines } from "@/lib/firestore/machines";
 import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { getClinicPayments } from "@/lib/firestore/payments";
+import { getClinicAccess } from "@/lib/subscription";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";
 import MachinesSection from "@/components/settings/MachinesSection";
@@ -11,19 +13,22 @@ import MachineTypesSection from "@/components/settings/MachineTypesSection";
 import PatientImportSection from "@/components/settings/PatientImportSection";
 import VisitImportSection from "@/components/settings/VisitImportSection";
 import PreferencesSection from "@/components/settings/PreferencesSection";
+import BillingSection from "@/components/settings/BillingSection";
 
 export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [clinic, staff, machines, sessionTypeDefs] = await Promise.all([
+  const [clinic, staff, machines, sessionTypeDefs, payments] = await Promise.all([
     getClinic(session.clinicId),
     getClinicStaff(session.clinicId),
     getClinicMachines(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
+    getClinicPayments(session.clinicId),
   ]);
 
   const isOwner = session.role === "owner";
+  const access = clinic ? getClinicAccess(clinic) : ({ status: "active" } as const);
 
   return (
     <div className="max-w-3xl">
@@ -35,6 +40,14 @@ export default async function SettingsPage() {
           initialName={clinic?.name || ""}
           initialAddress={clinic?.address || ""}
           isOwner={isOwner}
+        />
+
+        <BillingSection
+          access={access}
+          isOwner={isOwner}
+          clinicName={clinic?.name || "Your Clinic"}
+          ownerEmail={session.email || ""}
+          payments={payments}
         />
 
         <StaffSection initialStaff={staff} currentUid={session.uid} isOwner={isOwner} />
