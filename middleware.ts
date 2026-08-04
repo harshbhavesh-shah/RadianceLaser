@@ -42,7 +42,10 @@ export function middleware(request: NextRequest) {
   // session) happens in app/admin/layout.tsx via getAdminSession(), for the
   // same Edge-runtime-can't-run-Admin-SDK reason described above.
   const isProtectedRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
-  const isLoginRoute = pathname === "/login";
+  // /signup gets the same "already signed in? go to your dashboard instead"
+  // treatment as /login — a signed-in visitor has no reason to see a form
+  // for creating a brand new clinic.
+  const isLoginRoute = pathname === "/login" || pathname === "/signup";
 
   if (isProtectedRoute && !hasSessionCookie) {
     const loginUrl = new URL("/login", request.url);
@@ -60,5 +63,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/signup"],
 };

@@ -1,10 +1,11 @@
 # LaserClinic — multi-tenant clinic management SaaS
 
-A multi-clinic SaaS platform for laser/aesthetics clinics: clinics sign in
-and land in their own portal, with data isolated per clinic in Firestore.
-Covers day-to-day clinic operations end to end — patients, treatment
-sessions, appointments, prepaid packages, consent forms, receipts, and
-before/after photos — not just the auth/tenancy layer.
+A multi-clinic SaaS platform for laser/aesthetics clinics: clinics sign
+themselves up for a free trial, land in their own portal, and pay annually
+once it ends — with data isolated per clinic in Firestore. Covers
+day-to-day clinic operations end to end — patients, treatment sessions,
+appointments, prepaid packages, consent forms, receipts, and before/after
+photos — not just the auth/tenancy/billing layer around them.
 
 ## Stack
 
@@ -13,8 +14,9 @@ before/after photos — not just the auth/tenancy layer.
 - **Firebase Auth** for login (email/password)
 - **Firestore** for data, isolated per clinic via a `clinicId` field +
   security rules
-- **Firebase Admin SDK** for server-side auth verification and the
-  clinic-creation script
+- **Firebase Admin SDK** for server-side auth verification, self-serve
+  signup, and the clinic-creation script
+- **Razorpay** for annual subscription billing
 
 ## How the auth/multi-tenancy model works
 
@@ -72,7 +74,7 @@ intact — copy it exactly as it appears in the JSON file.
 npm install
 ```
 
-### 4. Deploy Firestore security rules
+### 4. Deploy Firestore security rules and indexes
 
 Install the Firebase CLI if you don't have it (`npm install -g firebase-tools`),
 then:
@@ -80,12 +82,22 @@ then:
 ```bash
 firebase login
 # edit .firebaserc and put your real project ID in place of the placeholder
-firebase deploy --only firestore:rules
+firebase deploy --only firestore:rules,firestore:indexes
 ```
+
+The indexes in `firestore.indexes.json` back the Patients list's pagination
+and search, and the Documents page's Receipts/Consent Forms pagination —
+without them, those queries fail outright (Firestore returns a
+`FAILED_PRECONDITION` error with a direct "create this index" link, which
+also works, but running the deploy command above does all of them at once).
+A newly created composite index takes a few minutes to finish building
+before the query that needs it will actually work.
 
 ### 5. Create your first clinic + owner login
 
-There's no self-serve signup yet, so bootstrap the first clinic manually:
+Clinics can now sign themselves up at `/signup` (see "Self-serve signup"
+below) — but for a first local clinic, or to add one manually without going
+through checkout, there's still the bootstrap script:
 
 ```bash
 npm run create-clinic -- --clinicName "Advanced Skin Clinic" --email you@example.com --password "some-temp-password" --role owner
@@ -93,8 +105,10 @@ npm run create-clinic -- --clinicName "Advanced Skin Clinic" --email you@example
 
 This creates the clinic document, a Firebase Auth user, and sets that
 user's custom claims to tie them to the new clinic. Run it again with
-different values any time you want to add another clinic (a future
-customer) or another staff member.
+different values any time you want to add another clinic or another staff
+member. Unlike `/signup`, a clinic created this way starts as
+`subscriptionStatus: "trialing"` the same way, so there's no functional
+difference to the resulting account beyond how it was created.
 
 ### 6. Run it locally
 
@@ -104,6 +118,50 @@ npm run dev
 
 Visit `http://localhost:3000` — it'll redirect to `/login`. Sign in with the
 email/password you just created.
+
+## Self-serve signup, trials, and billing
+
+- **`/` is a public marketing landing page**, `/signup` is the "start your
+  free trial" form — anyone can create a clinic there without you running
+  a script. It creates the Firebase Auth user, the clinic doc, custom
+  claims, and staff mirror doc all server-side (`app/signup/actions.ts`),
+  then signs the new owner in through the exact same code path `/login`
+  uses, so there's only one tested way a browser session actually gets
+  established. No CAPTCHA or rate limiting on this yet — a known gap on a
+  genuinely public, unauthenticated endpoint that creates real accounts.
+- **Every clinic starts on a free trial** (`lib/subscription.ts
+  TRIAL_LENGTH_DAYS`, currently 365 days). `getClinicAccess()` there is the
+  single source of truth for whether a clinic is `trialing`, `active`
+  (paid, through `subscriptionRenewsAt`), or `locked` — mirrored in
+  `firestore.rules`' `clinicIsActive()`, which is the actual security
+  boundary: a locked clinic can still read all its own data, but every
+  `create`/`update`/`delete` rule on every tenant-scoped collection checks
+  this and rejects the write, independent of anything the Next.js server
+  does or doesn't check. `components/TrialBanner.tsx` shows the in-app
+  reminder/lock notice; there's no email/SMS reminder yet, only that banner.
+- **Billing is Razorpay**, one-time annual payments (not auto-renewing
+  subscriptions — a customer clicks "Renew," nothing auto-charges their
+  card). See `lib/razorpay.ts` (order creation + signature verification),
+  `app/dashboard/billing/actions.ts` (the checkout flow, called from
+  Settings → Billing), and `app/api/webhooks/razorpay/route.ts` (the
+  authoritative fallback confirmation if the browser closes right after
+  paying). Needs `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`/
+  `RAZORPAY_WEBHOOK_SECRET` in `.env.local` (see `.env.local.example`) —
+  test-mode keys work immediately after creating a Razorpay account, before
+  KYC finishes. **After changing these in Vercel's env vars, you must
+  redeploy** — Vercel doesn't apply env var changes to an already-running
+  deployment.
+- **`/admin` is a platform-level super-admin panel** — separate from any
+  clinic, gated by a `superAdmin` custom claim independent of
+  `clinicId`/`role` (see `lib/session.ts` `getAdminSession()`). Lists every
+  clinic with its live trial/subscription status, and lets you manually
+  extend access by N days or terminate it. Grant yourself this claim with:
+  ```bash
+  node scripts/grantSuperAdmin.mjs --email admin@example.com --password "some-temp-password"
+  ```
+  (omit `--password` to grant the claim to an account that already exists,
+  e.g. your own clinic-owner login — the same account can be both a
+  clinic's owner and the platform admin at once).
 
 ## One-off migration scripts
 
@@ -146,15 +204,31 @@ features built on top of them:
   toggle
 - **Analytics** — revenue and session breakdowns by type/staff/machine
 - **Settings** — clinic profile, staff management, machines, consent
-  templates, and bulk CSV/Excel import for patients and visit history
+  templates, billing, and bulk CSV/Excel import for patients and visit
+  history
+- **Self-serve signup** — a public landing page and trial signup form; no
+  script required to onboard a new clinic
+- **Trial + billing** — a year-long free trial per clinic, hard-locked
+  (writes only, reads always work) once it lapses without payment, and a
+  one-time annual Razorpay checkout to pay
+- **Platform admin panel** — cross-clinic visibility into trial/subscription
+  status, with manual extend/terminate overrides
 - Role-based gating in a handful of pages (`owner` vs `doctor` vs
   `reception`), though not yet consolidated into a single policy layer
 
 ## Known limitations / next steps
 
-- **No self-serve signup** — `scripts/createClinic.mjs` is still the only
-  way to add a clinic; there's no in-product signup or billing flow yet
-- **No billing** — no Stripe integration; nothing meters or charges clinics
+- **No CAPTCHA/rate limiting on `/signup`** — it's a genuinely public,
+  unauthenticated endpoint that creates real Firebase Auth accounts and
+  Firestore docs; worth closing before this gets meaningful signup traffic
+- **No outbound trial/renewal reminders** — the countdown only shows as an
+  in-app banner (`components/TrialBanner.tsx`) when someone happens to be
+  logged in and looking; there's no email/SMS reminder sent ahead of a
+  trial ending or a subscription lapsing
+- **Billing is manual-renewal only** — a customer has to come back and
+  click "Renew" every year; there's no auto-charging Razorpay Subscription,
+  by design (see "Self-serve signup, trials, and billing" above), but it
+  does mean a renewal can be missed with no nudge beyond the in-app banner
 - **Photos and signatures are stored as base64 inside Firestore documents**,
   not Firebase Storage, because Storage needs the paid Blaze plan. Works
   fine at small scale (images are compressed client-side to stay well under
