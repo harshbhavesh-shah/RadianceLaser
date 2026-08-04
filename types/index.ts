@@ -8,6 +8,14 @@ export interface TenantScoped {
 
 export type StatsWindow = "today" | "week" | "month";
 
+// "trialing": within the free trial window (see Clinic.trialEndsAt).
+// "active": has a paid subscription — set once the Razorpay integration
+//   marks a successful payment (not built yet, but the field exists now so
+//   the access-control logic in lib/subscription.ts and firestore.rules
+//   doesn't need to change shape when billing lands).
+// "canceled": was "active", subscription lapsed or was canceled.
+export type SubscriptionStatus = "trialing" | "active" | "canceled";
+
 // Every clinic (tenant) that signs up for the product.
 // Firestore path: clinics/{clinicId}
 export interface Clinic {
@@ -17,6 +25,17 @@ export interface Clinic {
   address?: string; // shown on printed documents (receipts) — see Settings > Clinic Profile
   // Per-clinic preferences, editable from Settings — see app/dashboard/settings.
   statsWindow?: StatsWindow; // defaults to "today" if unset
+  // See lib/subscription.ts getClinicAccess for how these two combine into
+  // the actual "can this clinic make changes right now" decision — mirrored
+  // in firestore.rules' clinicIsActive() as the real enforcement boundary,
+  // the same layering as auth (see README's auth/multi-tenancy section).
+  // Clinics created before this field existed are backfilled to "active"
+  // (grandfathered, not retroactively put on a trial clock) — see
+  // scripts/backfillClinicSubscriptions.mjs.
+  subscriptionStatus: SubscriptionStatus;
+  // Epoch ms when the free trial ends. Only meaningful while
+  // subscriptionStatus is "trialing".
+  trialEndsAt: number;
 }
 
 // Roles a staff member can have within their clinic. Extend this as the

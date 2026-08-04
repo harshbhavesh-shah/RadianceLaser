@@ -10,6 +10,18 @@ rules_version = '2';
 //   document's clinicId, so one clinic's staff can never read or write
 //   another clinic's data, even if they guessed a document ID.
 //
+// Trial/subscription enforcement:
+// - Every clinic doc carries subscriptionStatus + trialEndsAt (see
+//   types/index.ts Clinic, lib/subscription.ts getClinicAccess). Writes to
+//   any tenant-scoped collection additionally require clinicIsActive() —
+//   this is the actual hard-lock enforcement once a trial ends: a clinic
+//   past its trial with no active subscription can still read all its own
+//   data (nothing here changes read rules) but can no longer create,
+//   update, or delete anything, from any client, regardless of what the
+//   Next.js server code does or doesn't check. lib/subscription.ts mirrors
+//   this logic for UI decisions (banners, disabling buttons) but is not
+//   itself a security boundary — this file is.
+//
 // Deploy with: firebase deploy --only firestore:rules
 
 function isSignedIn() {
@@ -24,11 +36,32 @@ function belongsToClinic(data) {
   return isSignedIn() && data.clinicId == clinicId();
 }
 
+function clinicIsActive(cid) {
+  // Hardcoded "(default)" rather than $(database): this function is
+  // declared at the top level, outside the `match /databases/{database}/...`
+  // block below, so the `database` path binding isn't in scope here —
+  // referencing it silently resolved to nothing and made get() fail, which
+  // made every write rule using this function evaluate to false (a real
+  // incident: this blocked ALL writes, including for "active" clinics,
+  // until caught and fixed). This project only has the one "(default)"
+  // Firestore database, so hardcoding it is safe.
+  let clinic = get(/databases/(default)/documents/clinics/$(cid)).data;
+  return clinic.subscriptionStatus == 'active'
+    || (clinic.subscriptionStatus == 'trialing' && request.time.toMillis() < clinic.trialEndsAt);
+}
+
+// Shorthand for the common case: the requester's own clinic (from their
+// auth token) must be active/trialing to write.
+function callerClinicIsActive() {
+  return clinicIsActive(clinicId());
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // The clinic's own profile doc — readable by its own staff, not writable
-    // by clients at all (only the Admin SDK / server should update this).
+    // by clients at all (only the Admin SDK / server, e.g. a future Razorpay
+    // webhook, should update subscriptionStatus/trialEndsAt on this doc).
     match /clinics/{clinicId} {
       allow read: if isSignedIn() && request.auth.token.clinicId == clinicId;
       allow write: if false;
@@ -46,34 +79,38 @@ service cloud.firestore {
     // delete as separate allow statements, not combined, to avoid this.
     match /appointments/{appointmentId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data); // can't change clinicId on update
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data) // can't change clinicId on update
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     match /patients/{patientId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data)
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     match /visits/{visitId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data)
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     match /packages/{packageId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data)
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     match /counters/{counterId} {
@@ -85,7 +122,7 @@ service cloud.firestore {
       // allow: a nonexistent doc has no data to protect, and counter IDs are
       // derived from the caller's own clinicId anyway.
       allow read: if resource == null || belongsToClinic(resource.data);
-      allow write: if belongsToClinic(request.resource.data);
+      allow write: if belongsToClinic(request.resource.data) && callerClinicIsActive();
     }
 
     // Firestore mirror of Firebase Auth users (see app/dashboard/settings/actions.ts).
@@ -100,10 +137,11 @@ service cloud.firestore {
 
     match /machines/{machineId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data)
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     // Clinic-defined major machine types (e.g. "CO2 Laser"), on top of the
@@ -111,10 +149,11 @@ service cloud.firestore {
     // components/settings/MachineTypeFormModal.tsx.
     match /sessionTypeDefs/{sessionTypeDefId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data)
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     // Before/after photo metadata — see types/index.ts PatientPhoto. The
@@ -123,20 +162,22 @@ service cloud.firestore {
     // download URL, the sensitive flag).
     match /patientPhotos/{photoId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data)
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     // Clinic-authored consent form templates — see types/index.ts
     // ConsentFormTemplate and components/settings/ConsentTemplateFormModal.tsx.
     match /consentFormTemplates/{templateId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
       allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+        && belongsToClinic(request.resource.data)
+        && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     // Signed consent forms — see types/index.ts ConsentForm. Deliberately no
@@ -145,8 +186,8 @@ service cloud.firestore {
     // itself lives in Firebase Storage — see storage.rules.
     match /consentForms/{consentFormId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     // Patient-wise receipts, generated from the Documents section — see
@@ -156,8 +197,8 @@ service cloud.firestore {
     // counters collection below before this document is written.
     match /receipts/{receiptId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data);
-      allow delete: if belongsToClinic(resource.data);
+      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
+      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
     // Deny everything else by default.

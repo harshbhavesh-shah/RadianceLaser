@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { adminDb } from "@/lib/firebase/admin";
+import { getClinic } from "@/lib/firestore/clinics";
 import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
+import { getClinicAccess } from "@/lib/subscription";
 import { SessionTypeConfigProvider } from "@/lib/sessionTypeConfigContext";
 import Sidebar from "@/components/Sidebar";
+import TrialBanner from "@/components/TrialBanner";
 import { SidebarProvider } from "@/components/SidebarContext";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,19 +18,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
-  const [clinicSnap, sessionTypeDefs] = await Promise.all([
-    adminDb().collection("clinics").doc(session.clinicId).get(),
+  const [clinic, sessionTypeDefs] = await Promise.all([
+    getClinic(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
   ]);
-  const clinicName = clinicSnap.exists ? (clinicSnap.data()?.name as string) : "Your Clinic";
+  const clinicName = clinic?.name || "Your Clinic";
   const sessionTypeConfig = buildSessionTypeConfig(sessionTypeDefs);
+  // Falls back to "active" if the clinic doc is somehow missing (shouldn't
+  // happen outside a broken account) rather than locking someone out of a
+  // dashboard that can't even render its own clinic name yet.
+  const access = clinic ? getClinicAccess(clinic) : { status: "active" as const };
 
   return (
     <SidebarProvider>
       <SessionTypeConfigProvider initialConfig={sessionTypeConfig}>
-        <div className="flex h-screen flex-col overflow-hidden bg-canvas md:flex-row">
-          <Sidebar clinicName={clinicName} session={session} />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
+        <div className="flex h-screen flex-col overflow-hidden bg-canvas">
+          <TrialBanner access={access} role={session.role} />
+          <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
+            <Sidebar clinicName={clinicName} session={session} />
+            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
+          </div>
         </div>
       </SessionTypeConfigProvider>
     </SidebarProvider>

@@ -27,6 +27,11 @@ import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
+// Keep in sync with TRIAL_LENGTH_DAYS in lib/subscription.ts (duplicated
+// here since this is a plain Node script, not compiled through Next's
+// TypeScript/path-alias setup).
+const TRIAL_LENGTH_DAYS = 365;
+
 function parseArgs() {
   const args = {};
   const argv = process.argv.slice(2);
@@ -69,13 +74,22 @@ async function main() {
   const auth = getAuth();
   const db = getFirestore();
 
-  // 1. Create the clinic document.
+  // 1. Create the clinic document. Starts on a free trial — see
+  //    lib/subscription.ts getClinicAccess for how trialEndsAt/
+  //    subscriptionStatus combine into the actual access decision, and
+  //    firestore.rules' clinicIsActive() for where that's actually
+  //    enforced.
   const clinicRef = db.collection("clinics").doc();
+  const trialEndsAt = Date.now() + TRIAL_LENGTH_DAYS * 24 * 60 * 60 * 1000;
   await clinicRef.set({
     name: clinicName,
     createdAt: Date.now(),
+    subscriptionStatus: "trialing",
+    trialEndsAt,
   });
-  console.log(`✓ Created clinic "${clinicName}" (id: ${clinicRef.id})`);
+  console.log(
+    `✓ Created clinic "${clinicName}" (id: ${clinicRef.id}), trial ends ${new Date(trialEndsAt).toDateString()}`
+  );
 
   // 2. Create the Firebase Auth user for the first staff account.
   const userRecord = await auth.createUser({ email, password, displayName: staffName });
