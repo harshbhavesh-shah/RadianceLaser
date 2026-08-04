@@ -152,6 +152,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Pending email-OTP 2FA codes (see lib/twoFactor.ts) — keyed by uid, not
+    // clinic-scoped like everything else here. Entirely server-only: only
+    // the Admin SDK (via app/login/actions.ts) ever reads or writes these,
+    // so there's no client access at all, not even read — a client that
+    // could read its own challenge doc would just be reading the very code
+    // it's supposed to prove it received by email.
+    match /twoFactorChallenges/{uid} {
+      allow read, write: if false;
+    }
+
     match /machines/{machineId} {
       allow read: if belongsToClinic(resource.data);
       allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();

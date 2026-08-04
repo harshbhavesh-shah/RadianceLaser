@@ -96,8 +96,22 @@ export default function AppointmentsClient({
   useEffect(() => {
     return () => {
       if (unmountTimerRef.current) clearTimeout(unmountTimerRef.current);
+      // Bug fix: navigating to another /dashboard page (via the sidebar,
+      // browser back, etc.) while the mini patient panel is still open
+      // unmounts this component WITHOUT ever calling closePatientPanel(),
+      // so the sidebar's temporary "collapsed to make room for the panel"
+      // override was never being reset. Since SidebarProvider lives above
+      // this component at the persistent dashboard layout level, that stuck
+      // override then forced the sidebar collapsed on every other page too
+      // — and since collapsed prefers the override over the user's own
+      // preference, even the sidebar's own expand/collapse button couldn't
+      // undo it (it only ever touches the preference, not the override).
+      // Clearing the override on unmount, unconditionally, means leaving
+      // this page always hands control back, no matter how the panel was
+      // left open.
+      setTemporaryOverride(null);
     };
-  }, []);
+  }, [setTemporaryOverride]);
 
   function handleSaved(saved: Appointment) {
     setAppointments((prev) => {

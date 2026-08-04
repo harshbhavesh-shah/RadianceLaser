@@ -258,6 +258,11 @@ export interface StaffMember extends TenantScoped {
   email: string;
   role: UserRole;
   createdAt: number;
+  // Opt-in per staff member — see lib/twoFactor.ts and
+  // app/login/actions.ts requestTwoFactorIfEnabledAction(). Absent/false
+  // means ordinary single-factor sign-in. Each person manages their own;
+  // there's no owner-mandated "require this for everyone" yet.
+  twoFactorEnabled?: boolean;
 }
 
 export type MachineStatus = "active" | "maintenance" | "retired";

@@ -157,3 +157,21 @@ export async function updateStatsWindow(window: StatsWindow): Promise<{ error?: 
     return { error: "Couldn't update this preference." };
   }
 }
+
+/** Each staff member manages their own 2FA — deliberately no requireOwner()
+ * here, unlike everything else in this file. There's no owner-mandated
+ * "require this for everyone" yet (see lib/twoFactor.ts and
+ * app/login/actions.ts requestTwoFactorIfEnabledAction()). */
+export async function toggleTwoFactorAction(enabled: boolean): Promise<{ error?: string }> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Not signed in.");
+
+    await adminDb().collection("staff").doc(session.uid).update({ twoFactorEnabled: enabled });
+    revalidatePath("/dashboard/settings");
+    return {};
+  } catch (err) {
+    console.error("Failed to update 2FA preference:", err);
+    return { error: "Couldn't update this setting. Please try again." };
+  }
+}

@@ -96,6 +96,24 @@ export default function VisitFormModal({
   const [error, setError] = useState<string | null>(null);
   const [permissionError, setPermissionError] = useState(false);
 
+  // The actual complaint wasn't about any individual field being too
+  // technical — it's that adding a second treated area duplicated the
+  // *entire* field set again (all 8 Q-Switch fields), when in practice the
+  // machine settings (Carbon/Mode/HP/Eng/Pass/Repeat, or HR/SHR/Stack for
+  // LHR) are the same for the whole session; only the area name and its fee
+  // actually differ area to area. "Area"/"Fee" are the one pair of column
+  // keys both built-in types share for exactly this reason, so they're the
+  // per-area fields; everything else is entered once and applied to every
+  // area. A clinic-defined custom machine type isn't guaranteed to have
+  // "area"/"fee" keys at all (Settings → Machine Types lets a clinic name
+  // its own columns anything), so this simplification only applies when
+  // those keys are actually present — otherwise every column still gets
+  // its own copy per area, same as before, since there's no reliable way to
+  // guess which of a custom type's columns are meant to vary per area.
+  const perAreaColumns = config.columns.filter((c) => c.key === "area" || c.key === "fee");
+  const sharedColumns = config.columns.filter((c) => c.key !== "area" && c.key !== "fee");
+  const useSimplifiedAreaFlow = perAreaColumns.length > 0;
+
   const selectedPackage = activePackages.find((p) => p.id === packageId);
   const machinesForType = machines.filter((m) => m.sessionType === sessionType);
 
@@ -105,8 +123,22 @@ export default function VisitFormModal({
     );
   }
 
+  // Shared (session-level) fields are the same value across every area, so
+  // editing one writes it into all of them at once — there's only ever one
+  // visible input for e.g. "Mode", not one per area.
+  function updateSharedField(key: string, value: string) {
+    setAreaEntries((prev) => prev.map((entry) => ({ ...entry, [key]: value })));
+  }
+
   function addArea() {
-    setAreaEntries((prev) => [...prev, blankAreaInput(columnKeys)]);
+    // New areas inherit the current shared-field values (carried over from
+    // the first area) rather than starting blank, since those settings are
+    // meant to apply to the whole session, not just the first area entered.
+    setAreaEntries((prev) => {
+      const shared: AreaInput = {};
+      for (const col of sharedColumns) shared[col.key] = prev[0]?.[col.key] || "";
+      return [...prev, { ...blankAreaInput(columnKeys), ...shared }];
+    });
   }
 
   function removeArea(index: number) {
@@ -340,85 +372,195 @@ export default function VisitFormModal({
           </div>
         )}
 
-        <div className="mb-2 flex items-center justify-between">
-          <label className="text-sm font-medium text-brown-700">
-            Treated Area{areaEntries.length > 1 ? "s" : ""}
-          </label>
-          <button
-            type="button"
-            onClick={addArea}
-            className="text-sm font-medium text-gold-600 hover:underline"
-          >
-            + Add Another Area
-          </button>
-        </div>
+        {useSimplifiedAreaFlow ? (
+          <>
+            {/* Session-level settings — entered once, applied to every area
+                below, since these are normally the same machine settings for
+                the whole sitting (e.g. one Mode/HP/Energy for the session),
+                not something that varies area to area. */}
+            {sharedColumns.length > 0 && (
+              <div className="mb-4">
+                <label className="mb-1.5 block text-sm font-medium text-brown-700">
+                  Session Settings
+                </label>
+                <div className="grid grid-cols-1 gap-4 rounded-lg border border-beige-300 p-3 sm:grid-cols-2">
+                  {sharedColumns.map((col) => (
+                    <div key={col.key}>
+                      <label className="mb-1.5 block text-sm font-medium text-brown-700">
+                        {col.label}
+                      </label>
+                      {col.type === "select" ? (
+                        <select
+                          value={areaEntries[0]?.[col.key] || ""}
+                          onChange={(e) => updateSharedField(col.key, e.target.value)}
+                          className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                        >
+                          <option value="">— Select —</option>
+                          {col.options?.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={col.type === "number" ? "number" : "text"}
+                          min={col.type === "number" ? 0 : undefined}
+                          value={areaEntries[0]?.[col.key] || ""}
+                          onChange={(e) => updateSharedField(col.key, e.target.value)}
+                          className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        <div className="space-y-3">
-          {areaEntries.map((entry, index) => {
-            const isFeeLockedByPackage = !!packageId;
-            return (
-              <div
-                key={index}
-                className="rounded-lg border border-beige-300 p-3"
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-sm font-medium text-brown-700">
+                Treated Area{areaEntries.length > 1 ? "s" : ""}
+              </label>
+              <button
+                type="button"
+                onClick={addArea}
+                className="text-sm font-medium text-gold-600 hover:underline"
               >
-                {areaEntries.length > 1 && (
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-brown-400">
-                      Area {index + 1}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeArea(index)}
-                      className="text-xs font-medium text-red-700 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {config.columns.map((col) => {
-                    const isFeeLocked = col.key === "fee" && isFeeLockedByPackage;
-                    return (
-                      <div key={col.key}>
-                        <label className="mb-1.5 block text-sm font-medium text-brown-700">
-                          {col.label}
-                        </label>
-                        {col.type === "select" ? (
-                          <select
-                            value={entry[col.key] || ""}
-                            onChange={(e) => updateAreaField(index, col.key, e.target.value)}
-                            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-                          >
-                            <option value="">— Select —</option>
-                            {col.options?.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
+                + Add Another Area
+              </button>
+            </div>
+
+            {/* Each area is just its own fields (Area name, Fee) on one
+                line — not a full duplicated card — since everything else
+                about the session is already set once above. */}
+            <div className="space-y-2">
+              {areaEntries.map((entry, index) => {
+                const isFeeLockedByPackage = !!packageId;
+                return (
+                  <div key={index} className="flex items-start gap-2">
+                    {perAreaColumns.map((col) => {
+                      const isFeeLocked = col.key === "fee" && isFeeLockedByPackage;
+                      return (
+                        <div key={col.key} className="flex-1">
+                          {index === 0 && (
+                            <label className="mb-1.5 block text-sm font-medium text-brown-700">
+                              {col.label}
+                            </label>
+                          )}
                           <input
                             type={col.type === "number" ? "number" : "text"}
                             min={col.type === "number" ? 0 : undefined}
                             value={entry[col.key] || ""}
                             onChange={(e) => updateAreaField(index, col.key, e.target.value)}
                             disabled={isFeeLocked}
+                            placeholder={col.label}
                             className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500 disabled:bg-beige-200 disabled:text-brown-400"
                           />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                        </div>
+                      );
+                    })}
+                    {areaEntries.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeArea(index)}
+                        className={`flex-shrink-0 rounded-md border border-beige-300 px-2.5 py-2 text-xs font-medium text-red-700 hover:bg-red-50 ${index === 0 ? "mt-6" : ""}`}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-        {areaEntries.length > 1 && (
-          <p className="mt-3 text-xs text-brown-400">
-            Fee shown on receipts/reports for this visit will be the total across all areas above.
-          </p>
+            {areaEntries.length > 1 && (
+              <p className="mt-3 text-xs text-brown-400">
+                Fee shown on receipts/reports for this visit will be the total across all areas above.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Fallback for a clinic-defined custom machine type with no
+                "area"/"fee" columns to split on — same full-duplication
+                behavior as before, since there's no reliable way to guess
+                which of this type's own columns are meant to vary per area. */}
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-sm font-medium text-brown-700">
+                Treated Area{areaEntries.length > 1 ? "s" : ""}
+              </label>
+              <button
+                type="button"
+                onClick={addArea}
+                className="text-sm font-medium text-gold-600 hover:underline"
+              >
+                + Add Another Area
+              </button>
+            </div>
+            <div className="space-y-3">
+              {areaEntries.map((entry, index) => {
+                const isFeeLockedByPackage = !!packageId;
+                return (
+                  <div key={index} className="rounded-lg border border-beige-300 p-3">
+                    {areaEntries.length > 1 && (
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-brown-400">
+                          Area {index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeArea(index)}
+                          className="text-xs font-medium text-red-700 hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      {config.columns.map((col) => {
+                        const isFeeLocked = col.key === "fee" && isFeeLockedByPackage;
+                        return (
+                          <div key={col.key}>
+                            <label className="mb-1.5 block text-sm font-medium text-brown-700">
+                              {col.label}
+                            </label>
+                            {col.type === "select" ? (
+                              <select
+                                value={entry[col.key] || ""}
+                                onChange={(e) => updateAreaField(index, col.key, e.target.value)}
+                                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                              >
+                                <option value="">— Select —</option>
+                                {col.options?.map((opt) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type={col.type === "number" ? "number" : "text"}
+                                min={col.type === "number" ? 0 : undefined}
+                                value={entry[col.key] || ""}
+                                onChange={(e) => updateAreaField(index, col.key, e.target.value)}
+                                disabled={isFeeLocked}
+                                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500 disabled:bg-beige-200 disabled:text-brown-400"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {areaEntries.length > 1 && (
+              <p className="mt-3 text-xs text-brown-400">
+                Fee shown on receipts/reports for this visit will be the total across all areas above.
+              </p>
+            )}
+          </>
         )}
 
         {error && permissionError && (

@@ -11,12 +11,13 @@ photos — not just the auth/tenancy/billing layer around them.
 
 - **Next.js 14** (App Router) + TypeScript
 - **Tailwind CSS**
-- **Firebase Auth** for login (email/password)
+- **Firebase Auth** for login (email/password and Google)
 - **Firestore** for data, isolated per clinic via a `clinicId` field +
   security rules
 - **Firebase Admin SDK** for server-side auth verification, self-serve
   signup, and the clinic-creation script
 - **Razorpay** for annual subscription billing
+- **Resend** for transactional email (currently just 2FA sign-in codes)
 
 ## How the auth/multi-tenancy model works
 
@@ -162,6 +163,42 @@ email/password you just created.
   (omit `--password` to grant the claim to an account that already exists,
   e.g. your own clinic-owner login — the same account can be both a
   clinic's owner and the platform admin at once).
+
+## Google sign-in and email-OTP 2FA
+
+- **Google Sign-In** works for both login and signup, on the same button.
+  `signInWithPopup` with `GoogleAuthProvider` runs client-side as normal;
+  the interesting part is deciding what happens next. If the resulting
+  account's ID token already carries a `clinicId` claim, it's treated as an
+  ordinary login. If not — a Google account signing in for the first
+  time — the user is asked to name their clinic, then
+  `app/login/actions.ts` `provisionGoogleClinicAction()` attaches a clinic
+  doc, custom claims, and a staff mirror doc to the Auth user Firebase
+  already created automatically (unlike email/password signup, which
+  creates the Auth user itself via the Admin SDK — here it already exists).
+  Just needs Google enabled once in Firebase Console → Authentication →
+  Sign-in method → Google; no new env vars, it reuses the existing
+  `NEXT_PUBLIC_FIREBASE_*` client config.
+- **Email-OTP 2FA is opt-in per staff member**, toggled from their own
+  Settings page (`components/settings/TwoFactorSection.tsx`) — there's no
+  owner-mandated "require this for everyone" yet. When on, primary auth
+  (password or Google) still has to succeed first; only *after* that does
+  `app/login/actions.ts` `requestTwoFactorIfEnabledAction()` check the
+  account's `twoFactorEnabled` flag and, if set, generate and email a
+  6-digit code via `lib/twoFactor.ts` before a session cookie is ever
+  issued. Codes are stored as a SHA-256 hash (never plaintext), expire
+  after 10 minutes, allow 5 attempts before requiring a fresh code, and are
+  deleted the moment they're used — see `lib/twoFactor.ts` for all of this.
+  `app/login/page.tsx` and `app/signup/page.tsx` share the exact same gate
+  logic via `lib/authFlow.ts`, deliberately, so a 2FA-enabled account can't
+  be signed into by skipping the check on one entry point but not the
+  other.
+- Sending the actual code needs `RESEND_API_KEY` in `.env.local` (see
+  `.env.local.example`) — works immediately with no domain setup, but
+  Resend's sandbox sender can then only deliver to the email address that
+  owns the Resend account itself. Real delivery to arbitrary staff emails
+  needs a verified domain in the Resend dashboard and `RESEND_FROM_EMAIL`
+  set to an address on it.
 
 ## One-off migration scripts
 

@@ -14,6 +14,7 @@ import PatientImportSection from "@/components/settings/PatientImportSection";
 import VisitImportSection from "@/components/settings/VisitImportSection";
 import PreferencesSection from "@/components/settings/PreferencesSection";
 import BillingSection from "@/components/settings/BillingSection";
+import TwoFactorSection from "@/components/settings/TwoFactorSection";
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -29,6 +30,7 @@ export default async function SettingsPage() {
 
   const isOwner = session.role === "owner";
   const access = clinic ? getClinicAccess(clinic) : ({ status: "active" } as const);
+  const currentStaff = staff.find((s) => s.uid === session.uid);
 
   return (
     <div className="max-w-3xl">
@@ -51,6 +53,11 @@ export default async function SettingsPage() {
         />
 
         <StaffSection initialStaff={staff} currentUid={session.uid} isOwner={isOwner} />
+
+        <TwoFactorSection
+          initialEnabled={currentStaff?.twoFactorEnabled === true}
+          email={session.email || ""}
+        />
 
         <MachineTypesSection
           clinicId={session.clinicId}
