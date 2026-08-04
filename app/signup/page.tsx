@@ -143,7 +143,7 @@ export default function SignUpPage() {
     <div className="relative min-h-screen overflow-hidden bg-canvas">
       {/* Same decorative glow treatment as /login — one continuous visual
           identity from marketing through to the product itself. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden animate-spotlight-wipe">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden">
         <div
           className="animate-glow-in absolute left-1/2 top-[-200px] h-[420px] w-[420px] rounded-full bg-gold-100 blur-3xl"
           style={{ animationDelay: "0s", marginLeft: "-357px" }}

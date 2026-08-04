@@ -149,7 +149,7 @@ function LoginForm() {
       {/* Soft glowing pastel lights, top of the page — a nod to "Radiance."
           Purely decorative: aria-hidden, and pointer-events-none so it never
           gets in the way of the form below it. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden animate-spotlight-wipe">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden">
         {/* Horizontal placement uses margin-left (in px), not a translate-x
             utility — the glow-drift keyframe below sets `transform` directly
             for the wobble, and a CSS animation owns the whole `transform`

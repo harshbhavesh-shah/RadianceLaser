@@ -20,6 +20,7 @@ import {
 import { getSession } from "@/lib/session";
 import { ANNUAL_PRICE_INR, TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import Reveal from "@/components/marketing/Reveal";
+import SiteHeader from "@/components/marketing/SiteHeader";
 
 const SECONDARY_FEATURES: { icon: typeof Users; title: string; description: string }[] = [
   {
@@ -101,12 +102,17 @@ export default async function HomePage() {
   const trialMonths = Math.round(TRIAL_LENGTH_DAYS / 30);
 
   return (
-    <div className="relative overflow-hidden bg-canvas">
+    <div className="relative bg-canvas">
       {/* Same decorative glow treatment as /login and /signup — one visual
           identity from the first thing a visitor sees through to the
           product itself. Fades in on first paint (animate-glow-in) rather
-          than just appearing at full opacity. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden animate-spotlight-wipe">
+          than just appearing at full opacity. The glow's own wrapper below
+          already clips its blobs' bleed with its own overflow-hidden, so
+          this outer div deliberately does NOT also set overflow-hidden —
+          that would make it the nearest "scroll container" ancestor for
+          SiteHeader's position: sticky and break the sticky-to-viewport
+          behavior (sticky only sticks within its nearest such ancestor). */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden">
         <div
           className="animate-glow-in absolute left-1/2 top-[-200px] h-[420px] w-[420px] rounded-full bg-gold-100 blur-3xl"
           style={{ animationDelay: "0s", marginLeft: "-357px" }}
@@ -122,39 +128,7 @@ export default async function HomePage() {
       </div>
 
       <div className="relative z-10">
-        {/* Header */}
-        <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 sm:py-6">
-          <span className="font-display text-lg font-medium text-brown-900 sm:text-xl">RadianceLaser</span>
-          <nav className="hidden items-center gap-6 text-sm font-medium text-brown-600 md:flex">
-            <a href="#security" className="hover:text-gold-600">
-              Data &amp; Security
-            </a>
-            <a href="#features" className="hover:text-gold-600">
-              Features
-            </a>
-            <a href="#import" className="hover:text-gold-600">
-              Switch from your old system
-            </a>
-            <a href="#pricing" className="hover:text-gold-600">
-              Pricing
-            </a>
-          </nav>
-          <nav className="flex items-center gap-2 sm:gap-4">
-            <Link
-              href="/login"
-              className="whitespace-nowrap text-xs font-medium text-brown-700 hover:text-gold-600 sm:text-sm"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              className="whitespace-nowrap rounded-md bg-brown-900 px-3 py-1.5 text-xs font-semibold text-beige-200 transition-colors hover:bg-gold-600 sm:px-4 sm:py-2 sm:text-sm"
-            >
-              <span className="sm:hidden">Start Trial</span>
-              <span className="hidden sm:inline">Start Free Trial</span>
-            </Link>
-          </nav>
-        </header>
+        <SiteHeader />
 
         {/* Hero */}
         <section className="mx-auto max-w-4xl px-6 pt-16 pb-8 text-center">

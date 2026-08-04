@@ -79,15 +79,16 @@
 
   /* Same blobs, but fading in from nothing on first paint instead of just
      appearing at full opacity — used on /, /login, /signup. Deliberately
-     opacity-only: an earlier version also animated clip-path on the blob
-     itself for a top-to-bottom "spotlight" reveal, but clip-path forces the
-     renderer to hard-clip the element's rendered output — including the
-     soft bleed from `blur-3xl` — to the clip geometry, even when that
-     geometry nominally covers "the whole box." The result was the blurred
-     glow rendering as a flat-edged bar instead of its normal soft circle,
-     both mid-animation AND at rest. The actual top-to-bottom reveal now
-     lives on the non-blurred wrapper via .animate-spotlight-wipe below,
-     which doesn't have this problem. The one-shot fade and the looping
+     opacity-only: an earlier version also animated clip-path (either on the
+     blob itself, or on a wrapper around it) for a top-to-bottom "spotlight"
+     reveal, but clip-path forces the renderer to hard-clip the element's
+     rendered output — including the soft bleed from `blur-3xl` — to the
+     clip geometry, even when that geometry nominally covers "the whole
+     box." As the clip rectangle grew during the reveal, its leading edge
+     swept a flat-edged bar through the blur instead of a soft circle
+     growing in, both mid-animation and (on some screens) at rest. Plain
+     opacity has no such edge to hard-clip, so it's the only version of this
+     effect that's actually shipped. The one-shot fade and the looping
      drift both animate opacity, so the drift is delayed to start exactly
      when the fade finishes rather than fighting over that property while
      both are active. */
@@ -104,24 +105,6 @@
       glow-fade-in 2.2s ease-out both,
       glow-drift 16s ease-in-out 2.2s infinite;
   }
-
-  /* The actual top-to-bottom "spotlight switching on" reveal — applied to
-     the non-blurred wrapper div that already clips its blurred children to
-     this same rectangle via overflow-hidden, so once this animation
-     finishes, clip-path's resting value (no inset) imposes exactly the same
-     boundary overflow-hidden already did — nothing changes about the blobs'
-     appearance at rest, only during this brief intro. */
-  @keyframes spotlight-wipe {
-    from {
-      clip-path: inset(0 0 100% 0);
-    }
-    to {
-      clip-path: inset(0 0 0% 0);
-    }
-  }
-  .animate-spotlight-wipe {
-    animation: spotlight-wipe 2.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -130,8 +113,7 @@
   .animate-fade-up,
   .animate-scale-in,
   .animate-glow-drift,
-  .animate-glow-in,
-  .animate-spotlight-wipe {
+  .animate-glow-in {
     animation: none !important;
   }
 }
