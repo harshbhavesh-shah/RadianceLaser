@@ -12,6 +12,10 @@
  *   node scripts/grantSuperAdmin.mjs --email you@example.com
  *   node scripts/grantSuperAdmin.mjs --email you@example.com --revoke
  *
+ *   # If the account doesn't exist yet (e.g. a standalone admin login with
+ *   # no clinic), pass --password to create it first:
+ *   node scripts/grantSuperAdmin.mjs --email admin@example.com --password "some-temp-password"
+ *
  * Requires .env.local to be filled in with FIREBASE_ADMIN_* values.
  */
 
@@ -38,11 +42,11 @@ function parseArgs() {
 }
 
 async function main() {
-  const { email, revoke } = parseArgs();
+  const { email, password, revoke } = parseArgs();
 
   if (!email) {
     console.error(
-      "Usage: node scripts/grantSuperAdmin.mjs --email you@example.com [--revoke]"
+      "Usage: node scripts/grantSuperAdmin.mjs --email you@example.com [--password \"temp-password\"] [--revoke]"
     );
     process.exit(1);
   }
@@ -59,7 +63,28 @@ async function main() {
   initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
   const auth = getAuth();
 
-  const userRecord = await auth.getUserByEmail(email);
+  let userRecord;
+  try {
+    userRecord = await auth.getUserByEmail(email);
+  } catch (err) {
+    if (err.code !== "auth/user-not-found") throw err;
+
+    if (!password) {
+      console.error(
+        `No account exists for ${email} yet. Pass --password "some-temp-password" to create one, ` +
+        "e.g.:\n  node scripts/grantSuperAdmin.mjs --email " + email + ' --password "some-temp-password"'
+      );
+      process.exit(1);
+    }
+    if (revoke) {
+      console.error("Nothing to revoke — no account exists for this email.");
+      process.exit(1);
+    }
+
+    userRecord = await auth.createUser({ email, password });
+    console.log(`✓ Created account ${email} (uid: ${userRecord.uid})`);
+  }
+
   const existingClaims = userRecord.customClaims || {};
 
   const newClaims = { ...existingClaims };
