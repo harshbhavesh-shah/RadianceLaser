@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Users,
   Sparkles,
@@ -9,46 +10,88 @@ import {
   BarChart3,
   Receipt,
   Image as ImageIcon,
+  FileSpreadsheet,
+  ShieldCheck,
+  Lock,
+  Eye,
+  KeyRound,
+  Check,
 } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { ANNUAL_PRICE_INR, TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 
-const FEATURES: { icon: typeof Users; title: string; description: string }[] = [
-  {
-    icon: Users,
-    title: "Patient Records",
-    description:
-      "Skin type, contraindications, and full visit history in one place — with duplicate-phone detection so the same patient never gets two records by accident.",
-  },
-  {
-    icon: Sparkles,
-    title: "Treatment Sessions",
-    description:
-      "Log multi-area sessions for Q-Switch, LHR, or any custom machine type your clinic runs, each with its own tracked fields.",
-  },
-  {
-    icon: Calendar,
-    title: "Appointments",
-    description: "Day, week, and month calendar views, with auto-complete once a visit is logged.",
-  },
+const SECONDARY_FEATURES: { icon: typeof Users; title: string; description: string }[] = [
   {
     icon: Package,
     title: "Prepaid Packages",
     description:
-      "Sell session bundles with a usage ledger computed live from actual visits — never a stored number that can drift out of sync.",
+      "Sell session bundles with a usage ledger computed live from actual visits — never a stored number that can drift out of sync with what actually happened.",
   },
   {
-    icon: FileSignature,
-    title: "Consent Forms & Receipts",
+    icon: ImageIcon,
+    title: "Before/After Photo Galleries",
     description:
-      "Clinic-branded consent templates signed on-screen, and itemized receipts with sequential, tamper-proof numbering.",
+      "Track progress per patient, with a sensitive-content blur toggle for anyone glancing at a screen who shouldn't see it.",
   },
   {
-    icon: BarChart3,
-    title: "Analytics",
-    description: "Revenue and session breakdowns by treatment type, staff member, and machine.",
+    icon: Users,
+    title: "Duplicate-Safe Patient Records",
+    description:
+      "Skin type, contraindications, and full visit history in one place — with duplicate-phone detection so the same patient never quietly gets a second record.",
   },
 ];
+
+const SECURITY_POINTS: { icon: typeof ShieldCheck; title: string; description: string }[] = [
+  {
+    icon: ShieldCheck,
+    title: "Isolation enforced at the database, not just the app",
+    description:
+      "Every clinic's data carries a clinic ID, and Firestore's own security rules — not application code you have to trust — reject any read or write where that ID doesn't match the signed-in staff member's own clinic. Even a leaked document link from another clinic is unreadable.",
+  },
+  {
+    icon: KeyRound,
+    title: "Secure session handling",
+    description:
+      "Sign-in tokens are never stored in a cookie a script could read — sessions are HttpOnly, verified server-side on every request, and separate from the lightweight check that just redirects signed-out visitors away from the dashboard.",
+  },
+  {
+    icon: Lock,
+    title: "Role-based access",
+    description:
+      "Owner, doctor, and reception accounts see different things — billing and staff management stay owner-only, for example — enforced on both the page and the underlying data request.",
+  },
+  {
+    icon: Eye,
+    title: "Sensitive content stays hidden until asked for",
+    description:
+      "Photos marked sensitive stay blurred in the gallery grid until someone deliberately clicks to reveal them, and signed consent forms are frozen at the moment of signing, so editing a template later can never rewrite what a patient actually agreed to.",
+  },
+];
+
+function ProductShot({
+  src,
+  alt,
+  width = 1440,
+  height = 900,
+}: {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl shadow-card ring-1 ring-beige-300">
+      <Image
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className="h-auto w-full"
+        sizes="(min-width: 1024px) 640px, 100vw"
+      />
+    </div>
+  );
+}
 
 export default async function HomePage() {
   const session = await getSession();
@@ -80,6 +123,20 @@ export default async function HomePage() {
         {/* Header */}
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
           <span className="font-display text-xl font-medium text-brown-900">RadianceLaser</span>
+          <nav className="hidden items-center gap-6 text-sm font-medium text-brown-600 md:flex">
+            <a href="#import" className="hover:text-gold-600">
+              Switch from your old system
+            </a>
+            <a href="#features" className="hover:text-gold-600">
+              Features
+            </a>
+            <a href="#security" className="hover:text-gold-600">
+              Data &amp; Security
+            </a>
+            <a href="#pricing" className="hover:text-gold-600">
+              Pricing
+            </a>
+          </nav>
           <nav className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium text-brown-700 hover:text-gold-600">
               Log In
@@ -94,14 +151,14 @@ export default async function HomePage() {
         </header>
 
         {/* Hero */}
-        <section className="mx-auto max-w-3xl px-6 pt-16 pb-20 text-center">
+        <section className="mx-auto max-w-4xl px-6 pt-16 pb-8 text-center">
           <h1 className="font-display text-4xl font-medium leading-tight text-brown-900 sm:text-5xl">
-            Run your laser &amp; aesthetics clinic from one place
+            The one place to run your laser &amp; aesthetics clinic
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-brown-600">
-            Patients, treatment sessions, appointments, packages, consent forms, and receipts —
-            built specifically for laser and aesthetics clinics, not adapted from generic
-            practice-management software.
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-brown-600">
+            Patients, treatment sessions, appointments, prepaid packages, consent forms, receipts,
+            and revenue — built specifically for laser and aesthetics clinics, not a generic
+            practice-management tool with your industry bolted on.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
@@ -122,20 +179,197 @@ export default async function HomePage() {
           </p>
         </section>
 
-        {/* Features */}
-        <section className="mx-auto max-w-6xl px-6 py-16">
+        {/* Hero screenshot — the whole day at a glance */}
+        <section className="mx-auto max-w-5xl px-6 pb-20">
+          <ProductShot src="/screenshots/dashboard-today.png" alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard" />
+          <p className="mt-3 text-center text-sm text-brown-400">
+            Today&apos;s schedule, business snapshot, and revenue — the first thing you see, every
+            morning.
+          </p>
+        </section>
+
+        {/* At-a-glance summary strip — the "more information at a glance"
+            request: a scannable list before anyone has to read prose. */}
+        <section className="mx-auto max-w-4xl px-6 pb-20">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-3 rounded-xl bg-surface p-8 shadow-soft ring-1 ring-beige-300 sm:grid-cols-2">
+            {[
+              "Patients, visits, appointments, packages, consent forms & receipts — one system",
+              "Import your existing patient list and session history from Excel/CSV",
+              "Per-clinic data isolation enforced at the database level, not just in app code",
+              "Role-based access for owners, doctors, and reception staff",
+              "Revenue, staff, and machine-usage analytics, computed live — never stale exports",
+              "Flat annual pricing, unlimited staff accounts, no per-seat fees",
+            ].map((line) => (
+              <div key={line} className="flex items-start gap-2.5 text-sm text-brown-700">
+                <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                <span>{line}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Data import — a named selling point per request, with a real
+            screenshot of the actual Settings section that does this. */}
+        <section id="import" className="mx-auto max-w-6xl px-6 py-16">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+            <div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
+                <FileSpreadsheet size={20} />
+              </div>
+              <h2 className="mt-4 font-display text-2xl font-medium text-brown-900 sm:text-3xl">
+                Switch from your old system in an afternoon
+              </h2>
+              <p className="mt-3 text-brown-600">
+                Already tracking patients in Excel, a notebook, or another piece of software?
+                You don&apos;t start from zero. Bring in your existing patient list and their full
+                session history straight from a CSV or Excel file — map your columns, preview
+                what&apos;s about to be imported, and bring it in all at once.
+              </p>
+              <ul className="mt-5 space-y-3 text-sm text-brown-700">
+                <li className="flex items-start gap-2.5">
+                  <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                  <span>
+                    <strong className="font-medium text-brown-900">Patients</strong> — name,
+                    contact, skin type, and contraindications, matched against existing records so
+                    nobody gets duplicated
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                  <span>
+                    <strong className="font-medium text-brown-900">Session history</strong> — past
+                    visit dates, treated areas, and fees, one file per treatment type
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                  <span>You choose Skip or Replace for anything that looks like a duplicate</span>
+                </li>
+              </ul>
+            </div>
+            <ProductShot src="/screenshots/settings-import.png" alt="Import Patients and Import Session History sections in RadianceLaser Settings" />
+          </div>
+        </section>
+
+        {/* Feature deep-dives, each with a real screenshot, alternating sides */}
+        <section id="features" className="mx-auto max-w-6xl px-6 py-16">
           <div className="mx-auto mb-12 max-w-xl text-center">
             <h2 className="font-display text-2xl font-medium text-brown-900 sm:text-3xl">
               Everything day-to-day clinic work needs
             </h2>
             <div className="mx-auto mt-3 h-[2px] w-10 bg-gold-500" />
           </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ icon: Icon, title, description }) => (
-              <div
-                key={title}
-                className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300"
-              >
+
+          <div className="space-y-20">
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+              <div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
+                  <Users size={20} />
+                </div>
+                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                  A full record for every patient
+                </h3>
+                <p className="mt-2 text-brown-600">
+                  Skin type, contraindications, and every logged visit in one page — Q-Switch,
+                  laser hair removal, or any custom machine type your clinic runs, each session
+                  keeping its own tracked fields (area, energy, passes, fee, and more).
+                </p>
+              </div>
+              <ProductShot src="/screenshots/patient-detail.png" alt="A patient's full record and visit history in RadianceLaser" />
+            </div>
+
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+              <div className="order-2 lg:order-1">
+                <ProductShot src="/screenshots/appointments-mini-panel.png" alt="Weekly appointment calendar with a patient's package and visit history open alongside it" />
+              </div>
+              <div className="order-1 lg:order-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
+                  <Calendar size={20} />
+                </div>
+                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                  Scheduling that already knows the patient
+                </h3>
+                <p className="mt-2 text-brown-600">
+                  Day, week, and month calendar views. Click any booking and see that patient&apos;s
+                  active packages and recent visits right alongside it — no second screen, no
+                  second app, no searching for their file.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+              <div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
+                  <FileSignature size={20} />
+                </div>
+                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                  Consent forms and receipts, done right
+                </h3>
+                <p className="mt-2 text-brown-600">
+                  Clinic-branded consent templates, signed on-screen and frozen the moment
+                  they&apos;re signed. Itemized receipts with sequential, gap-free numbering
+                  allocated atomically, so two staff issuing receipts at the same moment can never
+                  collide on the same number.
+                </p>
+              </div>
+              <ProductShot src="/screenshots/documents-receipts.png" alt="Patient receipts list in RadianceLaser Documents" />
+            </div>
+
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
+              <div className="order-2 lg:order-1">
+                <ProductShot src="/screenshots/analytics.png" alt="Revenue trend, treatment-type split, and most-treated areas on the RadianceLaser Analytics page" />
+              </div>
+              <div className="order-1 lg:order-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
+                  <BarChart3 size={20} />
+                </div>
+                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                  Know how the clinic is actually doing
+                </h3>
+                <p className="mt-2 text-brown-600">
+                  Revenue by day, month, and year; a split between direct sessions and package
+                  redemptions; which treatments, staff, and machines are actually earning — all
+                  computed live from the same visits and receipts your team logs day to day, never
+                  a separate report to remember to run.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Smaller, still-real features that don't need a full row each */}
+          <div className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {SECONDARY_FEATURES.map(({ icon: Icon, title, description }) => (
+              <div key={title} className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
+                  <Icon size={20} />
+                </div>
+                <h4 className="mt-4 font-display text-lg font-medium text-brown-900">{title}</h4>
+                <p className="mt-2 text-sm text-brown-600">{description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Data privacy & security — real architecture, described honestly.
+            Deliberately doesn't claim any compliance certification (HIPAA,
+            SOC 2, etc.) that hasn't actually been obtained — these are the
+            real properties of the system, which is the honest pitch. */}
+        <section id="security" className="mx-auto max-w-6xl px-6 py-16">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
+              <ShieldCheck size={20} />
+            </div>
+            <h2 className="mt-4 font-display text-2xl font-medium text-brown-900 sm:text-3xl">
+              Built with patient data privacy in mind
+            </h2>
+            <p className="mt-3 text-brown-600">
+              Patient records are sensitive by nature. Here&apos;s specifically how they&apos;re
+              protected — not a badge or a claim, the actual architecture.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {SECURITY_POINTS.map(({ icon: Icon, title, description }) => (
+              <div key={title} className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
                   <Icon size={20} />
                 </div>
@@ -146,28 +380,8 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Photos callout — kept separate from the grid since it's a smaller
-            detail than the six main features above, not because it matters
-            less operationally. */}
-        <section className="mx-auto max-w-3xl px-6 pb-16">
-          <div className="flex items-start gap-4 rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-              <ImageIcon size={20} />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-medium text-brown-900">
-                Before/After Photo Galleries
-              </h3>
-              <p className="mt-2 text-sm text-brown-600">
-                Track progress per patient, with a sensitive-content blur toggle for anyone
-                glancing at a screen who shouldn&apos;t see it.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Pricing */}
-        <section className="mx-auto max-w-3xl px-6 pb-20">
+        <section id="pricing" className="mx-auto max-w-3xl px-6 py-20">
           <div className="rounded-2xl bg-brown-900 p-10 text-center text-beige-200 shadow-card">
             <div className="flex items-center justify-center gap-2 text-sm uppercase tracking-wide text-gold-500">
               <Receipt size={16} />

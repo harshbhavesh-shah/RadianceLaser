@@ -4,6 +4,16 @@ function formatCurrency(n: number): string {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
 }
 
+// Matches the h-40 container below. Bar heights are set in px scaled
+// against this, not a CSS percentage — a percentage height only resolves
+// against a parent with a *definite* height, and the immediate parent here
+// (the flex-1 wrapper) has none: the outer flex row uses items-end, which
+// sizes each item to its content instead of stretching it, so a
+// percentage-height child inside it always computes to 0 (confirmed via
+// getComputedStyle while debugging — the bars silently never rendered).
+// components/RevenueChart.tsx's daily bars use the same px-based workaround.
+const CHART_HEIGHT_PX = 160;
+
 export default function YearlyRevenueChart({ data }: { data: MonthPoint[] }) {
   const max = Math.max(...data.map((d) => d.total), 1);
 
@@ -19,7 +29,7 @@ export default function YearlyRevenueChart({ data }: { data: MonthPoint[] }) {
             <div
               className="animate-grow-y w-full rounded-t-sm bg-gold-500 transition-colors group-hover:bg-gold-600"
               style={{
-                height: `${Math.max((point.total / max) * 100, point.total > 0 ? 4 : 1)}%`,
+                height: `${Math.max((point.total / max) * CHART_HEIGHT_PX, point.total > 0 ? 4 : 1)}px`,
                 animationDelay: `${i * 40}ms`,
               }}
             />
