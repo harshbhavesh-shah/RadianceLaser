@@ -16,7 +16,9 @@ export default function DocumentsTabs({
   packages,
   templates,
   initialForms,
+  initialFormsCursor,
   initialReceipts,
+  initialReceiptsCursor,
   currentUid,
   currentName,
   canManageTemplates,
@@ -32,7 +34,9 @@ export default function DocumentsTabs({
   packages: Package[];
   templates: ConsentFormTemplate[];
   initialForms: ConsentForm[];
+  initialFormsCursor: string | null;
   initialReceipts: Receipt[];
+  initialReceiptsCursor: string | null;
   currentUid: string;
   currentName: string;
   canManageTemplates: boolean;
@@ -74,6 +78,7 @@ export default function DocumentsTabs({
           visits={visits}
           templates={templates}
           initialForms={initialForms}
+          initialCursor={initialFormsCursor}
           currentUid={currentUid}
           currentName={currentName}
           canManageTemplates={canManageTemplates}
@@ -89,6 +94,7 @@ export default function DocumentsTabs({
           visits={visits}
           packages={packages}
           initialReceipts={initialReceipts}
+          initialCursor={initialReceiptsCursor}
           currentUid={currentUid}
           currentName={currentName}
           autoOpenPatientId={autoOpenReceiptPatientId}

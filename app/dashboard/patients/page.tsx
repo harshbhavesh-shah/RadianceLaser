@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { getPatients } from "@/lib/firestore/patients";
+import { getPatientsPage } from "@/lib/firestore/patients";
 import { redirect } from "next/navigation";
 import PatientsTable from "@/components/patients/PatientsTable";
 
@@ -8,7 +8,7 @@ export default async function PatientsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const patients = await getPatients(session.clinicId);
+  const { patients, nextCursor } = await getPatientsPage(session.clinicId);
 
   return (
     <div>
@@ -25,7 +25,7 @@ export default async function PatientsPage() {
         </Link>
       </div>
 
-      <PatientsTable patients={patients} />
+      <PatientsTable initialPatients={patients} initialCursor={nextCursor} />
     </div>
   );
 }

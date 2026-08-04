@@ -6,6 +6,7 @@ import ConsentTemplatesSection from "@/components/settings/ConsentTemplatesSecti
 import ConsentFormSignModal from "@/components/ConsentFormSignModal";
 import ConsentFormViewModal from "@/components/ConsentFormViewModal";
 import PatientPicker from "./PatientPicker";
+import { loadMoreConsentFormsAction } from "@/app/dashboard/documents/actions";
 import type { ConsentForm, ConsentFormTemplate, Patient, Visit } from "@/types";
 
 function formatDate(ms: number): string {
@@ -19,6 +20,7 @@ export default function ConsentFormsPanel({
   visits,
   templates,
   initialForms,
+  initialCursor,
   currentUid,
   currentName,
   canManageTemplates,
@@ -29,11 +31,18 @@ export default function ConsentFormsPanel({
   visits: Visit[];
   templates: ConsentFormTemplate[];
   initialForms: ConsentForm[];
+  // Cursor for the next page of clinic-wide consent forms (see
+  // lib/firestore/consentForms.ts getClinicConsentFormsPage) — null once the
+  // whole signing history has been loaded, or if there was never more than
+  // one page.
+  initialCursor: string | null;
   currentUid: string;
   currentName: string;
   canManageTemplates: boolean;
 }) {
   const [forms, setForms] = useState<ConsentForm[]>(initialForms);
+  const [cursor, setCursor] = useState(initialCursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [signingPatient, setSigningPatient] = useState<Patient | null>(null);
   const [viewingForm, setViewingForm] = useState<ConsentForm | null>(null);
@@ -41,6 +50,10 @@ export default function ConsentFormsPanel({
 
   const patientById = useMemo(() => new Map(patients.map((p) => [p.id, p])), [patients]);
 
+  // Only searches forms already loaded on screen, not the clinic's whole
+  // signing history — same caveat as ReceiptsPanel (see
+  // getClinicConsentFormsPage's doc comment for why a clinic-wide search
+  // isn't wired up here).
   const filteredForms = useMemo(() => {
     const q = search.trim().toLowerCase();
     const sorted = [...forms].sort((a, b) => b.signedAt - a.signedAt);
@@ -59,6 +72,18 @@ export default function ConsentFormsPanel({
   function handleDeleted(id: string) {
     setForms((prev) => prev.filter((f) => f.id !== id));
     setViewingForm(null);
+  }
+
+  async function handleLoadMore() {
+    if (!cursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const page = await loadMoreConsentFormsAction(cursor);
+      setForms((prev) => [...prev, ...page.forms]);
+      setCursor(page.nextCursor);
+    } finally {
+      setIsLoadingMore(false);
+    }
   }
 
   return (
@@ -119,6 +144,18 @@ export default function ConsentFormsPanel({
                 <span className="text-xs text-brown-400">{formatDate(form.signedAt)}</span>
               </button>
             ))}
+          </div>
+        )}
+
+        {!search.trim() && cursor && (
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className="rounded-md border border-beige-300 bg-canvas px-4 py-2 text-sm font-medium text-brown-700 transition-colors hover:bg-beige-100 disabled:opacity-50"
+            >
+              {isLoadingMore ? "Loading…" : "Load more"}
+            </button>
           </div>
         )}
       </div>

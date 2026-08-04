@@ -5,8 +5,8 @@ import { getPatients } from "@/lib/firestore/patients";
 import { getClinicVisits } from "@/lib/firestore/visits";
 import { getClinicPackages } from "@/lib/firestore/packages";
 import { getClinicStaff } from "@/lib/firestore/staff";
-import { getClinicConsentTemplates, getClinicConsentForms } from "@/lib/firestore/consentForms";
-import { getClinicReceipts } from "@/lib/firestore/receipts";
+import { getClinicConsentTemplates, getClinicConsentFormsPage } from "@/lib/firestore/consentForms";
+import { getClinicReceiptsPage } from "@/lib/firestore/receipts";
 import DocumentsTabs from "@/components/documents/DocumentsTabs";
 
 export default async function DocumentsPage({
@@ -20,15 +20,15 @@ export default async function DocumentsPage({
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [clinic, patients, visits, packages, staff, templates, forms, receipts] = await Promise.all([
+  const [clinic, patients, visits, packages, staff, templates, formsPage, receiptsPage] = await Promise.all([
     getClinic(session.clinicId),
     getPatients(session.clinicId),
     getClinicVisits(session.clinicId),
     getClinicPackages(session.clinicId),
     getClinicStaff(session.clinicId),
     getClinicConsentTemplates(session.clinicId),
-    getClinicConsentForms(session.clinicId),
-    getClinicReceipts(session.clinicId),
+    getClinicConsentFormsPage(session.clinicId),
+    getClinicReceiptsPage(session.clinicId),
   ]);
 
   const currentStaff = staff.find((s) => s.uid === session.uid);
@@ -48,8 +48,10 @@ export default async function DocumentsPage({
         visits={visits}
         packages={packages}
         templates={templates}
-        initialForms={forms}
-        initialReceipts={receipts}
+        initialForms={formsPage.forms}
+        initialFormsCursor={formsPage.nextCursor}
+        initialReceipts={receiptsPage.receipts}
+        initialReceiptsCursor={receiptsPage.nextCursor}
         currentUid={session.uid}
         currentName={currentName}
         canManageTemplates={session.role === "owner"}

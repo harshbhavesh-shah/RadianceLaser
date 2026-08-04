@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { clinicCacheTag } from "@/lib/firestore/clinics";
 import type { StaffMember, StatsWindow, UserRole } from "@/types";
 
 async function requireOwner() {
@@ -119,6 +120,7 @@ export async function updateClinicName(name: string): Promise<{ error?: string }
     if (!name.trim()) return { error: "Clinic name can't be empty." };
 
     await adminDb().collection("clinics").doc(session.clinicId).update({ name: name.trim() });
+    revalidateTag(clinicCacheTag(session.clinicId));
     revalidatePath("/dashboard");
     return {};
   } catch (err) {
@@ -134,6 +136,7 @@ export async function updateClinicAddress(address: string): Promise<{ error?: st
       .collection("clinics")
       .doc(session.clinicId)
       .update({ address: address.trim() });
+    revalidateTag(clinicCacheTag(session.clinicId));
     revalidatePath("/dashboard");
     return {};
   } catch (err) {
@@ -146,6 +149,7 @@ export async function updateStatsWindow(window: StatsWindow): Promise<{ error?: 
   try {
     const session = await requireOwner();
     await adminDb().collection("clinics").doc(session.clinicId).update({ statsWindow: window });
+    revalidateTag(clinicCacheTag(session.clinicId));
     revalidatePath("/dashboard");
     return {};
   } catch (err) {

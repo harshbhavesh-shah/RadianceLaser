@@ -5,6 +5,7 @@ import { Receipt as ReceiptIcon, Search } from "lucide-react";
 import PatientPicker from "./PatientPicker";
 import ReceiptFormModal from "./ReceiptFormModal";
 import ReceiptViewModal from "./ReceiptViewModal";
+import { loadMoreReceiptsAction } from "@/app/dashboard/documents/actions";
 import type { Package, Patient, Receipt, Visit } from "@/types";
 
 function formatCurrency(n: number): string {
@@ -28,6 +29,7 @@ export default function ReceiptsPanel({
   visits,
   packages,
   initialReceipts,
+  initialCursor,
   currentUid,
   currentName,
   autoOpenPatientId,
@@ -40,6 +42,10 @@ export default function ReceiptsPanel({
   visits: Visit[];
   packages: Package[];
   initialReceipts: Receipt[];
+  // Cursor for the next page of clinic-wide receipts (see
+  // lib/firestore/receipts.ts getClinicReceiptsPage) — null once the whole
+  // history has been loaded, or if there was never more than one page.
+  initialCursor: string | null;
   currentUid: string;
   currentName: string;
   // Set by the "Generate Receipt" deep link from an appointment (see
@@ -49,6 +55,8 @@ export default function ReceiptsPanel({
   autoAddVisitId?: string;
 }) {
   const [receipts, setReceipts] = useState<Receipt[]>(initialReceipts);
+  const [cursor, setCursor] = useState(initialCursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [billingPatient, setBillingPatient] = useState<Patient | null>(
     () => patients.find((p) => p.id === autoOpenPatientId) || null
@@ -56,6 +64,12 @@ export default function ReceiptsPanel({
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
   const [search, setSearch] = useState("");
 
+  // Only searches receipts already loaded on screen, not the clinic's whole
+  // history — a clinic-wide search would need a server-side query, same as
+  // the Patients list, which hasn't been built for receipts (see
+  // getClinicReceiptsPage's doc comment). Fine for finding something from
+  // the last page or two; won't find an older receipt that hasn't been
+  // paged in yet.
   const filteredReceipts = useMemo(() => {
     const q = search.trim().toLowerCase();
     const sorted = [...receipts].sort((a, b) => b.createdAt - a.createdAt);
@@ -74,6 +88,18 @@ export default function ReceiptsPanel({
   function handleDeleted(id: string) {
     setReceipts((prev) => prev.filter((r) => r.id !== id));
     setViewingReceipt(null);
+  }
+
+  async function handleLoadMore() {
+    if (!cursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const page = await loadMoreReceiptsAction(cursor);
+      setReceipts((prev) => [...prev, ...page.receipts]);
+      setCursor(page.nextCursor);
+    } finally {
+      setIsLoadingMore(false);
+    }
   }
 
   return (
@@ -131,6 +157,18 @@ export default function ReceiptsPanel({
               <span className="font-display text-sm font-medium text-brown-900">{formatCurrency(r.amount)}</span>
             </button>
           ))}
+        </div>
+      )}
+
+      {!search.trim() && cursor && (
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            className="rounded-md border border-beige-300 bg-canvas px-4 py-2 text-sm font-medium text-brown-700 transition-colors hover:bg-beige-100 disabled:opacity-50"
+          >
+            {isLoadingMore ? "Loading…" : "Load more"}
+          </button>
         </div>
       )}
 

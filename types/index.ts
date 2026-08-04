@@ -52,6 +52,16 @@ export interface Patient extends TenantScoped {
   gender?: string;
   address?: string;
   patientCode: string; // human-friendly ID shown in the UI, e.g. "PT-4K7QX2"
+  // Digits-only form of `phone` (see lib/phone.ts normalizePhone), kept in
+  // sync on every create/update so findPatientByPhone can query this field
+  // directly instead of scanning every patient in the clinic. Never shown in
+  // the UI — `phone` is still the display value.
+  phoneNormalized: string;
+  // Lowercased form of `name`, kept in sync on every create/update so
+  // searchPatients can do a case-insensitive prefix query (Firestore has no
+  // case-insensitive comparison) without loading the whole clinic roster.
+  // Never shown in the UI.
+  nameLower: string;
   skinType?: SkinType;
   contraindications?: string; // free text: pregnancy, isotretinoin, photosensitizing meds, etc.
   createdAt: number;
