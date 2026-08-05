@@ -16,6 +16,11 @@
  *   # no clinic), pass --password to create it first:
  *   node scripts/grantSuperAdmin.mjs --email admin@example.com --password "some-temp-password"
  *
+ *   # --password also works against an EXISTING account (e.g. one that so
+ *   # far only has Google Sign-In linked, no password) — it sets/resets
+ *   # that account's password rather than being ignored.
+ *   node scripts/grantSuperAdmin.mjs --email admin@example.com --password "new-password"
+ *
  * Requires .env.local to be filled in with FIREBASE_ADMIN_* values.
  */
 
@@ -64,10 +69,12 @@ async function main() {
   const auth = getAuth();
 
   let userRecord;
+  let accountExisted = true;
   try {
     userRecord = await auth.getUserByEmail(email);
   } catch (err) {
     if (err.code !== "auth/user-not-found") throw err;
+    accountExisted = false;
 
     if (!password) {
       console.error(
@@ -83,6 +90,17 @@ async function main() {
 
     userRecord = await auth.createUser({ email, password });
     console.log(`✓ Created account ${email} (uid: ${userRecord.uid})`);
+  }
+
+  // An account that already exists (e.g. created earlier via Google
+  // Sign-In, which links no password credential at all) previously made
+  // --password silently do nothing here — this was a real bug, not user
+  // error: the flag only ever took effect in the create-new-account branch
+  // above. Applying it here too means --password reliably sets/resets the
+  // password whether the account is brand new or not.
+  if (accountExisted && password) {
+    await auth.updateUser(userRecord.uid, { password });
+    console.log(`✓ Set password for existing account ${email}`);
   }
 
   const existingClaims = userRecord.customClaims || {};

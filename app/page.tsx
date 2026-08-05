@@ -27,19 +27,19 @@ const SECONDARY_FEATURES: { icon: typeof Users; title: string; description: stri
     icon: Package,
     title: "Prepaid Packages",
     description:
-      "Sell session bundles with a usage ledger computed live from actual visits — never a stored number that can drift out of sync with what actually happened.",
+      "Sell session bundles with a usage count computed live from actual visits, instead of a stored number that can quietly drift out of sync.",
   },
   {
     icon: ImageIcon,
     title: "Before/After Photo Galleries",
     description:
-      "Track progress per patient, with a sensitive-content blur toggle for anyone glancing at a screen who shouldn't see it.",
+      "Track progress per patient, with a blur toggle for sensitive photos so a glance at the screen doesn't show more than it should.",
   },
   {
     icon: Users,
     title: "Duplicate-Safe Patient Records",
     description:
-      "Skin type, contraindications, and full visit history in one place — with duplicate-phone detection so the same patient never quietly gets a second record.",
+      "Skin type, contraindications, and full visit history in one place, with duplicate-phone detection so the same patient doesn't end up with two records.",
   },
 ];
 
@@ -48,19 +48,19 @@ const SECURITY_POINTS: { icon: typeof ShieldCheck; title: string; description: s
     icon: ShieldCheck,
     title: "Isolation enforced at the database, not just the app",
     description:
-      "Every clinic's data carries a clinic ID, and Firestore's own security rules — not application code you have to trust — reject any read or write where that ID doesn't match the signed-in staff member's own clinic. Even a leaked document link from another clinic is unreadable.",
+      "Every clinic's data carries a clinic ID, and Firestore's own security rules reject any read or write where that ID doesn't match the signed-in staff member's own clinic. That check happens at the database, not in application code you'd have to trust — even a leaked document link from another clinic can't be opened.",
   },
   {
     icon: KeyRound,
     title: "Secure session handling",
     description:
-      "Sign-in tokens are never stored in a cookie a script could read — sessions are HttpOnly, verified server-side on every request, and separate from the lightweight check that just redirects signed-out visitors away from the dashboard.",
+      "Sign-in tokens live in HttpOnly cookies, invisible to any script running on the page, and get verified server-side on every request. That's separate from the lightweight check that just redirects signed-out visitors away from the dashboard.",
   },
   {
     icon: Lock,
     title: "Role-based access",
     description:
-      "Owner, doctor, and reception accounts see different things — billing and staff management stay owner-only, for example — enforced on both the page and the underlying data request.",
+      "Owner, doctor, and reception accounts see different things. Billing and staff management, for example, stay owner-only — enforced both on the page and on the underlying data request.",
   },
   {
     icon: Eye,
@@ -137,9 +137,9 @@ export default async function HomePage() {
               The one place to run your laser &amp; aesthetics clinic
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-brown-600">
-              Patients, treatment sessions, appointments, prepaid packages, consent forms, receipts,
-              and revenue — built specifically for laser and aesthetics clinics, not a generic
-              practice-management tool with your industry bolted on.
+              Patients, treatment sessions, appointments, packages, consent forms, receipts, and
+              revenue, all in one system built around how a laser and aesthetics clinic actually
+              runs its day.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
@@ -166,8 +166,8 @@ export default async function HomePage() {
           <Reveal delayMs={150}>
             <ProductShot src="/screenshots/dashboard-today.png" alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard" />
             <p className="mt-3 text-center text-sm text-brown-400">
-              Today&apos;s schedule, business snapshot, and revenue — the first thing you see, every
-              morning.
+              Today&apos;s schedule, business snapshot, and revenue, right when you open the dashboard
+              each morning.
             </p>
           </Reveal>
         </section>
@@ -182,7 +182,7 @@ export default async function HomePage() {
                 "Import your existing patient list and session history from Excel/CSV",
                 "Per-clinic data isolation enforced at the database level, not just in app code",
                 "Role-based access for owners, doctors, and reception staff",
-                "Revenue, staff, and machine-usage analytics, computed live — never stale exports",
+                "Revenue, staff, and machine-usage analytics that update live as visits get logged",
                 "Flat annual pricing, unlimited staff accounts, no per-seat fees",
               ].map((line) => (
                 <div key={line} className="flex items-start gap-2.5 text-sm text-brown-700">
@@ -208,8 +208,8 @@ export default async function HomePage() {
                 Built with patient data privacy in mind
               </h2>
               <p className="mt-3 text-brown-600">
-                Patient records are sensitive by nature. Here&apos;s specifically how they&apos;re
-                protected — not a badge or a claim, the actual architecture.
+                Patient records deserve real protection, not just a compliance badge. Here&apos;s the
+                actual architecture behind it.
               </p>
             </div>
           </Reveal>
@@ -250,9 +250,9 @@ export default async function HomePage() {
                   Scheduling that already knows the patient
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  Day, week, and month calendar views. Click any booking and see that patient&apos;s
-                  active packages and recent visits right alongside it — no second screen, no
-                  second app, no searching for their file.
+                  Day, week, and month views. Click a booking and you can see that patient&apos;s
+                  active packages and recent visits right there, without digging up their file
+                  somewhere else.
                 </p>
               </Reveal>
               <Reveal delayMs={120}>
@@ -272,10 +272,10 @@ export default async function HomePage() {
                   Know how the clinic is actually doing
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  Revenue by day, month, and year; a split between direct sessions and package
-                  redemptions; which treatments, staff, and machines are actually earning — all
-                  computed live from the same visits and receipts your team logs day to day, never
-                  a separate report to remember to run.
+                  See revenue by day, month, and year, how much comes from direct sessions versus
+                  package redemptions, and which treatments, staff, and machines are actually
+                  earning. It&apos;s computed live from the same visits and receipts your team
+                  already logs, so there&apos;s no separate report to remember to run.
                 </p>
               </Reveal>
             </div>
@@ -289,10 +289,9 @@ export default async function HomePage() {
                   Consent forms and receipts, done right
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  Clinic-branded consent templates, signed on-screen and frozen the moment
-                  they&apos;re signed. Itemized receipts with sequential, gap-free numbering
-                  allocated atomically, so two staff issuing receipts at the same moment can never
-                  collide on the same number.
+                  Clinic-branded consent templates, signed right on screen and locked the moment
+                  they&apos;re signed. Receipts get sequential, gap-free numbers automatically, even
+                  if two staff members happen to be issuing one at the exact same time.
                 </p>
               </Reveal>
               <Reveal delayMs={120}>
@@ -312,9 +311,9 @@ export default async function HomePage() {
                   A full record for every patient
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  Skin type, contraindications, and every logged visit in one page — Q-Switch,
-                  laser hair removal, or any custom machine type your clinic runs, each session
-                  keeping its own tracked fields (area, energy, passes, fee, and more).
+                  Skin type, contraindications, and every visit on one page. Whether it&apos;s
+                  Q-Switch, laser hair removal, or a custom machine type you&apos;ve added, each
+                  session keeps its own fields — area, energy, passes, fee, and more.
                 </p>
               </Reveal>
             </div>
@@ -336,10 +335,10 @@ export default async function HomePage() {
                 Switch from your old system in an afternoon
               </h2>
               <p className="mt-3 text-brown-600">
-                Already tracking patients in Excel, a notebook, or another piece of software?
-                You don&apos;t start from zero. Bring in your existing patient list and their full
-                session history straight from a CSV or Excel file — map your columns, preview
-                what&apos;s about to be imported, and bring it in all at once.
+                Already tracking patients in Excel, a notebook, or another system? You don&apos;t
+                have to start over. Import your existing patient list and full session history
+                straight from a CSV or Excel file — map your columns, preview what&apos;s coming
+                in, and load it all at once.
               </p>
               <ul className="mt-5 space-y-3 text-sm text-brown-700">
                 <li className="flex items-start gap-2.5">

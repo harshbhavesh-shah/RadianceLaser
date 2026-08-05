@@ -228,6 +228,38 @@ service cloud.firestore {
       allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
     }
 
+    // WhatsApp messaging — see types/index.ts and lib/whatsapp/. The
+    // connection doc holds BYO-mode API credentials (WhatsAppConnection.
+    // byoApiKey), so it's entirely server-only, same reasoning as
+    // twoFactorChallenges above: a client has no legitimate reason to ever
+    // read this, let alone write it.
+    match /whatsappConnections/{clinicId} {
+      allow read, write: if false;
+    }
+
+    // Templates are readable client-side (the Settings editor shows
+    // approval status), but every write — create, submit-for-approval,
+    // webhook-driven approval/rejection updates — goes through server
+    // actions using the Admin SDK, never a direct client write, since
+    // creating one also calls out to Gupshup's template API.
+    match /messageTemplates/{templateId} {
+      allow read: if belongsToClinic(resource.data);
+      allow write: if false;
+    }
+
+    // Conversations and messages are both read-only client-side (the inbox
+    // UI) — writes only ever come from a server action (sending) or the
+    // inbound webhook (see app/api/webhooks/gupshup), both Admin SDK.
+    match /whatsappConversations/{conversationId} {
+      allow read: if belongsToClinic(resource.data);
+      allow write: if false;
+    }
+
+    match /whatsappMessages/{messageId} {
+      allow read: if belongsToClinic(resource.data);
+      allow write: if false;
+    }
+
     // Deny everything else by default.
     match /{document=**} {
       allow read, write: if false;

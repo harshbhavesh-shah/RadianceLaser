@@ -410,3 +410,108 @@ export interface Receipt extends TenantScoped {
   issuedByName: string;
   createdAt: number;
 }
+
+// ---------------------------------------------------------------------------
+// WhatsApp messaging (see lib/whatsapp/, app/dashboard/settings/messaging/,
+// app/api/webhooks/gupshup/). Built against Gupshup as the BSP (Business
+// Solution Provider) fronting the actual WhatsApp Business Platform — see
+// lib/whatsapp/gupshupClient.ts for why Gupshup and what's actually wired
+// up vs. stubbed pending real account credentials.
+
+// "managed" = the clinic connects their own WhatsApp number through an
+// embedded-signup popup under our Gupshup partner account (we never see
+// their number's underlying credentials, just a Gupshup-issued app id).
+// "byo" = the clinic already has their own Gupshup account and pastes in
+// their own API key/app id directly. Both end up sending as the CLINIC's
+// own WhatsApp Business identity either way — "managed" vs "byo" is about
+// who did the Meta/Gupshup account setup, not who the messages appear to
+// come from.
+export type WhatsAppConnectionMode = "managed" | "byo";
+export type WhatsAppConnectionStatus = "not_connected" | "connecting" | "connected" | "error";
+
+// Firestore path: whatsappConnections/{clinicId} — one per clinic, doc id
+// deliberately equals clinicId rather than being a random id, since a
+// clinic can only ever have exactly one connection.
+export interface WhatsAppConnection extends TenantScoped {
+  id: string;
+  mode: WhatsAppConnectionMode;
+  status: WhatsAppConnectionStatus;
+  displayPhoneNumber?: string; // e.g. "+91 98765 43210", set once connected
+  gupshupAppId?: string;
+  // BYO mode only. Deliberately never included in anything returned to a
+  // "use client" component — server actions expose only a redacted
+  // isConnected/mode/displayPhoneNumber view, never this field itself. A
+  // production deployment handling real customer credentials at scale
+  // should encrypt this at rest (e.g. via a KMS) rather than storing it as
+  // a plain field; left as plain text for now since it's already behind
+  // both Firestore's per-clinic isolation rules and the server-only read
+  // path, and no real BYO credentials exist yet to protect.
+  byoApiKey?: string;
+  lastError?: string;
+  connectedAt?: number;
+  updatedAt: number;
+}
+
+export type MessageTemplateCategory = "appointment_reminder" | "appointment_confirmation" | "receipt_sent" | "custom";
+export type TemplateApprovalStatus = "draft" | "pending" | "approved" | "rejected";
+
+// Meta only allows a handful of button shapes per template, max 3 buttons
+// total — see lib/whatsapp/gupshupClient.ts submitTemplate() for the exact
+// validation mirrored from Meta's rules.
+export type TemplateButtonType = "quick_reply" | "call" | "url";
+
+export interface TemplateButton {
+  type: TemplateButtonType;
+  label: string; // <=20 chars, enforced in the editor UI
+  value?: string; // phone number for "call", URL for "url" — unused for "quick_reply"
+}
+
+// Firestore path: messageTemplates/{id}
+export interface MessageTemplate extends TenantScoped {
+  id: string;
+  name: string; // internal label; also submitted to Meta as the template's snake_case name
+  category: MessageTemplateCategory;
+  language: string; // BCP-47-ish, e.g. "en"
+  // May contain {{1}}, {{2}}, ... placeholders per Meta's template variable
+  // syntax — variableLabels gives each one a human label for the editor
+  // (e.g. body "Hi {{1}}, your appointment is at {{2}}" pairs with
+  // variableLabels ["Patient name", "Appointment time"]).
+  body: string;
+  variableLabels: string[];
+  buttons: TemplateButton[];
+  approvalStatus: TemplateApprovalStatus;
+  gupshupTemplateId?: string;
+  rejectionReason?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type MessageDirection = "inbound" | "outbound";
+export type MessageDeliveryStatus = "queued" | "sent" | "delivered" | "read" | "failed";
+
+// One thread per distinct phone number per clinic — a patient's WhatsApp
+// conversation, whether or not that number currently matches a patient
+// record (patientId/patientName are best-effort links, not required).
+// Firestore path: whatsappConversations/{id}
+export interface WhatsAppConversation extends TenantScoped {
+  id: string;
+  patientId?: string;
+  patientName?: string; // denormalized snapshot, same reasoning as Appointment.patientName
+  phoneNumber: string; // E.164, e.g. "+919876543210"
+  lastMessagePreview: string;
+  lastMessageAt: number;
+  unreadCount: number;
+  updatedAt: number;
+}
+
+// Firestore path: whatsappMessages/{id}
+export interface WhatsAppMessage extends TenantScoped {
+  id: string;
+  conversationId: string;
+  direction: MessageDirection;
+  body: string;
+  status: MessageDeliveryStatus;
+  templateId?: string; // set for outbound template-based sends
+  gupshupMessageId?: string;
+  createdAt: number;
+}
