@@ -1,69 +1,47 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  Users,
-  Sparkles,
-  Calendar,
-  Package,
-  FileSignature,
-  BarChart3,
-  Receipt,
-  Image as ImageIcon,
-  FileSpreadsheet,
-  ShieldCheck,
-  Lock,
-  Eye,
-  KeyRound,
-  Check,
-} from "lucide-react";
+import { Receipt, Check } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { ANNUAL_PRICE_INR, TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import Reveal from "@/components/marketing/Reveal";
 import SiteHeader from "@/components/marketing/SiteHeader";
 
-const SECONDARY_FEATURES: { icon: typeof Users; title: string; description: string }[] = [
+const SECONDARY_FEATURES: { title: string; description: string }[] = [
   {
-    icon: Package,
     title: "Prepaid Packages",
     description:
       "Sell session bundles with a usage count computed live from actual visits, instead of a stored number that can quietly drift out of sync.",
   },
   {
-    icon: ImageIcon,
     title: "Before/After Photo Galleries",
     description:
       "Track progress per patient, with a blur toggle for sensitive photos so a glance at the screen doesn't show more than it should.",
   },
   {
-    icon: Users,
     title: "Duplicate-Safe Patient Records",
     description:
       "Skin type, contraindications, and full visit history in one place, with duplicate-phone detection so the same patient doesn't end up with two records.",
   },
 ];
 
-const SECURITY_POINTS: { icon: typeof ShieldCheck; title: string; description: string }[] = [
+const SECURITY_POINTS: { title: string; description: string }[] = [
   {
-    icon: ShieldCheck,
     title: "Isolation enforced at the database, not just the app",
     description:
       "Every clinic's data carries a clinic ID, and Firestore's own security rules reject any read or write where that ID doesn't match the signed-in staff member's own clinic. That check happens at the database, not in application code you'd have to trust — even a leaked document link from another clinic can't be opened.",
   },
   {
-    icon: KeyRound,
     title: "Secure session handling",
     description:
       "Sign-in tokens live in HttpOnly cookies, invisible to any script running on the page, and get verified server-side on every request. That's separate from the lightweight check that just redirects signed-out visitors away from the dashboard.",
   },
   {
-    icon: Lock,
     title: "Role-based access",
     description:
       "Owner, doctor, and reception accounts see different things. Billing and staff management, for example, stay owner-only — enforced both on the page and on the underlying data request.",
   },
   {
-    icon: Eye,
     title: "Sensitive content stays hidden until asked for",
     description:
       "Photos marked sensitive stay blurred in the gallery grid until someone deliberately clicks to reveal them, and signed consent forms are frozen at the moment of signing, so editing a template later can never rewrite what a patient actually agreed to.",
@@ -75,14 +53,16 @@ function ProductShot({
   alt,
   width = 1440,
   height = 900,
+  className = "",
 }: {
   src: string;
   alt: string;
   width?: number;
   height?: number;
+  className?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl shadow-card ring-1 ring-beige-300 transition-transform duration-300 hover:-translate-y-1">
+    <div className={`overflow-hidden rounded-xl shadow-card ring-1 ring-beige-300 ${className}`}>
       <Image
         src={src}
         alt={alt}
@@ -91,6 +71,23 @@ function ProductShot({
         className="h-auto w-full"
         sizes="(min-width: 1024px) 640px, 100vw"
       />
+    </div>
+  );
+}
+
+/** Replaces the icon-in-a-rounded-square badge used everywhere in the
+ * previous version of this page — that specific motif (colored square,
+ * icon, heading, paragraph, repeated identically across three separate
+ * sections) is one of the more recognizable "generic SaaS template" tells.
+ * A numbered eyebrow label reads as more deliberate and gives every
+ * section its own position in a sequence instead of an interchangeable
+ * card in a grid. */
+function Eyebrow({ index, label }: { index: string; label: string }) {
+  return (
+    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold-600">
+      <span className="text-brown-400/50">{index}</span>
+      <span className="h-px w-6 bg-gold-500" />
+      <span>{label}</span>
     </div>
   );
 }
@@ -130,123 +127,135 @@ export default async function HomePage() {
       <div className="relative z-10">
         <SiteHeader />
 
-        {/* Hero */}
-        <section className="mx-auto max-w-4xl px-6 pt-16 pb-8 text-center">
-          <Reveal>
-            <h1 className="font-display text-4xl font-medium leading-tight text-brown-900 sm:text-5xl">
-              The one place to run your laser &amp; aesthetics clinic
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-brown-600">
-              Patients, treatment sessions, appointments, packages, consent forms, receipts, and
-              revenue, all in one system built around how a laser and aesthetics clinic actually
-              runs its day.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/signup"
-                className="rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-200 transition-all hover:-translate-y-0.5 hover:bg-gold-600 hover:shadow-card"
-              >
-                Start Your Free Trial
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-md border border-beige-300 px-6 py-3 text-sm font-semibold text-brown-700 transition-all hover:-translate-y-0.5 hover:border-gold-500 hover:text-gold-600"
-              >
-                Log In
-              </Link>
-            </div>
-            <p className="mt-4 text-sm text-brown-400">
-              Free for {trialMonths} months. No credit card required to start.
-            </p>
-          </Reveal>
-        </section>
-
-        {/* Hero screenshot — the whole day at a glance */}
-        <section className="mx-auto max-w-5xl px-6 pb-20">
-          <Reveal delayMs={150}>
-            <ProductShot src="/screenshots/dashboard-today.png" alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard" />
-            <p className="mt-3 text-center text-sm text-brown-400">
-              Today&apos;s schedule, business snapshot, and revenue, right when you open the dashboard
-              each morning.
-            </p>
-          </Reveal>
-        </section>
-
-        {/* At-a-glance summary strip — the "more information at a glance"
-            request: a scannable list before anyone has to read prose. */}
-        <section className="mx-auto max-w-4xl px-6 pb-20">
-          <Reveal>
-            <div className="grid grid-cols-1 gap-x-8 gap-y-3 rounded-xl bg-surface p-8 shadow-soft ring-1 ring-beige-300 sm:grid-cols-2">
-              {[
-                "Patients, visits, appointments, packages, consent forms & receipts — one system",
-                "Import your existing patient list and session history from Excel/CSV",
-                "Per-clinic data isolation enforced at the database level, not just in app code",
-                "Role-based access for owners, doctors, and reception staff",
-                "Revenue, staff, and machine-usage analytics that update live as visits get logged",
-                "Flat annual pricing, unlimited staff accounts, no per-seat fees",
-              ].map((line) => (
-                <div key={line} className="flex items-start gap-2.5 text-sm text-brown-700">
-                  <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
-                  <span>{line}</span>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </section>
-
-        {/* Data privacy & security — moved up front, ahead of the feature
-            deep-dives. Real architecture, described honestly. Deliberately
-            doesn't claim any compliance certification (HIPAA, SOC 2, etc.)
-            that hasn't actually been obtained. */}
-        <section id="security" className="mx-auto max-w-6xl px-6 py-16">
-          <Reveal>
-            <div className="mx-auto mb-12 max-w-2xl text-center">
-              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                <ShieldCheck size={20} />
-              </div>
-              <h2 className="mt-4 font-display text-2xl font-medium text-brown-900 sm:text-3xl">
-                Built with patient data privacy in mind
-              </h2>
-              <p className="mt-3 text-brown-600">
-                Patient records deserve real protection, not just a compliance badge. Here&apos;s the
-                actual architecture behind it.
+        {/* Hero — asymmetric split rather than centered-text-then-full-width-
+            screenshot-below: the headline gets to be the widest thing on its
+            own line instead of competing for center-stage width with a
+            paragraph under it, and the screenshot reads as a product shot
+            (offset, layered shadow) rather than a framed illustration. */}
+        <section className="mx-auto max-w-6xl px-6 pt-14 pb-20 sm:pt-20">
+          <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-[1fr_1.05fr] lg:gap-10">
+            <Reveal>
+              <h1 className="font-display text-[2.75rem] font-medium leading-[1.05] tracking-tight text-brown-900 sm:text-6xl">
+                Run your laser &amp; aesthetics clinic without the spreadsheets.
+              </h1>
+              <p className="mt-6 max-w-md text-lg text-brown-600">
+                Patients, treatment sessions, appointments, packages, consent forms, receipts, and
+                revenue — one system built around how a laser and aesthetics clinic actually runs
+                its day.
               </p>
-            </div>
-          </Reveal>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {SECURITY_POINTS.map(({ icon: Icon, title, description }, i) => (
-              <Reveal key={title} delayMs={i * 80}>
-                <div className="h-full rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300 transition-shadow duration-300 hover:shadow-card">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                    <Icon size={20} />
-                  </div>
-                  <h3 className="mt-4 font-display text-lg font-medium text-brown-900">{title}</h3>
-                  <p className="mt-2 text-sm text-brown-600">{description}</p>
-                </div>
-              </Reveal>
-            ))}
+              <div className="mt-9 flex flex-wrap items-center gap-4">
+                <Link
+                  href="/signup"
+                  className="rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-200 transition-all hover:-translate-y-0.5 hover:bg-gold-600 hover:shadow-card"
+                >
+                  Start Your Free Trial
+                </Link>
+                <Link
+                  href="/login"
+                  className="rounded-md border border-beige-300 px-6 py-3 text-sm font-semibold text-brown-700 transition-all hover:-translate-y-0.5 hover:border-gold-500 hover:text-gold-600"
+                >
+                  Log In
+                </Link>
+              </div>
+              <p className="mt-5 text-sm text-brown-400">
+                Free for {trialMonths} months. No credit card required to start.
+              </p>
+            </Reveal>
+
+            <Reveal delayMs={150}>
+              <div className="relative lg:pl-6">
+                <div
+                  aria-hidden
+                  className="absolute -inset-4 -z-10 rounded-2xl bg-gradient-to-br from-gold-100/60 to-transparent lg:-inset-6"
+                />
+                <ProductShot
+                  src="/screenshots/dashboard-today.png"
+                  alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard"
+                  className="shadow-2xl ring-brown-900/10 lg:rotate-[0.6deg]"
+                />
+              </div>
+            </Reveal>
           </div>
         </section>
 
-        {/* Feature deep-dives, each with a real screenshot, alternating sides.
-            Order: scheduling, analytics, forms (documents), patient view. */}
-        <section id="features" className="mx-auto max-w-6xl px-6 py-16">
+        {/* At-a-glance summary — sits directly on the canvas between two
+            hairlines rather than inside another bordered white card, so the
+            page doesn't read as "card, card, card" stacked top to bottom. */}
+        <section className="mx-auto max-w-5xl px-6 pb-24">
           <Reveal>
-            <div className="mx-auto mb-12 max-w-xl text-center">
-              <h2 className="font-display text-2xl font-medium text-brown-900 sm:text-3xl">
-                Everything day-to-day clinic work needs
-              </h2>
-              <div className="mx-auto mt-3 h-[2px] w-10 bg-gold-500" />
+            <div className="border-y border-beige-300 py-10">
+              <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
+                {[
+                  "Patients, visits, appointments, packages, consent forms & receipts — one system",
+                  "Import your existing patient list and session history from Excel/CSV",
+                  "Per-clinic data isolation enforced at the database level, not just in app code",
+                  "Role-based access for owners, doctors, and reception staff",
+                  "Revenue, staff, and machine-usage analytics that update live as visits get logged",
+                  "Flat annual pricing, unlimited staff accounts, no per-seat fees",
+                ].map((line) => (
+                  <div key={line} className="flex items-start gap-2.5 text-sm text-brown-700">
+                    <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                    <span>{line}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </Reveal>
+        </section>
 
-          <div className="space-y-20">
+        {/* Data privacy & security — a numbered, rule-divided list instead
+            of four identical icon-badge cards in a grid. Deliberately
+            doesn't claim any compliance certification (HIPAA, SOC 2, etc.)
+            that hasn't actually been obtained — real architecture,
+            described honestly. */}
+        <section id="security" className="mx-auto max-w-5xl px-6 py-16">
+          <Reveal>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,280px)_1fr]">
+              <div>
+                <Eyebrow index="01" label="Data & Security" />
+                <h2 className="mt-4 font-display text-3xl font-medium leading-tight text-brown-900">
+                  Built with patient privacy in mind
+                </h2>
+                <p className="mt-3 text-brown-600">
+                  Patient records deserve real protection, not just a compliance badge. Here&apos;s
+                  the actual architecture behind it.
+                </p>
+              </div>
+
+              <div className="divide-y divide-beige-300 border-t border-beige-300 lg:border-t-0">
+                {SECURITY_POINTS.map(({ title, description }, i) => (
+                  <Reveal key={title} delayMs={i * 70}>
+                    <div className="grid grid-cols-1 gap-2 py-6 sm:grid-cols-[3rem_1fr] sm:gap-6">
+                      <span className="font-display text-2xl text-brown-300">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <h3 className="font-display text-lg font-medium text-brown-900">{title}</h3>
+                        <p className="mt-1.5 text-sm text-brown-600">{description}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
+        {/* Feature deep-dives, each with a real screenshot, alternating
+            sides. Order: scheduling, analytics, forms (documents), patient
+            view. */}
+        <section id="features" className="mx-auto max-w-6xl px-6 py-20">
+          <Reveal>
+            <Eyebrow index="02" label="What it does" />
+            <h2 className="mt-4 max-w-lg font-display text-3xl font-medium leading-tight text-brown-900">
+              Everything day-to-day clinic work needs
+            </h2>
+          </Reveal>
+
+          <div className="mt-16 space-y-24">
             <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
               <Reveal>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                  <Calendar size={20} />
-                </div>
-                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                <h3 className="font-display text-xl font-medium text-brown-900">
                   Scheduling that already knows the patient
                 </h3>
                 <p className="mt-2 text-brown-600">
@@ -265,10 +274,7 @@ export default async function HomePage() {
                 <ProductShot src="/screenshots/analytics.png" alt="Revenue trend, treatment-type split, and most-treated areas on the RadianceLaser Analytics page" />
               </Reveal>
               <Reveal delayMs={120} className="order-1 lg:order-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                  <BarChart3 size={20} />
-                </div>
-                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                <h3 className="font-display text-xl font-medium text-brown-900">
                   Know how the clinic is actually doing
                 </h3>
                 <p className="mt-2 text-brown-600">
@@ -282,10 +288,7 @@ export default async function HomePage() {
 
             <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
               <Reveal>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                  <FileSignature size={20} />
-                </div>
-                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                <h3 className="font-display text-xl font-medium text-brown-900">
                   Consent forms and receipts, done right
                 </h3>
                 <p className="mt-2 text-brown-600">
@@ -304,10 +307,7 @@ export default async function HomePage() {
                 <ProductShot src="/screenshots/patient-detail.png" alt="A patient's full record and visit history in RadianceLaser" />
               </Reveal>
               <Reveal delayMs={120} className="order-1 lg:order-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                  <Users size={20} />
-                </div>
-                <h3 className="mt-4 font-display text-xl font-medium text-brown-900">
+                <h3 className="font-display text-xl font-medium text-brown-900">
                   A full record for every patient
                 </h3>
                 <p className="mt-2 text-brown-600">
@@ -320,18 +320,14 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Data import — a named selling point per request, with a real
-            screenshot of the actual Settings section that does this. Text
-            and image are wrapped in a shared flex container so the image is
-            centered against the FULL text block (heading + paragraph +
+        {/* Data import — text and image share a flex container so the image
+            centers against the FULL text block (heading + paragraph +
             list), not just whichever line happens to be tallest. */}
-        <section id="import" className="mx-auto max-w-6xl px-6 py-16">
+        <section id="import" className="mx-auto max-w-6xl px-6 py-20">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
             <Reveal className="flex flex-col justify-center">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                <FileSpreadsheet size={20} />
-              </div>
-              <h2 className="mt-4 font-display text-2xl font-medium text-brown-900 sm:text-3xl">
+              <Eyebrow index="03" label="Switching over" />
+              <h2 className="mt-4 font-display text-3xl font-medium leading-tight text-brown-900">
                 Switch from your old system in an afternoon
               </h2>
               <p className="mt-3 text-brown-600">
@@ -368,19 +364,14 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Smaller, still-real features that don't need a full row each —
-            the three boxes, at the bottom of the features block. */}
-        <section className="mx-auto max-w-6xl px-6 pb-16">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {SECONDARY_FEATURES.map(({ icon: Icon, title, description }, i) => (
+        {/* Smaller, still-real features — a plain three-column list with
+            hairline top rules instead of three more icon-badge cards. */}
+        <section className="mx-auto max-w-6xl px-6 pb-20">
+          <div className="grid grid-cols-1 gap-10 border-t border-beige-300 pt-10 sm:grid-cols-3 sm:gap-8">
+            {SECONDARY_FEATURES.map(({ title, description }, i) => (
               <Reveal key={title} delayMs={i * 80}>
-                <div className="h-full rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300 transition-shadow duration-300 hover:shadow-card">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-100 text-gold-600">
-                    <Icon size={20} />
-                  </div>
-                  <h4 className="mt-4 font-display text-lg font-medium text-brown-900">{title}</h4>
-                  <p className="mt-2 text-sm text-brown-600">{description}</p>
-                </div>
+                <h4 className="font-display text-lg font-medium text-brown-900">{title}</h4>
+                <p className="mt-2 text-sm text-brown-600">{description}</p>
               </Reveal>
             ))}
           </div>
