@@ -386,31 +386,64 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Pricing */}
-        <section id="pricing" className="mx-auto max-w-3xl px-6 py-20">
+        {/* Pricing — a single-plan "pricing column" card rather than a bare
+            price line, since one raised, shadowed card reads as more
+            deliberate than a plain announcement, even with just one plan
+            to show. */}
+        <section id="pricing" className="mx-auto max-w-6xl px-6 py-20">
           <Reveal>
-            <div className="rounded-2xl bg-brown-900 p-10 text-center text-beige-200 shadow-card">
+            <div className="mx-auto mb-12 max-w-xl text-center">
+              <h2 className="font-display text-2xl font-medium text-brown-900 sm:text-3xl">
+                Simple, flat pricing
+              </h2>
+              <p className="mt-3 text-brown-600">One plan, everything included. No tiers to compare.</p>
+            </div>
+          </Reveal>
+
+          <Reveal>
+            <div className="relative mx-auto max-w-sm rounded-2xl bg-brown-900 p-8 text-beige-200 shadow-2xl ring-1 ring-brown-900/10 transition-transform duration-300 hover:-translate-y-1.5 sm:p-10">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gold-600 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-card">
+                Everything included
+              </div>
+
               <div className="flex items-center justify-center gap-2 text-sm uppercase tracking-wide text-gold-500">
                 <Receipt size={16} />
-                <span>Simple, flat pricing</span>
+                <span>Annual plan</span>
               </div>
-              <div className="mt-4 font-display text-4xl font-medium text-white">
+              <div className="mt-4 text-center font-display text-5xl font-medium text-white">
                 ₹{ANNUAL_PRICE_INR.toLocaleString("en-IN")}
                 <span className="text-lg font-normal text-beige-200">/year</span>
               </div>
-              <p className="mt-2 text-sm text-beige-200">
-                One clinic, unlimited staff accounts, every feature included. No tiers, no
-                per-seat charges.
+              <p className="mt-2 text-center text-sm text-beige-200">
+                One clinic, unlimited staff accounts — no per-seat charges, no add-on tiers.
               </p>
-              <p className="mt-1 text-sm text-beige-200">
-                Try it free for {trialMonths} months first — no credit card needed to start.
-              </p>
+
+              <div className="my-6 h-px bg-beige-200/15" />
+
+              <ul className="space-y-3">
+                {[
+                  "Unlimited staff accounts, every role included",
+                  "Patients, scheduling, packages, consent forms & receipts",
+                  "Import your existing patient list and session history",
+                  "Revenue, staff, and machine-usage analytics",
+                  "Per-clinic data isolation, enforced at the database",
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2.5 text-sm text-beige-200">
+                    <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-500" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+
               <Link
                 href="/signup"
-                className="mt-6 inline-block rounded-md bg-gold-600 px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-gold-500 hover:shadow-card"
+                className="mt-8 block rounded-md bg-gold-600 px-6 py-3 text-center text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-gold-500 hover:shadow-card"
               >
                 Start Your Free Trial
               </Link>
+              <p className="mt-3 text-center text-xs text-beige-200/80">
+                Free for {trialMonths} months first — no credit card needed to start.
+              </p>
             </div>
           </Reveal>
         </section>
