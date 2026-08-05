@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { UserPlus } from "lucide-react";
 import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { todayLocalStr } from "@/lib/calendar";
+import { quickCreatePatientAction } from "@/app/dashboard/appointments/actions";
 import type { Appointment, AppointmentStatus, Patient, SessionType } from "@/types";
 
 const DURATION_OPTIONS = [15, 30, 45, 60];
@@ -25,6 +27,7 @@ export default function AppointmentFormModal({
   onClose,
   onSaved,
   onDeleted,
+  onPatientCreated,
 }: {
   clinicId: string;
   patients: Patient[];
@@ -35,6 +38,10 @@ export default function AppointmentFormModal({
   onClose: () => void;
   onSaved: (appt: Appointment) => void;
   onDeleted?: (id: string) => void;
+  // Lets a patient created right here (see the "no matches" quick-add form
+  // below) also land in the parent's patient list — otherwise it'd only
+  // exist in this modal's own selectedPatient until the next full page load.
+  onPatientCreated?: (patient: Patient) => void;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const isEditing = !!appointment;
@@ -44,6 +51,14 @@ export default function AppointmentFormModal({
     appointment ? { id: appointment.patientId, name: appointment.patientName, phone: appointment.patientPhone } as Patient : null
   );
   const [showPatientResults, setShowPatientResults] = useState(false);
+
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddPhone, setQuickAddPhone] = useState("");
+  const [quickAddSaving, setQuickAddSaving] = useState(false);
+  const [quickAddError, setQuickAddError] = useState<string | null>(null);
+  const [quickAddDuplicate, setQuickAddDuplicate] = useState<{ id: string; name: string; phone: string } | null>(
+    null
+  );
 
   const [sessionType, setSessionType] = useState<SessionType>(appointment?.sessionType || "qs");
   const [date, setDate] = useState(appointment?.date || presetDate || todayLocalStr());
@@ -72,6 +87,28 @@ export default function AppointmentFormModal({
     setSelectedPatient(p);
     setPatientQuery(p.name);
     setShowPatientResults(false);
+    setShowQuickAdd(false);
+    setQuickAddDuplicate(null);
+  }
+
+  async function handleQuickAdd(confirmDuplicate = false) {
+    setQuickAddSaving(true);
+    setQuickAddError(null);
+    const result = await quickCreatePatientAction(patientQuery, quickAddPhone, confirmDuplicate);
+    setQuickAddSaving(false);
+
+    if (result.duplicate) {
+      setQuickAddDuplicate(result.duplicate);
+      return;
+    }
+    if (result.error) {
+      setQuickAddError(result.error);
+      return;
+    }
+    if (result.patient) {
+      onPatientCreated?.(result.patient);
+      selectPatient(result.patient);
+    }
   }
 
   async function handleSave(forceBook = false) {
@@ -163,6 +200,9 @@ export default function AppointmentFormModal({
               setPatientQuery(e.target.value);
               setSelectedPatient(null);
               setShowPatientResults(true);
+              setShowQuickAdd(false);
+              setQuickAddError(null);
+              setQuickAddDuplicate(null);
             }}
             onFocus={() => setShowPatientResults(true)}
             placeholder="Search by name or phone…"
@@ -183,6 +223,74 @@ export default function AppointmentFormModal({
               ))}
             </div>
           )}
+
+          {/* No matches for whatever's been typed: offer to create that
+              patient right here instead of forcing a trip to the Patients
+              page and back. Only once there's real text to work with — an
+              empty/focused-but-untouched field shouldn't invite "add a
+              patient with no name." */}
+          {showPatientResults &&
+            !selectedPatient &&
+            patientQuery.trim().length > 1 &&
+            patientMatches.length === 0 &&
+            !showQuickAdd && (
+              <div className="absolute z-10 mt-1 w-full rounded-md border border-beige-300 bg-surface p-3 shadow-card">
+                <p className="text-sm text-brown-500">No patient matches &ldquo;{patientQuery}&rdquo;.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAdd(true)}
+                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-gold-600 hover:underline"
+                >
+                  <UserPlus size={14} />
+                  Add &ldquo;{patientQuery}&rdquo; as a new patient
+                </button>
+              </div>
+            )}
+
+          {showQuickAdd && (
+            <div className="mt-2 rounded-md border border-beige-300 bg-canvas p-3">
+              <label className="mb-1.5 block text-xs font-medium text-brown-700">
+                Contact number for {patientQuery}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  autoFocus
+                  value={quickAddPhone}
+                  onChange={(e) => {
+                    setQuickAddPhone(e.target.value);
+                    setQuickAddDuplicate(null);
+                  }}
+                  placeholder="Phone number"
+                  className="flex-1 rounded-md border border-beige-300 bg-surface px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleQuickAdd(false)}
+                  disabled={quickAddSaving || !quickAddPhone.trim()}
+                  className="flex-shrink-0 rounded-md bg-brown-900 px-3 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+                >
+                  {quickAddSaving ? "Adding…" : "Add & Select"}
+                </button>
+              </div>
+              {quickAddError && <p className="mt-1.5 text-xs text-red-700">{quickAddError}</p>}
+              {quickAddDuplicate && (
+                <div className="mt-1.5 rounded-md border border-gold-500/40 bg-gold-100/50 p-2 text-xs text-brown-800">
+                  <p>
+                    A patient with this phone already exists: {quickAddDuplicate.name} ({quickAddDuplicate.phone}).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => selectPatient(quickAddDuplicate as Patient)}
+                    className="mt-1 font-medium text-gold-600 hover:underline"
+                  >
+                    Select {quickAddDuplicate.name} instead
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {selectedPatient && (
             <p className="mt-1.5 text-xs text-gold-600">
               Selected: {selectedPatient.name} · {selectedPatient.phone}

@@ -11,6 +11,7 @@ import {
   Package,
   BarChart3,
   FileText,
+  MessageCircle,
   Settings,
   Menu,
   X,
@@ -38,6 +39,7 @@ const NAV_ITEMS: {
   { label: "Packages", href: "/dashboard/packages", icon: Package },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },
+  { label: "Communication", href: "/dashboard/communication", icon: MessageCircle },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

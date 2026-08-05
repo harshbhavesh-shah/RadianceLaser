@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
-import { createTemplateAction } from "@/app/dashboard/settings/messaging/actions";
+import { createTemplateAction } from "@/app/dashboard/communication/actions";
 import type { MessageTemplateCategory, TemplateButton, TemplateButtonType } from "@/types";
 
 const CATEGORY_OPTIONS: { value: MessageTemplateCategory; label: string }[] = [

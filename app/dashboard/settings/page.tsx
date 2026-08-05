@@ -5,7 +5,6 @@ import { getClinicStaff } from "@/lib/firestore/staff";
 import { getClinicMachines } from "@/lib/firestore/machines";
 import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
 import { getClinicPayments } from "@/lib/firestore/payments";
-import { getWhatsAppConnection, getClinicMessageTemplates } from "@/lib/firestore/whatsapp";
 import { getClinicAccess } from "@/lib/subscription";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";
@@ -17,28 +16,20 @@ import PreferencesSection from "@/components/settings/PreferencesSection";
 import BillingSection from "@/components/settings/BillingSection";
 import TwoFactorSection from "@/components/settings/TwoFactorSection";
 import ReplayTourSection from "@/components/settings/ReplayTourSection";
-import WhatsAppSection from "@/components/settings/WhatsAppSection";
-import MessageTemplatesSection from "@/components/settings/MessageTemplatesSection";
 
 export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [clinic, staff, machines, sessionTypeDefs, payments, whatsappConnection, messageTemplates] =
-    await Promise.all([
-      getClinic(session.clinicId),
-      getClinicStaff(session.clinicId),
-      getClinicMachines(session.clinicId),
-      getClinicSessionTypeDefs(session.clinicId),
-      getClinicPayments(session.clinicId),
-      getWhatsAppConnection(session.clinicId),
-      getClinicMessageTemplates(session.clinicId),
-    ]);
+  const [clinic, staff, machines, sessionTypeDefs, payments] = await Promise.all([
+    getClinic(session.clinicId),
+    getClinicStaff(session.clinicId),
+    getClinicMachines(session.clinicId),
+    getClinicSessionTypeDefs(session.clinicId),
+    getClinicPayments(session.clinicId),
+  ]);
 
   const isOwner = session.role === "owner";
-  // Never forward byoApiKey to the client — WhatsAppSection only needs to
-  // know whether/how a connection exists, not the secret itself.
-  const redactedWhatsappConnection = whatsappConnection ? { ...whatsappConnection, byoApiKey: undefined } : null;
   const access = clinic ? getClinicAccess(clinic) : ({ status: "active" } as const);
   const currentStaff = staff.find((s) => s.uid === session.uid);
 
@@ -70,14 +61,6 @@ export default async function SettingsPage() {
         />
 
         <ReplayTourSection role={session.role} />
-
-        <WhatsAppSection initialConnection={redactedWhatsappConnection} canEdit={isOwner} />
-
-        <MessageTemplatesSection
-          initialTemplates={messageTemplates}
-          isConnected={whatsappConnection?.status === "connected"}
-          canEdit={isOwner}
-        />
 
         <MachineTypesSection
           clinicId={session.clinicId}

@@ -33,7 +33,7 @@ const PANEL_TRANSITION_MS = 300;
 
 export default function AppointmentsClient({
   clinicId,
-  patients,
+  patients: initialPatients,
   initialAppointments,
   visits,
   packages,
@@ -49,6 +49,7 @@ export default function AppointmentsClient({
   receiptedAppointmentIds: Record<string, true>;
 }) {
   const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
+  const [patients, setPatients] = useState<Patient[]>(initialPatients);
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("week");
   const [anchor, setAnchor] = useState(new Date());
@@ -329,6 +330,7 @@ export default function AppointmentsClient({
           onClose={() => setModalState({ mode: "closed" })}
           onSaved={handleSaved}
           onDeleted={handleDeleted}
+          onPatientCreated={(patient) => setPatients((prev) => [...prev, patient])}
         />
       )}
     </div>

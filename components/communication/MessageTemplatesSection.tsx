@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { deleteTemplateAction } from "@/app/dashboard/settings/messaging/actions";
+import { deleteTemplateAction } from "@/app/dashboard/communication/actions";
 import TemplateFormModal from "./TemplateFormModal";
 import type { MessageTemplate, TemplateApprovalStatus } from "@/types";
 

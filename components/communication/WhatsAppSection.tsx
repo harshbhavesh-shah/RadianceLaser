@@ -6,7 +6,7 @@ import {
   beginManagedConnectionAction,
   connectByoAction,
   disconnectWhatsAppAction,
-} from "@/app/dashboard/settings/messaging/actions";
+} from "@/app/dashboard/communication/actions";
 import type { WhatsAppConnection } from "@/types";
 
 type Mode = "choose" | "byo";
