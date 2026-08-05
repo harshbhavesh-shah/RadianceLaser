@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AlertTriangle, PackageX, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, PackageX, ShieldAlert } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
 import type { OverviewAlert } from "@/lib/overview";
 
 const ICONS: Record<OverviewAlert["kind"], typeof AlertTriangle> = {
@@ -14,11 +15,7 @@ const ICONS: Record<OverviewAlert["kind"], typeof AlertTriangle> = {
  * miss if it's buried on an individual patient record. */
 export default function AlertsPanel({ alerts }: { alerts: OverviewAlert[] }) {
   if (alerts.length === 0) {
-    return (
-      <div className="rounded-xl bg-surface p-6 text-center shadow-soft ring-1 ring-beige-300">
-        <p className="text-sm text-brown-400">Nothing needs attention right now.</p>
-      </div>
-    );
+    return <EmptyState compact icon={CheckCircle2} title="Nothing needs attention right now." />;
   }
 
   return (

@@ -263,6 +263,14 @@ export interface StaffMember extends TenantScoped {
   // means ordinary single-factor sign-in. Each person manages their own;
   // there's no owner-mandated "require this for everyone" yet.
   twoFactorEnabled?: boolean;
+  // Both per-staff-member, not per-clinic — see components/onboarding/.
+  // tourCompleted flips true the first time this person finishes or skips
+  // the guided product tour, so it only ever auto-launches once per
+  // person. onboardingDismissed flips true if they close the setup
+  // checklist, regardless of how many steps are actually done — a
+  // deliberate simplification over tracking "seen at N/5 done" separately.
+  tourCompleted?: boolean;
+  onboardingDismissed?: boolean;
 }
 
 export type MachineStatus = "active" | "maintenance" | "retired";

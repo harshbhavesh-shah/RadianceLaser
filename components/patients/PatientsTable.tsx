@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import type { Patient } from "@/types";
 import { loadMorePatientsAction, searchPatientsAction } from "@/app/dashboard/patients/actions";
+import EmptyState from "@/components/ui/EmptyState";
 
 const SEARCH_DEBOUNCE_MS = 300;
 // Keep in sync with SEARCH_RESULT_LIMIT in lib/firestore/patients.ts.
@@ -94,19 +95,12 @@ export default function PatientsTable({
       </div>
 
       {showNoPatientsYet || showNoSearchMatches ? (
-        <div className="rounded-xl bg-surface p-10 text-center shadow-soft ring-1 ring-beige-300">
-          <p className="text-sm text-brown-600">
-            {showNoPatientsYet ? "No patients yet." : "No patients match that search."}
-          </p>
-          {showNoPatientsYet && (
-            <Link
-              href="/dashboard/patients/new"
-              className="mt-3 inline-block text-sm font-medium text-gold-600 hover:underline"
-            >
-              Add your first patient
-            </Link>
-          )}
-        </div>
+        <EmptyState
+          icon={Users}
+          title={showNoPatientsYet ? "No patients yet." : "No patients match that search."}
+          description={showNoPatientsYet ? "Add your first patient to get started." : undefined}
+          action={showNoPatientsYet ? { label: "Add your first patient", href: "/dashboard/patients/new" } : undefined}
+        />
       ) : (
         <>
           <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">

@@ -5,6 +5,7 @@ import { CalendarCheck, Receipt as ReceiptIcon, Stethoscope } from "lucide-react
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { formatTime12h } from "@/lib/calendar";
 import { STATUS_STYLES, STATUS_LABELS } from "@/components/appointments/statusStyles";
+import EmptyState from "@/components/ui/EmptyState";
 import type { Appointment } from "@/types";
 
 /** The spine of the Overview page — today's appointments in order, one tap
@@ -27,13 +28,12 @@ export default function TodayAgenda({
 
   if (appointments.length === 0) {
     return (
-      <div className="flex flex-col items-center rounded-xl bg-surface p-8 text-center shadow-soft ring-1 ring-beige-300">
-        <CalendarCheck className="text-brown-400" size={26} />
-        <p className="mt-2 text-sm text-brown-400">No appointments booked for today.</p>
-        <Link href="/dashboard/appointments" className="mt-2 text-sm font-medium text-gold-600 hover:underline">
-          Go to Schedule
-        </Link>
-      </div>
+      <EmptyState
+        compact
+        icon={CalendarCheck}
+        title="No appointments booked for today."
+        action={{ label: "Go to Schedule", href: "/dashboard/appointments" }}
+      />
     );
   }
 

@@ -86,6 +86,13 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
               key={item.href}
               href={item.href}
               title={showLabels ? undefined : item.label}
+              // Targeted by the guided tour (components/onboarding/
+              // ProductTour.tsx) to spotlight this item. The tour forces
+              // the sidebar open (SidebarContext's temporary override) for
+              // the duration, so in practice this only ever needs to match
+              // the desktop, labeled render — the mobile drawer copy is
+              // unmounted (closed) while the tour runs.
+              data-tour={`nav-${item.href}`}
               className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
                 showLabels ? "" : "justify-center"
               } ${

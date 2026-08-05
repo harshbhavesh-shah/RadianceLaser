@@ -15,6 +15,7 @@ import VisitImportSection from "@/components/settings/VisitImportSection";
 import PreferencesSection from "@/components/settings/PreferencesSection";
 import BillingSection from "@/components/settings/BillingSection";
 import TwoFactorSection from "@/components/settings/TwoFactorSection";
+import ReplayTourSection from "@/components/settings/ReplayTourSection";
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -58,6 +59,8 @@ export default async function SettingsPage() {
           initialEnabled={currentStaff?.twoFactorEnabled === true}
           email={session.email || ""}
         />
+
+        <ReplayTourSection role={session.role} />
 
         <MachineTypesSection
           clinicId={session.clinicId}

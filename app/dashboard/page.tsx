@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { UserPlus, CalendarPlus, Search } from "lucide-react";
+import { UserPlus, CalendarPlus, Search, ClipboardList } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
 import { getSession } from "@/lib/session";
 import { getClinic } from "@/lib/firestore/clinics";
 import { getPatients } from "@/lib/firestore/patients";
@@ -8,6 +9,7 @@ import { getClinicVisits } from "@/lib/firestore/visits";
 import { getClinicPackages } from "@/lib/firestore/packages";
 import { getClinicAppointments } from "@/lib/firestore/appointments";
 import { getClinicReceipts } from "@/lib/firestore/receipts";
+import { getClinicStaff } from "@/lib/firestore/staff";
 import { computeWindowStats, computeRecentActivity, computeMonthlyRevenue } from "@/lib/analytics";
 import {
   computeTodayAppointments,
@@ -23,6 +25,7 @@ import RevenueChart from "@/components/RevenueChart";
 import TodayAgenda from "@/components/overview/TodayAgenda";
 import AlertsPanel from "@/components/overview/AlertsPanel";
 import QuickActions, { type QuickAction } from "@/components/overview/QuickActions";
+import OnboardingChecklist from "@/components/onboarding/OnboardingChecklist";
 
 const WINDOW_LABELS = { today: "Today", week: "This Week", month: "This Month" };
 
@@ -41,7 +44,7 @@ export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [clinic, patients, visits, packages, appointments, receipts, sessionTypeDefs] = await Promise.all([
+  const [clinic, patients, visits, packages, appointments, receipts, sessionTypeDefs, staff] = await Promise.all([
     getClinic(session.clinicId),
     getPatients(session.clinicId),
     getClinicVisits(session.clinicId),
@@ -49,8 +52,24 @@ export default async function DashboardPage() {
     getClinicAppointments(session.clinicId),
     getClinicReceipts(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
+    getClinicStaff(session.clinicId),
   ]);
   const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
+  const currentStaff = staff.find((s) => s.uid === session.uid);
+
+  // Shown until this person dismisses it (StaffMember.onboardingDismissed)
+  // — step completion is derived live from real data below rather than
+  // stored, so it can't drift out of sync with what the clinic actually has.
+  const onboarding = currentStaff?.onboardingDismissed ? null : (
+    <OnboardingChecklist
+      role={session.role}
+      tourCompleted={currentStaff?.tourCompleted === true}
+      hasPatients={patients.length > 0}
+      hasVisits={visits.length > 0}
+      hasAppointments={appointments.length > 0}
+      hasTeam={staff.length > 1}
+    />
+  );
 
   const patientsById = new Map(patients.map((p) => [p.id, p]));
   const today = todayLocalStr();
@@ -129,6 +148,7 @@ export default async function DashboardPage() {
     return (
       <div className="space-y-10">
         {header}
+        {onboarding}
         {todaySection}
       </div>
     );
@@ -143,6 +163,7 @@ export default async function DashboardPage() {
     return (
       <div className="space-y-10">
         {header}
+        {onboarding}
         {todaySection}
 
         <div>
@@ -165,6 +186,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-10">
       {header}
+      {onboarding}
       {todaySection}
 
       <div>
@@ -209,12 +231,12 @@ function RecentActivityList({
 }) {
   if (activity.length === 0) {
     return (
-      <div className="rounded-xl bg-surface p-8 text-center shadow-soft ring-1 ring-beige-300">
-        <p className="text-sm text-brown-600">No visits logged yet.</p>
-        <Link href="/dashboard/patients" className="mt-2 inline-block text-sm font-medium text-gold-600 hover:underline">
-          Go to Patients
-        </Link>
-      </div>
+      <EmptyState
+        compact
+        icon={ClipboardList}
+        title="No visits logged yet."
+        action={{ label: "Go to Patients", href: "/dashboard/patients" }}
+      />
     );
   }
 

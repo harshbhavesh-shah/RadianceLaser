@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Package } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { getPatients } from "@/lib/firestore/patients";
 import { getClinicPackages } from "@/lib/firestore/packages";
@@ -7,6 +8,7 @@ import { getClinicVisits } from "@/lib/firestore/visits";
 import { computePackageLedger } from "@/lib/packages";
 import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
+import EmptyState from "@/components/ui/EmptyState";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-gold-100 text-gold-600",
@@ -49,15 +51,12 @@ export default async function PackagesPage() {
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
       {rows.length === 0 ? (
-        <div className="rounded-xl bg-surface p-10 text-center shadow-soft ring-1 ring-beige-300">
-          <p className="text-sm text-brown-600">No packages purchased yet.</p>
-          <p className="mt-1 text-sm text-brown-400">
-            Packages are created from a patient&apos;s Visit History tab — find the patient first.
-          </p>
-          <Link href="/dashboard/patients" className="mt-3 inline-block text-sm font-medium text-gold-600 hover:underline">
-            Go to Patients →
-          </Link>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="No packages purchased yet."
+          description="Packages are created from a patient's Visit History tab — find the patient first."
+          action={{ label: "Go to Patients", href: "/dashboard/patients" }}
+        />
       ) : (
         <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
           <table className="w-full min-w-[700px] text-left text-sm">
