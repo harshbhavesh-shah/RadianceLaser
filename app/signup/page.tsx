@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
@@ -161,7 +162,8 @@ export default function SignUpPage() {
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-card ring-1 ring-beige-300">
           <Link href="/" className="block text-center">
-            <h1 className="font-display text-3xl font-medium text-brown-900">RadianceLaser</h1>
+            <Image src="/logo.png" alt="" width={56} height={56} className="mx-auto" />
+            <h1 className="mt-3 font-display text-3xl font-medium text-brown-900">RadianceLaser</h1>
           </Link>
           <div className="mx-auto mt-3 mb-2 h-[2px] w-10 bg-gold-500" />
 
