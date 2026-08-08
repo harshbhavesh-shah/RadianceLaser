@@ -5,7 +5,7 @@ import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { todayLocalStr } from "@/lib/packages";
-import type { Package, SessionType } from "@/types";
+import type { Package, PaymentMethod, SessionType } from "@/types";
 
 export default function PackageFormModal({
   clinicId,
@@ -28,6 +28,7 @@ export default function PackageFormModal({
   const [totalAmount, setTotalAmount] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(todayLocalStr());
   const [expiryDate, setExpiryDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +52,7 @@ export default function PackageFormModal({
         totalAmount: amount,
         purchaseDate,
         ...(expiryDate ? { expiryDate } : {}),
+        ...(paymentMethod ? { paymentMethod } : {}),
         createdAt: Date.now(),
       });
 
@@ -64,6 +66,7 @@ export default function PackageFormModal({
         totalAmount: amount,
         purchaseDate,
         ...(expiryDate ? { expiryDate } : {}),
+        ...(paymentMethod ? { paymentMethod } : {}),
         createdAt: Date.now(),
       });
     } catch (err) {
@@ -154,6 +157,28 @@ export default function PackageFormModal({
                 onChange={(e) => setExpiryDate(e.target.value)}
                 className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-brown-700">
+              Payment Method <span className="text-brown-400">(optional)</span>
+            </label>
+            <div className="flex gap-2">
+              {(["cash", "online"] as const).map((method) => (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
+                    paymentMethod === method
+                      ? "border-gold-500 bg-gold-100 text-gold-600"
+                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                  }`}
+                >
+                  {method}
+                </button>
+              ))}
             </div>
           </div>
         </div>

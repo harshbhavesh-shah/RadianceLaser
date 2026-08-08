@@ -1,6 +1,7 @@
 import "server-only";
 import { feeOf, todayLocalStr } from "@/lib/analytics";
-import type { Machine, Package, SessionType, Visit } from "@/types";
+import { computePackageLedger } from "@/lib/packages";
+import type { Appointment, Machine, Package, SessionType, Visit } from "@/types";
 
 type Window = "day" | "week" | "month" | "year";
 
@@ -181,4 +182,122 @@ export function computeAreaPopularity(visits: Visit[], limit = 10): AreaStat[] {
     .map(([area, count]) => ({ area, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
+}
+
+export interface CashFlowSummary {
+  cash: number;
+  online: number;
+  // Money from visits/packages that predate PaymentMethod, or where it was
+  // left blank (it's optional) — shown as its own bucket rather than
+  // silently folded into either real one, so the split stays honest about
+  // what's actually known.
+  unspecified: number;
+  total: number;
+}
+
+/** How this year's money actually came in — cash vs online — across both
+ * direct-pay visits and package purchases. Separate from the direct/package
+ * *source* split (computeRevenueSummary) — this is about payment method,
+ * not what was paid for. */
+export function computeCashFlowSummary(visits: Visit[], packages: Package[]): CashFlowSummary {
+  const year = new Date().getFullYear();
+  let cash = 0;
+  let online = 0;
+  let unspecified = 0;
+
+  for (const v of visits) {
+    if (!v.date?.startsWith(String(year)) || v.packageId) continue;
+    const fee = feeOf(v);
+    if (v.paymentMethod === "cash") cash += fee;
+    else if (v.paymentMethod === "online") online += fee;
+    else unspecified += fee;
+  }
+  for (const p of packages) {
+    if (!p.purchaseDate?.startsWith(String(year))) continue;
+    if (p.paymentMethod === "cash") cash += p.totalAmount;
+    else if (p.paymentMethod === "online") online += p.totalAmount;
+    else unspecified += p.totalAmount;
+  }
+
+  return { cash, online, unspecified, total: cash + online + unspecified };
+}
+
+export interface AppointmentReliability {
+  totalPast: number; // completed + cancelled + no-show this year, date already happened
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  noShowRate: number; // 0-100
+  cancellationRate: number; // 0-100
+}
+
+/** No-show and cancellation rates, this year — only counts appointments
+ * whose date has actually passed AND have a resolved status (completed,
+ * cancelled, or no-show). A still-"booked" appointment in the past means
+ * nobody updated it after the fact — deliberately excluded rather than
+ * guessed at either way. */
+export function computeAppointmentReliability(appointments: Appointment[]): AppointmentReliability {
+  const year = new Date().getFullYear();
+  const today = todayLocalStr();
+
+  const past = appointments.filter(
+    (a) => a.date?.startsWith(String(year)) && a.date <= today && a.status !== "booked"
+  );
+  const completed = past.filter((a) => a.status === "completed").length;
+  const cancelled = past.filter((a) => a.status === "cancelled").length;
+  const noShow = past.filter((a) => a.status === "no-show").length;
+  const totalPast = past.length;
+
+  return {
+    totalPast,
+    completed,
+    cancelled,
+    noShow,
+    noShowRate: totalPast > 0 ? (noShow / totalPast) * 100 : 0,
+    cancellationRate: totalPast > 0 ? (cancelled / totalPast) * 100 : 0,
+  };
+}
+
+export interface PackageUtilizationSummary {
+  packagesSold: number;
+  sessionsSold: number;
+  sessionsUsed: number;
+  sessionsRemainingActive: number; // still redeemable — package isn't expired
+  sessionsLostToExpiry: number; // "breakage" — paid for, never used, can't be anymore
+  utilizationRate: number; // 0-100
+  breakageRate: number; // 0-100
+}
+
+/** All-time package usage, not year-scoped — a package bought last year can
+ * still expire (or get used up) this year, so slicing this by purchase year
+ * would split a single package's story across two periods for no reason.
+ * Reuses computePackageLedger (lib/packages.ts) rather than recomputing
+ * usage from scratch, so this can never disagree with what a patient's own
+ * package tab shows. */
+export function computePackageUtilization(packages: Package[], visits: Visit[]): PackageUtilizationSummary {
+  let sessionsSold = 0;
+  let sessionsUsed = 0;
+  let sessionsRemainingActive = 0;
+  let sessionsLostToExpiry = 0;
+
+  for (const pkg of packages) {
+    const ledger = computePackageLedger(pkg, visits);
+    sessionsSold += pkg.totalSessions;
+    sessionsUsed += ledger.sessionsUsed;
+    if (ledger.status === "expired") {
+      sessionsLostToExpiry += ledger.sessionsRemaining;
+    } else {
+      sessionsRemainingActive += ledger.sessionsRemaining;
+    }
+  }
+
+  return {
+    packagesSold: packages.length,
+    sessionsSold,
+    sessionsUsed,
+    sessionsRemainingActive,
+    sessionsLostToExpiry,
+    utilizationRate: sessionsSold > 0 ? (sessionsUsed / sessionsSold) * 100 : 0,
+    breakageRate: sessionsSold > 0 ? (sessionsLostToExpiry / sessionsSold) * 100 : 0,
+  };
 }

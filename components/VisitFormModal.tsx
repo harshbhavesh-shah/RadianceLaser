@@ -8,7 +8,7 @@ import { rollupAreaFields } from "@/lib/visitAreas";
 import { maybeAutoCompleteAppointment } from "@/lib/pipeline";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import PermissionErrorNotice from "@/components/PermissionErrorNotice";
-import type { Machine, Package, SessionType, StaffMember, Visit, VisitAreaEntry } from "@/types";
+import type { Machine, Package, PaymentMethod, SessionType, StaffMember, Visit, VisitAreaEntry } from "@/types";
 
 function todayLocalStr(): string {
   const d = new Date();
@@ -60,6 +60,7 @@ export default function VisitFormModal({
 
   const [date, setDate] = useState(visit?.date || "");
   const [packageId, setPackageId] = useState(visit?.packageId || presetPackageId || "");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(visit?.paymentMethod || "");
   const [machineId, setMachineId] = useState(visit?.machineId || "");
   const [performedByUid, setPerformedByUid] = useState(visit?.performedByUid || "");
   const [durationMinutes, setDurationMinutes] = useState(
@@ -193,6 +194,7 @@ export default function VisitFormModal({
         // link (package, machine, staff) needs an explicit deleteField(),
         // otherwise the stale value would silently stay on the document.
         updatePayload.packageId = packageId ? packageId : deleteField();
+        updatePayload.paymentMethod = !packageId && paymentMethod ? paymentMethod : deleteField();
         updatePayload.machineId = machineId ? machineId : deleteField();
         updatePayload.performedByUid = performedByUid ? performedByUid : deleteField();
         updatePayload.performedByName = performedByStaff ? performedByStaff.name : deleteField();
@@ -204,6 +206,7 @@ export default function VisitFormModal({
           fields: rolledUpFields,
           areas: parsedAreas,
           packageId: packageId || undefined,
+          paymentMethod: !packageId && paymentMethod ? paymentMethod : undefined,
           machineId: machineId || undefined,
           performedByUid: performedByUid || undefined,
           performedByName: performedByStaff?.name,
@@ -218,6 +221,7 @@ export default function VisitFormModal({
           fields: rolledUpFields,
           areas: parsedAreas,
           ...(packageId ? { packageId } : {}),
+          ...(!packageId && paymentMethod ? { paymentMethod } : {}),
           ...(machineId ? { machineId } : {}),
           ...(performedByUid ? { performedByUid, performedByName: performedByStaff?.name } : {}),
           ...(durationMinutes ? { durationMinutes: Number(durationMinutes) } : {}),
@@ -320,6 +324,33 @@ export default function VisitFormModal({
                 Covered by {selectedPackage.label} — no separate fee for this visit.
               </p>
             )}
+          </div>
+        )}
+
+        {/* Only meaningful for a direct-pay visit — a package-covered
+            session has no new payment of its own (see PaymentMethod in
+            types/index.ts). */}
+        {!packageId && (
+          <div className="mb-4">
+            <label className="mb-1.5 block text-sm font-medium text-brown-700">
+              Payment Method <span className="text-brown-400">(optional)</span>
+            </label>
+            <div className="flex gap-2">
+              {(["cash", "online"] as const).map((method) => (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
+                    paymentMethod === method
+                      ? "border-gold-500 bg-gold-100 text-gold-600"
+                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                  }`}
+                >
+                  {method}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

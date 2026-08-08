@@ -3,16 +3,19 @@ import { getSession } from "@/lib/session";
 import { getClinicVisits } from "@/lib/firestore/visits";
 import { getClinicPackages } from "@/lib/firestore/packages";
 import { getClinicMachines } from "@/lib/firestore/machines";
+import { getClinicAppointments } from "@/lib/firestore/appointments";
 import {
   computeRevenueSummary,
   computeYearlyRevenueTrend,
   computeRevenueByType,
   computeStaffMachineStats,
   computeAreaPopularity,
+  computeCashFlowSummary,
+  computeAppointmentReliability,
+  computePackageUtilization,
 } from "@/lib/analyticsPage";
 import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
-import StatsStrip from "@/components/StatsStrip";
 import PieChart from "@/components/analytics/PieChart";
 import YearlyRevenueChart from "@/components/analytics/YearlyRevenueChart";
 
@@ -25,6 +28,17 @@ function formatMinutes(n: number): string {
   const hrs = Math.floor(n / 60);
   const mins = n % 60;
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+}
+
+/** Small "label — value" pair used inline across the cards below, instead
+ * of another grid of boxes. */
+function StatInline({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-2 text-sm">
+      <span className="text-brown-400">{label}</span>
+      <span className="font-medium text-brown-900">{value}</span>
+    </div>
+  );
 }
 
 export default async function AnalyticsPage() {
@@ -41,10 +55,11 @@ export default async function AnalyticsPage() {
     );
   }
 
-  const [visits, packages, machines, sessionTypeDefs] = await Promise.all([
+  const [visits, packages, machines, appointments, sessionTypeDefs] = await Promise.all([
     getClinicVisits(session.clinicId),
     getClinicPackages(session.clinicId),
     getClinicMachines(session.clinicId),
+    getClinicAppointments(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
   ]);
   const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
@@ -55,23 +70,44 @@ export default async function AnalyticsPage() {
   const staffMachineStats = computeStaffMachineStats(visits, machines);
   const areaStats = computeAreaPopularity(visits);
   const maxAreaCount = Math.max(...areaStats.map((a) => a.count), 1);
+  const cashFlow = computeCashFlowSummary(visits, packages);
+  const reliability = computeAppointmentReliability(appointments);
+  const packageUtilization = computePackageUtilization(packages, visits);
 
   const currentYear = new Date().getFullYear();
+
+  const cashFlowRows = [
+    { label: "Cash", amount: cashFlow.cash, colorClass: "bg-gold-500" },
+    { label: "Online", amount: cashFlow.online, colorClass: "bg-brown-700" },
+    ...(cashFlow.unspecified > 0
+      ? [{ label: "Unspecified", amount: cashFlow.unspecified, colorClass: "bg-beige-300" }]
+      : []),
+  ];
 
   return (
     <div>
       <h1 className="font-display text-2xl font-medium text-brown-900">Analytics</h1>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
-      {/* Revenue summary — day/week/month/year */}
-      <StatsStrip
-        items={[
-          { label: "Today", ...revenueStripItem(revenue.day) },
-          { label: "This Week", ...revenueStripItem(revenue.week) },
-          { label: "This Month", ...revenueStripItem(revenue.month) },
-          { label: "This Year", ...revenueStripItem(revenue.year) },
-        ]}
-      />
+      {/* Revenue hero — one prominent number (this month) instead of four
+          equal boxes, with the other windows as a compact row underneath. */}
+      <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+        <div className="text-xs font-medium uppercase tracking-wide text-brown-400">
+          This Month&apos;s Revenue
+        </div>
+        <div className="mt-1.5 font-display text-4xl font-medium text-gold-600">
+          {formatCurrency(revenue.month.total)}
+        </div>
+        <div className="mt-1 text-xs text-brown-400">
+          {formatCurrency(revenue.month.directRevenue)} direct ·{" "}
+          {formatCurrency(revenue.month.packageRevenue)} via packages
+        </div>
+        <div className="mt-5 flex flex-wrap items-baseline gap-x-8 gap-y-2 border-t border-beige-300 pt-4">
+          <StatInline label="Today" value={formatCurrency(revenue.day.total)} />
+          <StatInline label="This Week" value={formatCurrency(revenue.week.total)} />
+          <StatInline label="This Year" value={formatCurrency(revenue.year.total)} />
+        </div>
+      </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Yearly trend chart */}
@@ -95,6 +131,127 @@ export default async function AnalyticsPage() {
             }))}
           />
         </div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Cash flow — cash vs online, this year */}
+        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+          <h2 className="font-display text-lg font-medium text-brown-900">
+            Cash Flow — {currentYear}
+          </h2>
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+
+          {cashFlow.total === 0 ? (
+            <p className="text-sm text-brown-400">
+              No revenue logged yet this year. Payment method is set on each visit or package
+              purchase — see the Payment Method field when logging a session or selling a
+              package.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex h-2.5 overflow-hidden rounded-full bg-beige-200">
+                {cashFlowRows.map((row) => (
+                  <div
+                    key={row.label}
+                    className={`h-full ${row.colorClass}`}
+                    style={{ width: `${(row.amount / cashFlow.total) * 100}%` }}
+                  />
+                ))}
+              </div>
+              <div className="space-y-2">
+                {cashFlowRows.map((row) => (
+                  <div key={row.label} className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 text-brown-700">
+                      <span className={`h-2 w-2 flex-shrink-0 rounded-full ${row.colorClass}`} />
+                      {row.label}
+                    </span>
+                    <span className="font-medium text-brown-900">
+                      {formatCurrency(row.amount)}{" "}
+                      <span className="font-normal text-brown-400">
+                        ({Math.round((row.amount / cashFlow.total) * 100)}%)
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* No-show / cancellation rate, this year */}
+        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+          <h2 className="font-display text-lg font-medium text-brown-900">
+            Appointment Reliability — {currentYear}
+          </h2>
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+
+          {reliability.totalPast === 0 ? (
+            <p className="text-sm text-brown-400">
+              No completed, cancelled, or no-show appointments yet this year.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="font-display text-3xl font-medium text-brown-900">
+                    {reliability.noShowRate.toFixed(0)}%
+                  </div>
+                  <div className="text-xs text-brown-400">No-show rate</div>
+                </div>
+                <div>
+                  <div className="font-display text-3xl font-medium text-brown-900">
+                    {reliability.cancellationRate.toFixed(0)}%
+                  </div>
+                  <div className="text-xs text-brown-400">Cancellation rate</div>
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-brown-400">
+                {reliability.completed} completed · {reliability.noShow} no-show ·{" "}
+                {reliability.cancelled} cancelled ({reliability.totalPast} total)
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Package utilization / breakage */}
+      <div className="mt-8 rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+        <h2 className="font-display text-lg font-medium text-brown-900">Package Utilization</h2>
+        <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+
+        {packageUtilization.sessionsSold === 0 ? (
+          <p className="text-sm text-brown-400">No packages sold yet.</p>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              <StatInline label="Packages sold" value={String(packageUtilization.packagesSold)} />
+              <StatInline label="Sessions sold" value={String(packageUtilization.sessionsSold)} />
+              <StatInline label="Sessions used" value={String(packageUtilization.sessionsUsed)} />
+              <StatInline
+                label="Lost to expiry"
+                value={String(packageUtilization.sessionsLostToExpiry)}
+              />
+            </div>
+            <div className="mt-5">
+              <div className="mb-1.5 flex justify-between text-xs text-brown-400">
+                <span>Utilization</span>
+                <span>{packageUtilization.utilizationRate.toFixed(0)}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-beige-200">
+                <div
+                  className="animate-grow-x h-full rounded-full bg-gold-500"
+                  style={{ width: `${packageUtilization.utilizationRate}%` }}
+                />
+              </div>
+            </div>
+            {packageUtilization.breakageRate > 0 && (
+              <p className="mt-3 text-xs text-brown-400">
+                {packageUtilization.breakageRate.toFixed(0)}% of sold sessions ({packageUtilization.sessionsLostToExpiry}) expired
+                unused.
+              </p>
+            )}
+          </>
+        )}
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -165,12 +322,4 @@ export default async function AnalyticsPage() {
       </div>
     </div>
   );
-}
-
-function revenueStripItem(entry: { total: number; packageRevenue: number; directRevenue: number }) {
-  return {
-    value: formatCurrency(entry.total),
-    sublabel: `${formatCurrency(entry.directRevenue)} direct · ${formatCurrency(entry.packageRevenue)} via packages`,
-    accent: true,
-  };
 }

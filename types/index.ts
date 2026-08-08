@@ -192,6 +192,10 @@ export interface Visit extends TenantScoped {
   performedByUid?: string;
   performedByName?: string; // denormalized, same reasoning as patientName on Appointment
   durationMinutes?: number;
+  // Only meaningful for a direct-pay visit (no packageId) — how the fee for
+  // THIS visit was paid. Absent on package-covered visits (no new payment
+  // happens there) and on visits logged before this field existed.
+  paymentMethod?: PaymentMethod;
   createdAt: number;
 }
 
@@ -218,8 +222,19 @@ export interface Package extends TenantScoped {
   totalAmount: number;
   purchaseDate: string; // YYYY-MM-DD
   expiryDate?: string; // YYYY-MM-DD, optional
+  // How the purchase was actually paid — absent on packages sold before
+  // this field existed (see lib/analyticsPage.ts computeCashFlowSummary for
+  // how those show up as "unspecified" rather than being guessed at).
+  paymentMethod?: PaymentMethod;
   createdAt: number;
 }
+
+// How money for a session or package actually came in — separate from
+// *whether* a visit was direct-pay or package-covered (that's
+// Visit.packageId). A package-covered visit has no paymentMethod of its
+// own since no new money changes hands at that visit; the payment was
+// already made (and recorded) on the package's own purchase.
+export type PaymentMethod = "cash" | "online";
 
 // Derived, not stored — see computePackageStatus in lib/firestore/packages.ts.
 export type PackageStatus = "active" | "completed" | "expired";
