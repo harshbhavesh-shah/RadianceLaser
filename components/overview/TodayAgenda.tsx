@@ -44,6 +44,13 @@ export default function TodayAgenda({
         const statusStyle = STATUS_STYLES[appt.status];
         const linkedVisitId = visitIdByAppointmentId[appt.id];
         const hasReceipt = !!receiptedAppointmentIds[appt.id];
+        // Online bookings from the public form arrive with no patientId —
+        // there's no patient record to link to or log a visit against yet
+        // (see components/appointments/UnlinkedBookingPanel.tsx for where
+        // that gets resolved), so route these to Schedule instead of a
+        // broken /dashboard/patients/ URL, and hide the actions that need a
+        // real patientId.
+        const isLinked = !!appt.patientId;
         const logVisitHref = `/dashboard/patients/${appt.patientId}?logVisit=1&sessionType=${encodeURIComponent(appt.sessionType)}&appointmentId=${appt.id}`;
         const generateReceiptHref = `/dashboard/documents?tab=receipts&newReceiptForPatient=${appt.patientId}&visitId=${linkedVisitId}`;
 
@@ -57,7 +64,7 @@ export default function TodayAgenda({
             ].join(" ")}
           >
             <Link
-              href={`/dashboard/patients/${appt.patientId}`}
+              href={isLinked ? `/dashboard/patients/${appt.patientId}` : "/dashboard/appointments"}
               className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-gold-600"
             >
               <span className="w-20 flex-shrink-0 font-medium text-brown-900">
@@ -70,10 +77,15 @@ export default function TodayAgenda({
               )}
               <span className="truncate font-medium text-brown-900">{appt.patientName}</span>
               <span className="hidden flex-shrink-0 text-brown-400 sm:inline">{appt.patientPhone}</span>
+              {!isLinked && (
+                <span className="flex-shrink-0 rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-medium text-brown-600">
+                  Unlinked
+                </span>
+              )}
             </Link>
 
             <span className="flex flex-shrink-0 items-center gap-2">
-              {appt.status === "booked" && !linkedVisitId && (
+              {isLinked && appt.status === "booked" && !linkedVisitId && (
                 <Link
                   href={logVisitHref}
                   className="flex items-center gap-1 rounded-full border border-gold-500 px-2.5 py-1 text-[11px] font-medium text-gold-600 transition-colors hover:bg-gold-100"
@@ -81,7 +93,7 @@ export default function TodayAgenda({
                   <Stethoscope size={12} /> Log Visit
                 </Link>
               )}
-              {appt.status === "booked" && linkedVisitId && !hasReceipt && (
+              {isLinked && appt.status === "booked" && linkedVisitId && !hasReceipt && (
                 <Link
                   href={generateReceiptHref}
                   className="flex items-center gap-1 rounded-full border border-gold-500 bg-gold-100 px-2.5 py-1 text-[11px] font-medium text-gold-600 transition-colors hover:bg-gold-100/70"

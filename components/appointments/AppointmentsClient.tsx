@@ -8,6 +8,7 @@ import CalendarWeekView from "./CalendarWeekView";
 import CalendarMonthView from "./CalendarMonthView";
 import AppointmentFormModal from "./AppointmentFormModal";
 import PatientMiniPanel from "./PatientMiniPanel";
+import UnlinkedBookingPanel from "./UnlinkedBookingPanel";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useSidebarCollapse } from "@/components/SidebarContext";
 import {
@@ -123,6 +124,13 @@ export default function AppointmentsClient({
     // Keep the panel in sync if we just edited the appointment it's showing.
     setPanelAppointment((prev) => (prev && prev.id === saved.id ? saved : prev));
     setRenderedPanelAppointment((prev) => (prev && prev.id === saved.id ? saved : prev));
+  }
+
+  function handleLinked(updatedAppointment: Appointment, patient: Patient) {
+    setAppointments((prev) => prev.map((a) => (a.id === updatedAppointment.id ? updatedAppointment : a)));
+    setPatients((prev) => (prev.some((p) => p.id === patient.id) ? prev : [...prev, patient]));
+    setPanelAppointment((prev) => (prev && prev.id === updatedAppointment.id ? updatedAppointment : prev));
+    setRenderedPanelAppointment((prev) => (prev && prev.id === updatedAppointment.id ? updatedAppointment : prev));
   }
 
   function handleDeleted(id: string) {
@@ -311,6 +319,16 @@ export default function AppointmentsClient({
               visitIdByAppointmentId={visitIdByAppointmentId}
               receiptedAppointmentIds={receiptedAppointmentIds}
               onClose={closePatientPanel}
+              onEditAppointment={() =>
+                setModalState({ mode: "edit", appointment: renderedPanelAppointment })
+              }
+            />
+          )}
+          {renderedPanelAppointment && !renderedPanelPatient && (
+            <UnlinkedBookingPanel
+              appointment={renderedPanelAppointment}
+              onClose={closePatientPanel}
+              onLinked={handleLinked}
               onEditAppointment={() =>
                 setModalState({ mode: "edit", appointment: renderedPanelAppointment })
               }
