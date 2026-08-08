@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth in-page jumps for the marketing header's #security/#features/etc.
+   anchor links, so clicking a nav item glides there instead of snapping —
+   scoped to prefers-reduced-motion:no-preference so it's skipped entirely
+   for anyone who's asked for less motion, same as every other animation in
+   this file. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 @layer utilities {
   /* Bars/columns grow up from their baseline on mount — the bar's own
      inline height/width style sets the true target size, this just scales

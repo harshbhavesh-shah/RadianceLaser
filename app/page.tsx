@@ -10,41 +10,36 @@ import SiteHeader from "@/components/marketing/SiteHeader";
 const SECONDARY_FEATURES: { title: string; description: string }[] = [
   {
     title: "Prepaid Packages",
-    description:
-      "Sell session bundles with a usage count computed live from actual visits, instead of a stored number that can quietly drift out of sync.",
+    description: "Sell session bundles and always see exactly how many sessions are left.",
   },
   {
-    title: "Before/After Photo Galleries",
-    description:
-      "Track progress per patient, with a blur toggle for sensitive photos so a glance at the screen doesn't show more than it should.",
+    title: "Before/After Photos",
+    description: "Track each patient's progress, with sensitive photos blurred until you tap to view them.",
   },
   {
-    title: "Duplicate-Safe Patient Records",
-    description:
-      "Skin type, contraindications, and full visit history in one place, with duplicate-phone detection so the same patient doesn't end up with two records.",
+    title: "No Duplicate Patients",
+    description: "We check phone numbers automatically, so the same patient never ends up with two records.",
   },
 ];
 
 const SECURITY_POINTS: { title: string; description: string }[] = [
   {
-    title: "Isolation enforced at the database, not just the app",
+    title: "Your data, only your clinic",
     description:
-      "Every clinic's data carries a clinic ID, and Firestore's own security rules reject any read or write where that ID doesn't match the signed-in staff member's own clinic. That check happens at the database, not in application code you'd have to trust — even a leaked document link from another clinic can't be opened.",
+      "Every request is checked against your clinic before anything loads — even a shared link from another clinic won't open your records.",
   },
   {
-    title: "Secure session handling",
-    description:
-      "Sign-in tokens live in HttpOnly cookies, invisible to any script running on the page, and get verified server-side on every request. That's separate from the lightweight check that just redirects signed-out visitors away from the dashboard.",
+    title: "Protected sign-in",
+    description: "Login sessions are encrypted and re-checked on every request, not just when you sign in.",
   },
   {
     title: "Role-based access",
-    description:
-      "Owner, doctor, and reception accounts see different things. Billing and staff management, for example, stay owner-only — enforced both on the page and on the underlying data request.",
+    description: "Owners, doctors, and reception each see only what they need. Billing stays owner-only.",
   },
   {
-    title: "Sensitive content stays hidden until asked for",
+    title: "Private by default",
     description:
-      "Photos marked sensitive stay blurred in the gallery grid until someone deliberately clicks to reveal them, and signed consent forms are frozen at the moment of signing, so editing a template later can never rewrite what a patient actually agreed to.",
+      "Sensitive photos stay blurred until you choose to view them, and a signed consent form can never be quietly changed afterward.",
   },
 ];
 
@@ -62,7 +57,9 @@ function ProductShot({
   className?: string;
 }) {
   return (
-    <div className={`overflow-hidden rounded-xl shadow-card ring-1 ring-beige-300 ${className}`}>
+    <div
+      className={`overflow-hidden rounded-xl shadow-card ring-1 ring-beige-300 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl ${className}`}
+    >
       <Image
         src={src}
         alt={alt}
@@ -97,6 +94,7 @@ export default async function HomePage() {
   if (session) redirect("/dashboard");
 
   const trialMonths = Math.round(TRIAL_LENGTH_DAYS / 30);
+  const trialLengthLabel = `${trialMonths} month${trialMonths === 1 ? "" : "s"}`;
 
   return (
     <div className="relative bg-canvas">
@@ -132,33 +130,32 @@ export default async function HomePage() {
             own line instead of competing for center-stage width with a
             paragraph under it, and the screenshot reads as a product shot
             (offset, layered shadow) rather than a framed illustration. */}
-        <section className="mx-auto max-w-6xl px-6 pt-14 pb-20 sm:pt-20">
-          <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-[1fr_1.05fr] lg:gap-10">
+        <section className="mx-auto max-w-7xl px-6 pt-14 pb-20 sm:pt-20">
+          <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-[0.9fr_1.25fr] lg:gap-12">
             <Reveal>
               <h1 className="font-display text-[2.75rem] font-medium leading-[1.05] tracking-tight text-brown-900 sm:text-6xl">
                 Run your laser &amp; aesthetics clinic without the spreadsheets.
               </h1>
               <p className="mt-6 max-w-md text-lg text-brown-600">
-                Patients, treatment sessions, appointments, packages, consent forms, receipts, and
-                revenue — one system built around how a laser and aesthetics clinic actually runs
-                its day.
+                One simple system for patients, appointments, billing, and everything else your
+                clinic does every day.
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-4">
                 <Link
                   href="/signup"
-                  className="rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-200 transition-all hover:-translate-y-0.5 hover:bg-gold-600 hover:shadow-card"
+                  className="rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-200 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-gold-600 hover:shadow-card active:scale-[0.97] active:duration-75"
                 >
                   Start Your Free Trial
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-md border border-beige-300 px-6 py-3 text-sm font-semibold text-brown-700 transition-all hover:-translate-y-0.5 hover:border-gold-500 hover:text-gold-600"
+                  className="rounded-md border border-beige-300 px-6 py-3 text-sm font-semibold text-brown-700 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-gold-500 hover:text-gold-600 active:scale-[0.97] active:duration-75"
                 >
                   Log In
                 </Link>
               </div>
               <p className="mt-5 text-sm text-brown-400">
-                Free for {trialMonths} months. No credit card required to start.
+                Free for {trialLengthLabel}. No credit card required to start.
               </p>
             </Reveal>
 
@@ -182,25 +179,25 @@ export default async function HomePage() {
             hairlines rather than inside another bordered white card, so the
             page doesn't read as "card, card, card" stacked top to bottom. */}
         <section className="mx-auto max-w-5xl px-6 pb-24">
-          <Reveal>
-            <div className="border-y border-beige-300 py-10">
-              <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
-                {[
-                  "Patients, visits, appointments, packages, consent forms & receipts — one system",
-                  "Import your existing patient list and session history from Excel/CSV",
-                  "Per-clinic data isolation enforced at the database level, not just in app code",
-                  "Role-based access for owners, doctors, and reception staff",
-                  "Revenue, staff, and machine-usage analytics that update live as visits get logged",
-                  "Flat annual pricing, unlimited staff accounts, no per-seat fees",
-                ].map((line) => (
-                  <div key={line} className="flex items-start gap-2.5 text-sm text-brown-700">
+          <div className="border-y border-beige-300 py-10">
+            <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
+              {[
+                "Patients, appointments, packages, forms & receipts in one place",
+                "Import your existing patient list from Excel or CSV",
+                "Your data is private to your clinic, always",
+                "Separate views for owners, doctors, and reception",
+                "Revenue and staff numbers that update live, automatically",
+                "One flat yearly price — unlimited staff, no hidden fees",
+              ].map((line, i) => (
+                <Reveal key={line} delayMs={i * 50}>
+                  <div className="flex items-start gap-2.5 text-sm text-brown-700">
                     <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
                     <span>{line}</span>
                   </div>
-                ))}
-              </div>
+                </Reveal>
+              ))}
             </div>
-          </Reveal>
+          </div>
         </section>
 
         {/* Data privacy & security — a numbered, rule-divided list instead
@@ -217,8 +214,7 @@ export default async function HomePage() {
                   Built with patient privacy in mind
                 </h2>
                 <p className="mt-3 text-brown-600">
-                  Patient records deserve real protection, not just a compliance badge. Here&apos;s
-                  the actual architecture behind it.
+                  Patient records are sensitive. Here&apos;s how we actually protect them.
                 </p>
               </div>
 
@@ -259,9 +255,8 @@ export default async function HomePage() {
                   Scheduling that already knows the patient
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  Day, week, and month views. Click a booking and you can see that patient&apos;s
-                  active packages and recent visits right there, without digging up their file
-                  somewhere else.
+                  Day, week, and month views. Click a booking to see that patient&apos;s packages
+                  and recent visits instantly — no need to look up their file separately.
                 </p>
               </Reveal>
               <Reveal delayMs={120}>
@@ -278,10 +273,8 @@ export default async function HomePage() {
                   Know how the clinic is actually doing
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  See revenue by day, month, and year, how much comes from direct sessions versus
-                  package redemptions, and which treatments, staff, and machines are actually
-                  earning. It&apos;s computed live from the same visits and receipts your team
-                  already logs, so there&apos;s no separate report to remember to run.
+                  See revenue by day, month, or year, and which treatments and staff bring in the
+                  most. It updates automatically — there&apos;s no report to remember to run.
                 </p>
               </Reveal>
             </div>
@@ -292,9 +285,8 @@ export default async function HomePage() {
                   Consent forms and receipts, done right
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  Clinic-branded consent templates, signed right on screen and locked the moment
-                  they&apos;re signed. Receipts get sequential, gap-free numbers automatically, even
-                  if two staff members happen to be issuing one at the exact same time.
+                  Patients sign consent forms right on screen. Receipts get clean, sequential
+                  numbers automatically, even when two staff issue them at once.
                 </p>
               </Reveal>
               <Reveal delayMs={120}>
@@ -311,9 +303,8 @@ export default async function HomePage() {
                   A full record for every patient
                 </h3>
                 <p className="mt-2 text-brown-600">
-                  Skin type, contraindications, and every visit on one page. Whether it&apos;s
-                  Q-Switch, laser hair removal, or a custom machine type you&apos;ve added, each
-                  session keeps its own fields — area, energy, passes, fee, and more.
+                  Skin type, contraindications, and every past visit on one page — for Q-Switch,
+                  laser hair removal, or any machine your clinic uses.
                 </p>
               </Reveal>
             </div>
@@ -328,33 +319,25 @@ export default async function HomePage() {
             <Reveal className="flex flex-col justify-center">
               <Eyebrow index="03" label="Switching over" />
               <h2 className="mt-4 font-display text-3xl font-medium leading-tight text-brown-900">
-                Switch from your old system in an afternoon
+                Switch to Radiance in an afternoon
               </h2>
               <p className="mt-3 text-brown-600">
-                Already tracking patients in Excel, a notebook, or another system? You don&apos;t
-                have to start over. Import your existing patient list and full session history
-                straight from a CSV or Excel file — map your columns, preview what&apos;s coming
-                in, and load it all at once.
+                Already tracking patients in Excel or a notebook? You don&apos;t have to start
+                over — bring in your patient list and session history from a spreadsheet in a few
+                clicks.
               </p>
               <ul className="mt-5 space-y-3 text-sm text-brown-700">
                 <li className="flex items-start gap-2.5">
                   <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
-                  <span>
-                    <strong className="font-medium text-brown-900">Patients</strong> — name,
-                    contact, skin type, and contraindications, matched against existing records so
-                    nobody gets duplicated
-                  </span>
+                  <span>Patients and their session history, matched so nobody gets duplicated</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
-                  <span>
-                    <strong className="font-medium text-brown-900">Session history</strong> — past
-                    visit dates, treated areas, and fees, one file per treatment type
-                  </span>
+                  <span>Preview what&apos;s coming in before you confirm anything</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
-                  <span>You choose Skip or Replace for anything that looks like a duplicate</span>
+                  <span>Skip or replace anything that looks like a duplicate</span>
                 </li>
               </ul>
             </Reveal>
@@ -428,12 +411,12 @@ export default async function HomePage() {
 
               <Link
                 href="/signup"
-                className="mt-8 block rounded-md bg-gold-600 px-6 py-3 text-center text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-gold-500 hover:shadow-card"
+                className="mt-8 block rounded-md bg-gold-600 px-6 py-3 text-center text-sm font-semibold text-white transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-gold-500 hover:shadow-card active:scale-[0.97] active:duration-75"
               >
                 Start Your Free Trial
               </Link>
               <p className="mt-3 text-center text-xs text-beige-200/80">
-                Free for {trialMonths} months first — no credit card needed to start.
+                Free for {trialLengthLabel} first — no credit card needed to start.
               </p>
             </div>
           </Reveal>

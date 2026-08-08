@@ -30,7 +30,7 @@ import { getFirestore } from "firebase-admin/firestore";
 // Keep in sync with TRIAL_LENGTH_DAYS in lib/subscription.ts (duplicated
 // here since this is a plain Node script, not compiled through Next's
 // TypeScript/path-alias setup).
-const TRIAL_LENGTH_DAYS = 365;
+const TRIAL_LENGTH_DAYS = 30;
 
 function parseArgs() {
   const args = {};

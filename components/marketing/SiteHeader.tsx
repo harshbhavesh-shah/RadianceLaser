@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 const NAV_LINKS = [
   { href: "#security", label: "Data & Security" },
   { href: "#features", label: "Features" },
-  { href: "#import", label: "Switch from your old system" },
+  { href: "#import", label: "Switch to Radiance" },
   { href: "#pricing", label: "Pricing" },
 ];
 
@@ -59,8 +59,9 @@ export default function SiteHeader() {
 
         <nav className="hidden items-center justify-center gap-6 text-sm font-medium leading-none text-brown-600 md:flex">
           {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="transition-colors hover:text-gold-600">
+            <a key={link.href} href={link.href} className="group relative py-1 transition-colors hover:text-gold-600">
               {link.label}
+              <span className="absolute inset-x-0 -bottom-0.5 h-px scale-x-0 bg-gold-500 transition-transform duration-300 ease-out group-hover:scale-x-100" />
             </a>
           ))}
         </nav>
@@ -83,7 +84,7 @@ export default function SiteHeader() {
           </Link>
           <Link
             href="/signup"
-            className="whitespace-nowrap rounded-md bg-brown-900 px-3 py-2 text-xs font-semibold leading-none text-beige-200 transition-colors hover:bg-gold-600 sm:px-4 sm:text-sm"
+            className="whitespace-nowrap rounded-md bg-brown-900 px-3 py-2 text-xs font-semibold leading-none text-beige-200 transition-all duration-150 hover:bg-gold-600 active:scale-95 sm:px-4 sm:text-sm"
           >
             <span className="sm:hidden">Start Trial</span>
             <span className="hidden sm:inline">Start Free Trial</span>

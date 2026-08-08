@@ -10,6 +10,7 @@ import { createTrialClinicAction } from "./actions";
 import { provisionGoogleClinicAction } from "@/app/login/actions";
 import { proceedAfterPrimaryAuth, finishAfterOtp } from "@/lib/authFlow";
 import { ANNUAL_PRICE_INR, TRIAL_LENGTH_DAYS } from "@/lib/subscription";
+import AuthShell from "@/components/marketing/AuthShell";
 
 // form: the normal clinic-name/owner-name/email/password form (or "click
 //   Google").
@@ -141,37 +142,20 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-canvas">
-      {/* Same decorative glow treatment as /login — one continuous visual
-          identity from marketing through to the product itself. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] overflow-hidden">
-        <div
-          className="animate-glow-in absolute left-1/2 top-[-200px] h-[420px] w-[420px] rounded-full bg-gold-100 blur-3xl"
-          style={{ animationDelay: "0s", marginLeft: "-357px" }}
-        />
-        <div
-          className="animate-glow-in absolute left-1/2 top-[-160px] h-[380px] w-[380px] rounded-full bg-rose-200/70 blur-3xl"
-          style={{ animationDelay: "-5s", marginLeft: "-38px" }}
-        />
-        <div
-          className="animate-glow-in absolute left-1/2 top-[-220px] h-[440px] w-[440px] rounded-full bg-violet-200/60 blur-3xl"
-          style={{ animationDelay: "-10s", marginLeft: "88px" }}
-        />
-      </div>
-
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
+    <AuthShell>
         <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-card ring-1 ring-beige-300">
-          <Link href="/" className="block text-center">
-            <Image src="/logo.png" alt="" width={56} height={56} className="mx-auto" />
-            <h1 className="mt-3 font-display text-3xl font-medium text-brown-900">RadianceLaser</h1>
+          <Link href="/" className="block text-center lg:hidden">
+            <Image src="/logo.png" alt="" width={44} height={44} className="mx-auto" />
+            <h1 className="mt-3 font-display text-2xl font-medium text-brown-900">RadianceLaser</h1>
           </Link>
-          <div className="mx-auto mt-3 mb-2 h-[2px] w-10 bg-gold-500" />
+          <div className="mx-auto mt-3 mb-2 h-[2px] w-10 bg-gold-500 lg:hidden" />
 
           {stage.name === "form" && (
             <>
               <p className="mb-2 text-center text-sm text-brown-600">Start your free trial</p>
               <p className="mb-7 text-center text-xs text-brown-400">
-                Free for {Math.round(TRIAL_LENGTH_DAYS / 30)} months, then ₹
+                Free for {Math.round(TRIAL_LENGTH_DAYS / 30)} month
+                {Math.round(TRIAL_LENGTH_DAYS / 30) === 1 ? "" : "s"}, then ₹
                 {ANNUAL_PRICE_INR.toLocaleString("en-IN")}/year. No card required to start.
               </p>
 
@@ -339,8 +323,7 @@ export default function SignUpPage() {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }
 

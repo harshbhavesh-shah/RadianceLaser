@@ -6,7 +6,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // clinic-creation time (scripts/createClinic.mjs bakes this into
 // trialEndsAt) — changing this constant later doesn't retroactively change
 // any clinic that was already created.
-export const TRIAL_LENGTH_DAYS = 365;
+export const TRIAL_LENGTH_DAYS = 30;
 
 // The one and only plan for now: a flat annual price, no tiers. See
 // app/dashboard/billing/actions.ts for where this is actually charged.
@@ -20,7 +20,10 @@ export const SUBSCRIPTION_LENGTH_DAYS = 365;
 // only "reminder" mechanism that exists so far — an in-app banner, not an
 // email/SMS. Actual outbound reminders are follow-up work once there's a
 // transactional email provider wired up.
-export const REMINDER_THRESHOLD_DAYS = 30;
+// Kept well under TRIAL_LENGTH_DAYS (a "last week" warning, not the whole
+// trial) — this was 30 back when the trial itself was 365 days; left equal
+// to the trial length here would make the banner show from day one.
+export const REMINDER_THRESHOLD_DAYS = 7;
 
 export type ClinicAccess =
   | { status: "active"; renewsInDays?: number }
