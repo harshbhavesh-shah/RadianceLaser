@@ -62,6 +62,32 @@ function callerClinicIsActive() {
   return clinicIsActive(clinicId());
 }
 
+// Lets an unauthenticated visitor create exactly one narrow shape of
+// appointment: a Laser Hair Removal booking made through the marketing
+// site's public appointment form (see advancedskinclinic-new/src/
+// appointment.njk, which writes here directly since RadianceLaser has no
+// slot/queue system to route this through server-side). Tightly scoped so
+// this can't be abused to write arbitrary appointment data: fixed
+// sessionType/status, no patientId (public bookers aren't linked to an
+// existing Patient record), and only the expected fields — anything else
+// on the doc is rejected. Still gated on the target clinic being
+// active/trialing, same as every other write.
+function isValidPublicLhrBooking(data) {
+  return data.clinicId is string
+    && clinicIsActive(data.clinicId)
+    && data.patientId == ""
+    && data.sessionType == "lhr"
+    && data.status == "booked"
+    && data.patientName is string && data.patientName.size() > 0
+    && data.patientPhone is string && data.patientPhone.size() > 0
+    && data.date is string
+    && data.time is string
+    && data.durationMinutes is number
+    && data.keys().hasOnly(
+         ['clinicId', 'patientId', 'patientName', 'patientPhone', 'sessionType',
+          'date', 'time', 'durationMinutes', 'status', 'notes', 'createdAt']);
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -85,7 +111,8 @@ service cloud.firestore {
     // delete as separate allow statements, not combined, to avoid this.
     match /appointments/{appointmentId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if belongsToClinic(request.resource.data) && callerClinicIsActive();
+      allow create: if (belongsToClinic(request.resource.data) && callerClinicIsActive())
+        || isValidPublicLhrBooking(request.resource.data);
       allow update: if belongsToClinic(resource.data)
         && belongsToClinic(request.resource.data) // can't change clinicId on update
         && callerClinicIsActive();
