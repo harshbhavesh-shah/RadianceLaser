@@ -83,18 +83,16 @@ export default async function DashboardPage() {
   ].slice(0, 8);
   const { visitIdByAppointmentId, receiptedAppointmentIds } = computeAppointmentPipelineMaps(visits, receipts);
 
-  const quickActionsBase: QuickAction[] = [
-    { label: "New Appointment", href: "/dashboard/appointments", icon: CalendarPlus },
+  // "New Appointment" used to live here too, alongside the "Patient Visit"
+  // button above — two entry points into the same booking flow was exactly
+  // the kind of ambiguity that let staff wander off the intended pipeline,
+  // so it's gone from this row. These two are for the genuinely different
+  // cases: filling in a patient's full profile (not just name/phone), and
+  // just looking someone up without booking anything.
+  const quickActions: QuickAction[] = [
     { label: "New Patient", href: "/dashboard/patients/new", icon: UserPlus },
     { label: "Find a Patient", href: "/dashboard/patients", icon: Search },
   ];
-  // Reception's day starts with booking/checking people in, so that action
-  // leads; everyone else starts with clinical/admin work, so patient lookup
-  // leads instead.
-  const quickActions =
-    session.role === "reception"
-      ? quickActionsBase
-      : [quickActionsBase[1], quickActionsBase[0], quickActionsBase[2]];
 
   const todayLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -104,13 +102,33 @@ export default async function DashboardPage() {
 
   // Header and the day's shortcuts live on one line — the shortcuts are
   // context for "what you might do today," not a separate section to scan.
+  //
+  // "Patient Visit" is deliberately the one prominent, dark button here —
+  // every other action (new patient, find a patient) is a lighter pill.
+  // The point is to make the correct pipeline unmistakable regardless of
+  // whether the patient is new, existing, walk-in, or pre-booked: start
+  // from Schedule, search for them there (an existing patient's name comes
+  // straight up; a new one gets created inline via the same search box —
+  // see AppointmentFormModal's "no matches" quick-add), and everything
+  // else (the visit, the record, the receipt) follows from that one
+  // booking. Staff choosing a different starting point is exactly how a
+  // new patient ends up created but never actually linked to anything.
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="font-display text-2xl font-medium text-brown-900">{greeting()}</h1>
         <p className="mt-1 text-sm text-brown-600">{todayLabel}</p>
       </div>
-      <QuickActions actions={quickActions} />
+      <div className="flex flex-wrap items-center gap-3">
+        <Link
+          href="/dashboard/appointments?newAppointment=1"
+          className="flex items-center gap-2 rounded-md bg-brown-900 px-4 py-2.5 text-sm font-semibold text-beige-200 transition-all hover:-translate-y-0.5 hover:bg-gold-600 hover:shadow-card"
+        >
+          <CalendarPlus size={16} />
+          Patient Visit
+        </Link>
+        <QuickActions actions={quickActions} />
+      </div>
     </div>
   );
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import AppointmentListView from "./AppointmentListView";
 import CalendarDayView from "./CalendarDayView";
@@ -55,6 +56,20 @@ export default function AppointmentsClient({
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("week");
   const [anchor, setAnchor] = useState(new Date());
   const [modalState, setModalState] = useState<ModalState>({ mode: "closed" });
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Lets the "Patient Visit" shortcut elsewhere in the app (the dashboard
+  // header) land straight on an already-open booking form instead of just
+  // this page — see the button's href (?newAppointment=1). Stripped from
+  // the URL right after so a refresh or back-navigation doesn't reopen it.
+  useEffect(() => {
+    if (searchParams.get("newAppointment") === "1") {
+      setModalState({ mode: "create" });
+      router.replace("/dashboard/appointments");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // panelAppointment drives the open/closed animation state; renderedPanelAppointment
   // stays populated for a moment after closing so the exit animation has

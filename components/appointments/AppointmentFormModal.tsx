@@ -195,6 +195,7 @@ export default function AppointmentFormModal({
           <label className="mb-1.5 block text-sm font-medium text-brown-700">Patient</label>
           <input
             type="text"
+            autoFocus={!isEditing}
             value={patientQuery}
             onChange={(e) => {
               setPatientQuery(e.target.value);
