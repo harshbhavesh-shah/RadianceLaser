@@ -5,6 +5,17 @@ import type { Receipt } from "@/types";
 
 const RECEIPTS_PAGE_SIZE = 25;
 
+/** A single receipt by id, or null if it doesn't exist or belongs to
+ * another clinic — used by server actions (e.g. sending a receipt over
+ * WhatsApp/SMS) that only have a receiptId, not a full patient/clinic list
+ * to scan. */
+export async function getReceipt(clinicId: string, receiptId: string): Promise<Receipt | null> {
+  const doc = await adminDb().collection("receipts").doc(receiptId).get();
+  if (!doc.exists) return null;
+  const receipt = { id: doc.id, ...doc.data() } as Receipt;
+  return receipt.clinicId === clinicId ? receipt : null;
+}
+
 /** Receipts for one patient, newest first — same single equality-query
  * pattern as getPatientVisits/getPatientConsentForms, no composite index
  * needed. */

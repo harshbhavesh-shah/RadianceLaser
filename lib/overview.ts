@@ -12,7 +12,7 @@ export function computeTodayAppointments(appointments: Appointment[], todayStr: 
     .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 }
 
-export type AlertKind = "package-low" | "package-expiring" | "contraindication";
+export type AlertKind = "package-low" | "package-expiring" | "contraindication" | "follow-up";
 
 export interface OverviewAlert {
   kind: AlertKind;
@@ -67,6 +67,39 @@ export function computePackageAlerts(
     }
   }
 
+  return alerts;
+}
+
+/** Visits with a follow-up date that's due (today or earlier) — the
+ * "someone needs to check back with this patient" reminder set from
+ * VisitFormModal. One alert per patient (their soonest-due follow-up, in
+ * case more than one is somehow overdue at once), so this list doesn't
+ * grow unbounded for a patient who's overdue on several old visits. */
+export function computeFollowUpAlerts(
+  visits: Visit[],
+  patientsById: Map<string, Patient>,
+  todayStr: string = todayLocalStr()
+): OverviewAlert[] {
+  const dueByPatient = new Map<string, Visit>();
+  for (const v of visits) {
+    if (!v.followUpDate || v.followUpDate > todayStr) continue;
+    const existing = dueByPatient.get(v.patientId);
+    if (!existing || v.followUpDate < existing.followUpDate!) {
+      dueByPatient.set(v.patientId, v);
+    }
+  }
+
+  const alerts: OverviewAlert[] = [];
+  for (const v of dueByPatient.values()) {
+    const patientName = patientsById.get(v.patientId)?.name || "Unknown patient";
+    alerts.push({
+      kind: "follow-up",
+      patientId: v.patientId,
+      patientName,
+      detail: v.followUpNote ? `${v.followUpNote} — due ${v.followUpDate}` : `Follow-up due ${v.followUpDate}`,
+      href: `/dashboard/patients/${v.patientId}`,
+    });
+  }
   return alerts;
 }
 

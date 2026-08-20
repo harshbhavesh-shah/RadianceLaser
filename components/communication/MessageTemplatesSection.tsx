@@ -4,26 +4,20 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { deleteTemplateAction } from "@/app/dashboard/communication/actions";
 import TemplateFormModal from "./TemplateFormModal";
-import type { MessageTemplate, TemplateApprovalStatus } from "@/types";
+import type { MessageTemplate, MessageTemplateCategory } from "@/types";
 
-const STATUS_STYLES: Record<TemplateApprovalStatus, string> = {
-  draft: "bg-beige-300 text-brown-600",
-  pending: "bg-gold-100 text-gold-600",
-  approved: "bg-green-50 text-green-700",
-  rejected: "bg-red-50 text-red-700",
+const CATEGORY_LABELS: Record<MessageTemplateCategory, string> = {
+  appointment_reminder: "Appointment Reminder",
+  appointment_confirmation: "Appointment Confirmation",
+  receipt_sent: "Receipt Sent",
+  custom: "Custom",
 };
 
-const STATUS_LABELS: Record<TemplateApprovalStatus, string> = {
-  draft: "Draft",
-  pending: "Pending Approval",
-  approved: "Approved",
-  rejected: "Rejected",
-};
-
-/** Templates are how WhatsApp's business-initiated messages work at all —
- * Meta requires proactive messages (reminders, confirmations) to use a
- * pre-approved template, so "approval pending" is a real, unavoidable wait
- * state here, not a bug — see lib/whatsapp/gupshupClient.ts submitTemplate(). */
+/** Templates here are just a name + variable order the app needs to send —
+ * the actual wording and Meta approval both live entirely on BhashSMS's own
+ * dashboard, outside this app (see types/index.ts MessageTemplate). Unlike
+ * the old Gupshup flow, there's no "submit for approval" step or status to
+ * track here at all. */
 export default function MessageTemplatesSection({
   initialTemplates,
   isConnected,
@@ -48,7 +42,8 @@ export default function MessageTemplatesSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Message Templates</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            The wording and buttons used for reminders, confirmations, and receipts sent over WhatsApp.
+            Templates approved on your BhashSMS/Meta account — this just tells the app the exact name and what
+            variables to fill in.
           </p>
         </div>
         {canEdit && (
@@ -77,14 +72,14 @@ export default function MessageTemplatesSection({
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-brown-900">{t.name}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_STYLES[t.approvalStatus]}`}>
-                    {STATUS_LABELS[t.approvalStatus]}
+                  <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold text-brown-600">
+                    {CATEGORY_LABELS[t.category]}
                   </span>
                 </div>
-                <p className="mt-0.5 truncate text-xs text-brown-400">{t.body}</p>
-                {t.approvalStatus === "rejected" && t.rejectionReason && (
-                  <p className="mt-0.5 text-xs text-red-600">{t.rejectionReason}</p>
+                {t.variableLabels.length > 0 && (
+                  <p className="mt-0.5 truncate text-xs text-brown-400">Fills: {t.variableLabels.join(", ")}</p>
                 )}
+                {t.bodyPreview && <p className="mt-0.5 truncate text-xs text-brown-400 italic">"{t.bodyPreview}"</p>}
               </div>
               {canEdit && (
                 <button
@@ -102,12 +97,9 @@ export default function MessageTemplatesSection({
       {modalOpen && (
         <TemplateFormModal
           onClose={() => setModalOpen(false)}
-          onCreated={() => {
+          onCreated={(template) => {
+            setTemplates((prev) => [template, ...prev]);
             setModalOpen(false);
-            // Simplest correct refresh given the template now exists
-            // server-side with a real approvalStatus — a full reload avoids
-            // guessing at the id/fields the server action assigned.
-            window.location.reload();
           }}
         />
       )}

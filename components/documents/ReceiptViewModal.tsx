@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { deleteDoc, doc } from "firebase/firestore";
-import { Printer, X } from "lucide-react";
+import { MessageCircle, Printer, Send, X } from "lucide-react";
 import { db } from "@/lib/firebase/client";
+import { sendReceiptMessageAction } from "@/app/dashboard/communication/actions";
 import type { Receipt } from "@/types";
 
 function formatCurrency(n: number): string {
@@ -36,6 +37,16 @@ export default function ReceiptViewModal({
 }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState<"whatsapp" | "sms" | null>(null);
+  const [sendResult, setSendResult] = useState<string | null>(null);
+
+  async function handleSend(channel: "whatsapp" | "sms") {
+    setSending(channel);
+    setSendResult(null);
+    const result = await sendReceiptMessageAction(receipt.id, channel);
+    setSending(null);
+    setSendResult(result.error || `Sent over ${channel === "whatsapp" ? "WhatsApp" : "SMS"}.`);
+  }
 
   async function handleDelete() {
     if (!confirm(`Delete receipt ${receipt.receiptNumber}? This can't be undone.`)) return;
@@ -159,8 +170,27 @@ export default function ReceiptViewModal({
         </div>
 
         {error && <p className="px-6 pb-2 text-sm text-red-700 print:hidden">{error}</p>}
+        {sendResult && <p className="px-6 pb-2 text-sm text-brown-600 print:hidden">{sendResult}</p>}
 
-        <div className="flex justify-end border-t border-beige-300 px-6 py-4 print:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-beige-300 px-6 py-4 print:hidden">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleSend("whatsapp")}
+              disabled={sending !== null}
+              className="flex items-center gap-1.5 rounded-md border border-beige-300 px-3 py-1.5 text-sm font-medium text-brown-700 transition-colors hover:border-gold-500 disabled:opacity-60"
+            >
+              <MessageCircle size={14} />
+              {sending === "whatsapp" ? "Sending…" : "Send via WhatsApp"}
+            </button>
+            <button
+              onClick={() => handleSend("sms")}
+              disabled={sending !== null}
+              className="flex items-center gap-1.5 rounded-md border border-beige-300 px-3 py-1.5 text-sm font-medium text-brown-700 transition-colors hover:border-gold-500 disabled:opacity-60"
+            >
+              <Send size={14} />
+              {sending === "sms" ? "Sending…" : "Send via SMS"}
+            </button>
+          </div>
           <button
             onClick={handleDelete}
             disabled={deleting}

@@ -196,6 +196,14 @@ export interface Visit extends TenantScoped {
   // THIS visit was paid. Absent on package-covered visits (no new payment
   // happens there) and on visits logged before this field existed.
   paymentMethod?: PaymentMethod;
+  // Optional "check back in" date for this visit — e.g. a doctor wants to
+  // confirm there's no reaction in 3 days, or nudge toward booking the next
+  // session in a few weeks. Surfaced on Overview's "Needs Attention" list
+  // once it's due (see lib/overview.ts computeFollowUpAlerts) so it doesn't
+  // rely on anyone remembering to check back manually. followUpNote is free
+  // text for what the follow-up is actually about.
+  followUpDate?: string; // YYYY-MM-DD
+  followUpNote?: string;
   createdAt: number;
 }
 
@@ -427,76 +435,66 @@ export interface Receipt extends TenantScoped {
 }
 
 // ---------------------------------------------------------------------------
-// WhatsApp messaging (see lib/whatsapp/, app/dashboard/settings/messaging/,
-// app/api/webhooks/gupshup/). Built against Gupshup as the BSP (Business
-// Solution Provider) fronting the actual WhatsApp Business Platform — see
-// lib/whatsapp/gupshupClient.ts for why Gupshup and what's actually wired
-// up vs. stubbed pending real account credentials.
-
-// "managed" = the clinic connects their own WhatsApp number through an
-// embedded-signup popup under our Gupshup partner account (we never see
-// their number's underlying credentials, just a Gupshup-issued app id).
-// "byo" = the clinic already has their own Gupshup account and pastes in
-// their own API key/app id directly. Both end up sending as the CLINIC's
-// own WhatsApp Business identity either way — "managed" vs "byo" is about
-// who did the Meta/Gupshup account setup, not who the messages appear to
-// come from.
-export type WhatsAppConnectionMode = "managed" | "byo";
-export type WhatsAppConnectionStatus = "not_connected" | "connecting" | "connected" | "error";
+// WhatsApp messaging (see lib/bhashsms/, components/communication/). Built
+// against BhashSMS — the clinic's own WhatsApp Business API provider — as a
+// simple GET-based send API (no OAuth, no partner account): a clinic
+// username/password/sender id, called directly per send. Templates are
+// authored and approved entirely on BhashSMS/Meta's own dashboard, outside
+// this app; all this app stores is the approved template's exact name and
+// how many/which variables it expects, so a send can fill them in in the
+// right order. See lib/bhashsms/client.ts for the actual HTTP call.
+export type WhatsAppConnectionStatus = "not_connected" | "connected" | "error";
 
 // Firestore path: whatsappConnections/{clinicId} — one per clinic, doc id
 // deliberately equals clinicId rather than being a random id, since a
 // clinic can only ever have exactly one connection.
 export interface WhatsAppConnection extends TenantScoped {
   id: string;
-  mode: WhatsAppConnectionMode;
   status: WhatsAppConnectionStatus;
-  displayPhoneNumber?: string; // e.g. "+91 98765 43210", set once connected
-  gupshupAppId?: string;
-  // BYO mode only. Deliberately never included in anything returned to a
-  // "use client" component — server actions expose only a redacted
-  // isConnected/mode/displayPhoneNumber view, never this field itself. A
-  // production deployment handling real customer credentials at scale
-  // should encrypt this at rest (e.g. via a KMS) rather than storing it as
-  // a plain field; left as plain text for now since it's already behind
-  // both Firestore's per-clinic isolation rules and the server-only read
-  // path, and no real BYO credentials exist yet to protect.
-  byoApiKey?: string;
+  bhashUser: string; // BhashSMS account username, e.g. "Advancedskinclinic"
+  // Deliberately never included in anything returned to a "use client"
+  // component — server actions expose only a redacted status/bhashUser/
+  // senderId view, never this field itself. A production deployment
+  // handling real customer credentials at scale should encrypt this at
+  // rest (e.g. via a KMS) rather than storing it as a plain field; left as
+  // plain text for now, same reasoning as the old byoApiKey field this
+  // replaces — already behind both Firestore's per-clinic isolation rules
+  // and the server-only read path.
+  bhashPass?: string;
+  senderId: string; // BhashSMS "sender" param, e.g. "BUZWAP"
   lastError?: string;
   connectedAt?: number;
   updatedAt: number;
 }
 
 export type MessageTemplateCategory = "appointment_reminder" | "appointment_confirmation" | "receipt_sent" | "custom";
-export type TemplateApprovalStatus = "draft" | "pending" | "approved" | "rejected";
 
-// Meta only allows a handful of button shapes per template, max 3 buttons
-// total — see lib/whatsapp/gupshupClient.ts submitTemplate() for the exact
-// validation mirrored from Meta's rules.
-export type TemplateButtonType = "quick_reply" | "call" | "url";
-
-export interface TemplateButton {
-  type: TemplateButtonType;
-  label: string; // <=20 chars, enforced in the editor UI
-  value?: string; // phone number for "call", URL for "url" — unused for "quick_reply"
-}
+// The three built-in categories are wired to specific places in the app
+// (receipt_sent → ReceiptViewModal's "Send via WhatsApp" button) that fill
+// in the template's variables automatically from real data, in this fixed
+// order — see TEMPLATE_VARIABLE_LABELS below and lib/bhashsms/send.ts.
+// Because of that, their variable count/order isn't editable when creating
+// a template: it has to match what the app actually fills in. "custom" has
+// no automatic trigger yet, so its variables are freely defined instead.
+export const TEMPLATE_VARIABLE_LABELS: Record<Exclude<MessageTemplateCategory, "custom">, string[]> = {
+  appointment_reminder: ["Patient name", "Date", "Time"],
+  appointment_confirmation: ["Patient name", "Date", "Time"],
+  receipt_sent: ["Patient name", "Receipt number", "Amount"],
+};
 
 // Firestore path: messageTemplates/{id}
 export interface MessageTemplate extends TenantScoped {
   id: string;
-  name: string; // internal label; also submitted to Meta as the template's snake_case name
+  name: string; // must exactly match the template name approved on BhashSMS/Meta's side — this is the `text` param on send
   category: MessageTemplateCategory;
-  language: string; // BCP-47-ish, e.g. "en"
-  // May contain {{1}}, {{2}}, ... placeholders per Meta's template variable
-  // syntax — variableLabels gives each one a human label for the editor
-  // (e.g. body "Hi {{1}}, your appointment is at {{2}}" pairs with
-  // variableLabels ["Patient name", "Appointment time"]).
-  body: string;
+  // For "custom" templates only, since the built-in categories' labels are
+  // fixed (see TEMPLATE_VARIABLE_LABELS) — free text a staff member sets to
+  // remember what each of the template's approved {{n}} placeholders means.
   variableLabels: string[];
-  buttons: TemplateButton[];
-  approvalStatus: TemplateApprovalStatus;
-  gupshupTemplateId?: string;
-  rejectionReason?: string;
+  // Optional, for staff reference only when picking a template — NOT sent
+  // anywhere. The actual approved wording lives on BhashSMS/Meta's side;
+  // this app never sees or controls it, only the template name + params.
+  bodyPreview?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -527,6 +525,6 @@ export interface WhatsAppMessage extends TenantScoped {
   body: string;
   status: MessageDeliveryStatus;
   templateId?: string; // set for outbound template-based sends
-  gupshupMessageId?: string;
+  providerMessageId?: string; // BhashSMS's response id/reference for this send, if any
   createdAt: number;
 }

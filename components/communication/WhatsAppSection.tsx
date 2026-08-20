@@ -1,22 +1,16 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { MessageCircle, Loader2 } from "lucide-react";
-import {
-  beginManagedConnectionAction,
-  connectByoAction,
-  disconnectWhatsAppAction,
-} from "@/app/dashboard/communication/actions";
+import { MessageCircle } from "lucide-react";
+import { connectWhatsAppAction, disconnectWhatsAppAction } from "@/app/dashboard/communication/actions";
 import type { WhatsAppConnection } from "@/types";
 
-type Mode = "choose" | "byo";
-
-/** Connection card for the clinic's WhatsApp Business number — see
- * types/index.ts WhatsAppConnection for the managed-vs-BYO distinction, and
- * lib/whatsapp/gupshupClient.ts for what's real vs. stubbed pending a live
- * Gupshup partner account. Both paths here hit real server actions and
- * surface real errors — there's no fake "connected" state without an
- * actual working connection. */
+/** Connection card for the clinic's BhashSMS WhatsApp account — see
+ * types/index.ts WhatsAppConnection and lib/bhashsms/client.ts. Unlike the
+ * old Gupshup flow, there's no OAuth popup or partner account: BhashSMS is
+ * just a username/password/sender id, saved directly and used on every
+ * send. There's no live validation call to check them against before
+ * saving — a wrong password only surfaces on the first real send. */
 export default function WhatsAppSection({
   initialConnection,
   canEdit,
@@ -25,37 +19,18 @@ export default function WhatsAppSection({
   canEdit: boolean;
 }) {
   const [connection, setConnection] = useState(initialConnection);
-  const [mode, setMode] = useState<Mode>("choose");
+  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [byoAppId, setByoAppId] = useState("");
-  const [byoApiKey, setByoApiKey] = useState("");
+  const [bhashUser, setBhashUser] = useState(connection?.bhashUser || "");
+  const [bhashPass, setBhashPass] = useState("");
+  const [senderId, setSenderId] = useState(connection?.senderId || "");
 
-  async function handleManagedConnect() {
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await beginManagedConnectionAction();
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      if (result.signupUrl) {
-        window.open(result.signupUrl, "_blank", "width=500,height=700");
-        setError(
-          "Embedded signup opened in a new window. Once you've connected your number there, this page will need a real Gupshup webhook callback to finish automatically — that part isn't wired up yet."
-        );
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleByoSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await connectByoAction(byoAppId.trim(), byoApiKey.trim());
+    const result = await connectWhatsAppAction(bhashUser.trim(), bhashPass.trim(), senderId.trim());
     setBusy(false);
     if (result.error) {
       setError(result.error);
@@ -64,10 +39,13 @@ export default function WhatsAppSection({
     setConnection({
       id: "",
       clinicId: "",
-      mode: "byo",
       status: "connected",
+      bhashUser: bhashUser.trim(),
+      senderId: senderId.trim(),
       updatedAt: Date.now(),
     });
+    setBhashPass("");
+    setEditing(false);
   }
 
   async function handleDisconnect() {
@@ -80,8 +58,10 @@ export default function WhatsAppSection({
       return;
     }
     setConnection(null);
-    setMode("choose");
+    setEditing(false);
   }
+
+  const showForm = editing || !connection || connection.status !== "connected";
 
   return (
     <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
@@ -89,20 +69,26 @@ export default function WhatsAppSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">WhatsApp Messaging</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Send appointment reminders, confirmations, and receipts over WhatsApp.
+            Send appointment reminders, confirmations, and receipts over WhatsApp via BhashSMS.
           </p>
         </div>
-        {connection?.status === "connected" && (
+        {connection?.status === "connected" && !editing && (
           <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-            Connected{connection.displayPhoneNumber ? ` · ${connection.displayPhoneNumber}` : ""}
+            Connected · {connection.bhashUser}
           </span>
         )}
       </div>
 
       {!canEdit ? (
         <p className="mt-4 text-sm text-brown-400">Only the clinic owner can manage this.</p>
-      ) : connection?.status === "connected" ? (
-        <div className="mt-4">
+      ) : !showForm ? (
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            onClick={() => setEditing(true)}
+            className="rounded-md border border-beige-300 px-4 py-2 text-sm font-medium text-brown-700 transition-colors hover:border-gold-500"
+          >
+            Edit
+          </button>
           <button
             onClick={handleDisconnect}
             disabled={busy}
@@ -111,46 +97,41 @@ export default function WhatsAppSection({
             Disconnect
           </button>
         </div>
-      ) : mode === "choose" ? (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <button
-            onClick={handleManagedConnect}
-            disabled={busy}
-            className="flex flex-col items-start gap-2 rounded-lg border border-beige-300 p-4 text-left transition-colors hover:border-gold-500 disabled:opacity-50"
-          >
-            <MessageCircle className="text-gold-600" size={20} />
-            <span className="text-sm font-semibold text-brown-900">Quick Connect</span>
-            <span className="text-xs text-brown-400">
-              Connect your WhatsApp number in one click — we handle the setup.
-            </span>
-            {busy && <Loader2 className="animate-spin text-brown-400" size={16} />}
-          </button>
-          <button
-            onClick={() => setMode("byo")}
-            className="flex flex-col items-start gap-2 rounded-lg border border-beige-300 p-4 text-left transition-colors hover:border-gold-500"
-          >
-            <MessageCircle className="text-brown-400" size={20} />
-            <span className="text-sm font-semibold text-brown-900">Use my own Gupshup account</span>
-            <span className="text-xs text-brown-400">Already have a Gupshup WhatsApp API app? Connect it directly.</span>
-          </button>
-        </div>
       ) : (
-        <form onSubmit={handleByoSubmit} className="mt-4 max-w-sm space-y-3">
+        <form onSubmit={handleSubmit} className="mt-4 max-w-sm space-y-3">
+          <div className="flex items-start gap-2 rounded-lg border border-beige-300 bg-canvas p-3">
+            <MessageCircle className="mt-0.5 flex-shrink-0 text-gold-600" size={16} />
+            <p className="text-xs text-brown-600">
+              From your BhashSMS account's WhatsApp API details — the same username, password, and sender id used in
+              their sendmsg.php URL.
+            </p>
+          </div>
           <div>
-            <label className="text-sm font-medium text-brown-700">Gupshup App ID</label>
+            <label className="text-sm font-medium text-brown-700">BhashSMS Username</label>
             <input
-              value={byoAppId}
-              onChange={(e) => setByoAppId(e.target.value)}
+              value={bhashUser}
+              onChange={(e) => setBhashUser(e.target.value)}
               required
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-brown-700">API Key</label>
+            <label className="text-sm font-medium text-brown-700">Password</label>
             <input
-              value={byoApiKey}
-              onChange={(e) => setByoApiKey(e.target.value)}
+              value={bhashPass}
+              onChange={(e) => setBhashPass(e.target.value)}
               type="password"
+              placeholder={connection ? "Enter to change" : undefined}
+              required={!connection}
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-brown-700">Sender ID</label>
+            <input
+              value={senderId}
+              onChange={(e) => setSenderId(e.target.value)}
+              placeholder="e.g. BUZWAP"
               required
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
@@ -161,15 +142,17 @@ export default function WhatsAppSection({
               disabled={busy}
               className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
             >
-              {busy ? "Connecting…" : "Connect"}
+              {busy ? "Saving…" : "Save"}
             </button>
-            <button
-              type="button"
-              onClick={() => setMode("choose")}
-              className="text-sm font-medium text-brown-600 hover:underline"
-            >
-              Back
-            </button>
+            {connection && (
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="text-sm font-medium text-brown-600 hover:underline"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       )}

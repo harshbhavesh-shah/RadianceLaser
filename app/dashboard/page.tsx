@@ -15,6 +15,7 @@ import {
   computeTodayAppointments,
   computePackageAlerts,
   computeContraindicationAlerts,
+  computeFollowUpAlerts,
   computeAppointmentPipelineMaps,
 } from "@/lib/overview";
 import { todayLocalStr } from "@/lib/calendar";
@@ -79,6 +80,7 @@ export default async function DashboardPage() {
   const todayAppointments = computeTodayAppointments(appointments, today);
   const alerts = [
     ...computeContraindicationAlerts(todayAppointments, patientsById),
+    ...computeFollowUpAlerts(visits, patientsById, today),
     ...computePackageAlerts(packages, visits, patientsById, today),
   ].slice(0, 8);
   const { visitIdByAppointmentId, receiptedAppointmentIds } = computeAppointmentPipelineMaps(visits, receipts);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, PackageX, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, PackageX, PhoneCall, ShieldAlert } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
 import type { OverviewAlert } from "@/lib/overview";
 
@@ -7,6 +7,7 @@ const ICONS: Record<OverviewAlert["kind"], typeof AlertTriangle> = {
   "package-low": PackageX,
   "package-expiring": PackageX,
   contraindication: ShieldAlert,
+  "follow-up": PhoneCall,
 };
 
 /** Everything that needs a follow-up today, in one place — package renewals

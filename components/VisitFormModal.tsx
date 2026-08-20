@@ -59,6 +59,8 @@ export default function VisitFormModal({
   const columnKeys = config.columns.map((c) => c.key);
 
   const [date, setDate] = useState(visit?.date || "");
+  const [followUpDate, setFollowUpDate] = useState(visit?.followUpDate || "");
+  const [followUpNote, setFollowUpNote] = useState(visit?.followUpNote || "");
   const [packageId, setPackageId] = useState(visit?.packageId || presetPackageId || "");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">(visit?.paymentMethod || "");
   const [machineId, setMachineId] = useState(visit?.machineId || "");
@@ -195,6 +197,8 @@ export default function VisitFormModal({
         // otherwise the stale value would silently stay on the document.
         updatePayload.packageId = packageId ? packageId : deleteField();
         updatePayload.paymentMethod = !packageId && paymentMethod ? paymentMethod : deleteField();
+        updatePayload.followUpDate = followUpDate ? followUpDate : deleteField();
+        updatePayload.followUpNote = followUpDate && followUpNote ? followUpNote : deleteField();
         updatePayload.machineId = machineId ? machineId : deleteField();
         updatePayload.performedByUid = performedByUid ? performedByUid : deleteField();
         updatePayload.performedByName = performedByStaff ? performedByStaff.name : deleteField();
@@ -207,6 +211,8 @@ export default function VisitFormModal({
           areas: parsedAreas,
           packageId: packageId || undefined,
           paymentMethod: !packageId && paymentMethod ? paymentMethod : undefined,
+          followUpDate: followUpDate || undefined,
+          followUpNote: followUpDate && followUpNote ? followUpNote : undefined,
           machineId: machineId || undefined,
           performedByUid: performedByUid || undefined,
           performedByName: performedByStaff?.name,
@@ -222,6 +228,8 @@ export default function VisitFormModal({
           areas: parsedAreas,
           ...(packageId ? { packageId } : {}),
           ...(!packageId && paymentMethod ? { paymentMethod } : {}),
+          ...(followUpDate ? { followUpDate } : {}),
+          ...(followUpDate && followUpNote ? { followUpNote } : {}),
           ...(machineId ? { machineId } : {}),
           ...(performedByUid ? { performedByUid, performedByName: performedByStaff?.name } : {}),
           ...(durationMinutes ? { durationMinutes: Number(durationMinutes) } : {}),
@@ -353,6 +361,26 @@ export default function VisitFormModal({
             </div>
           </div>
         )}
+
+        <div className="mb-4">
+          <label className="mb-1.5 block text-sm font-medium text-brown-700">
+            Follow-up Date <span className="text-brown-400">(optional)</span>
+          </label>
+          <input
+            type="date"
+            value={followUpDate}
+            onChange={(e) => setFollowUpDate(e.target.value)}
+            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+          />
+          {followUpDate && (
+            <input
+              value={followUpNote}
+              onChange={(e) => setFollowUpNote(e.target.value)}
+              placeholder="What's this follow-up about? e.g. Check for reaction"
+              className="mt-2 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+            />
+          )}
+        </div>
 
         {(machinesForType.length > 0 || staff.length > 0) && (
           <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">

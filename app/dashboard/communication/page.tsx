@@ -14,9 +14,9 @@ export default async function CommunicationPage() {
   ]);
 
   const isOwner = session.role === "owner";
-  // Never forward byoApiKey to the client — WhatsAppSection only needs to
+  // Never forward bhashPass to the client — WhatsAppSection only needs to
   // know whether/how a connection exists, not the secret itself.
-  const redactedConnection = whatsappConnection ? { ...whatsappConnection, byoApiKey: undefined } : null;
+  const redactedConnection = whatsappConnection ? { ...whatsappConnection, bhashPass: undefined } : null;
 
   return (
     <div className="max-w-3xl">
