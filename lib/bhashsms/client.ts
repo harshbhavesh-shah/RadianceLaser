@@ -11,17 +11,22 @@ import type { WhatsAppConnection } from "@/types";
  *     &phone=MOBILE&text=TEMPLATENAME&priority=wa&stype=normal
  *     &Params=param1,param2
  *
- * UNVERIFIED: the response format. BhashSMS's docs (as supplied) only cover
- * the request; nothing here has been checked against a real response body
- * yet. This treats the response as opaque text and only fails loudly if it
- * looks like an error — tighten isErrorResponse() once a real success/
- * failure response has actually been seen.
+ * Response format is still only partially confirmed. One real failure case
+ * has been observed against the clinic's actual account (wrong password):
+ * a 200 OK with a plain-text/HTML-ish body like
+ * "<br>Username/Password Incorrect or Account Deactivated" — no JSON, no
+ * distinct HTTP status. isErrorResponse() below is written to catch that
+ * plus other likely wordings; the real *success* response body still
+ * hasn't been seen, so isErrorResponse() may need loosening (or a
+ * success-shape check added) once one comes in — a false "sent" is worse
+ * than a false failure here, so lean toward flagging unfamiliar responses
+ * as errors rather than assuming success.
  */
 
 const SEND_URL = "http://bhashsms.com/api/sendmsg.php";
 
 function isErrorResponse(raw: string): boolean {
-  return /error|invalid|fail(ed)?|not\s*found/i.test(raw);
+  return /error|invalid|fail(ed)?|not\s*found|incorrect|deactivated|denied|unauthoriz|rejected/i.test(raw);
 }
 
 /** Sends an approved WhatsApp template message, filling in the template's

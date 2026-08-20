@@ -135,6 +135,40 @@ function formatCurrency(n: number): string {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
 }
 
+/** Sends a real WhatsApp message to a phone number of the owner's choosing,
+ * using one of the clinic's saved templates — for verifying a BhashSMS
+ * connection actually works (right credentials, right template name/
+ * approval) before relying on it for real patients. Returns BhashSMS's raw
+ * response text on success since its response format is otherwise
+ * unverified — seeing it here is how that gets confirmed. */
+export async function sendTestMessageAction(
+  templateId: string,
+  phone: string,
+  params: string[]
+): Promise<{ raw?: string; error?: string }> {
+  try {
+    const session = await requireOwner();
+
+    const connection = await getWhatsAppConnection(session.clinicId);
+    if (!connection || connection.status !== "connected") {
+      return { error: "Connect WhatsApp first." };
+    }
+
+    const templates = await getClinicMessageTemplates(session.clinicId);
+    const template = templates.find((t) => t.id === templateId);
+    if (!template) return { error: "Template not found." };
+
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone) return { error: "Enter a phone number to send to." };
+
+    const { raw } = await sendTemplateMessage(connection, normalizedPhone, template.name, params);
+    return { raw };
+  } catch (err) {
+    console.error("Failed to send test WhatsApp message:", err);
+    return { error: err instanceof Error ? err.message : "Couldn't send this message. Please try again." };
+  }
+}
+
 /** Sends a receipt to the patient over WhatsApp (using the clinic's
  * "receipt_sent" template, variables filled in the fixed order documented
  * on TEMPLATE_VARIABLE_LABELS) or plain SMS (free text, no template
