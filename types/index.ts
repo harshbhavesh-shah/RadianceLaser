@@ -128,6 +128,11 @@ export interface Patient extends TenantScoped {
   nameLower: string;
   skinType?: SkinType;
   contraindications?: string; // free text: pregnancy, isotretinoin, photosensitizing meds, etc.
+  // The patient's numeric ID in the clinic's old Access-based system
+  // (AdvanceSMS.mdb `patientno`), for anyone cross-referencing an old
+  // paper file — see scripts/importAdvanceSMS.mjs. Absent on every patient
+  // created in the app itself.
+  legacyPatientNo?: number;
   createdAt: number;
 }
 
@@ -204,6 +209,13 @@ export interface Visit extends TenantScoped {
   // text for what the follow-up is actually about.
   followUpDate?: string; // YYYY-MM-DD
   followUpNote?: string;
+  // The row's `xauto` id in the clinic's old Access-based system
+  // (AdvanceSMS.mdb Patient_visit_Qswitch/patient_visit_Detail), for
+  // tracing an imported visit back to its original source row — see
+  // scripts/importAdvanceSMS.mjs. Absent on every visit logged in the app
+  // itself. sessionType already indicates which of the two legacy tables
+  // this came from, so this id alone is enough to find the row.
+  legacyVisitNo?: number;
   createdAt: number;
 }
 

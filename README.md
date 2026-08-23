@@ -1,4 +1,38 @@
-# LaserClinic — multi-tenant clinic management SaaS
+<div align="center">
+  <img src="public/logo.png" alt="RadianceLaser logo" width="96" />
+
+  <h1>RadianceLaser</h1>
+  <p><b>Multi-tenant clinic management SaaS for laser &amp; aesthetics clinics</b></p>
+
+  <p>
+    <a href="https://radiancelaser.in/signup">
+      <img src="https://img.shields.io/badge/Start%20Free%20Trial-radiancelaser.in%2Fsignup-A9812F?style=for-the-badge&logo=rocket&logoColor=2C1D14&labelColor=2C1D14" alt="Sign up" />
+    </a>
+    <a href="https://radiancelaser.in/login">
+      <img src="https://img.shields.io/badge/Log%20In-radiancelaser.in%2Flogin-2C1D14?style=for-the-badge&logo=firebase&logoColor=F3E7CC" alt="Log in" />
+    </a>
+    <a href="https://radiancelaser.in">
+      <img src="https://img.shields.io/badge/Visit%20Website-radiancelaser.in-4A342A?style=for-the-badge&logo=googlechrome&logoColor=F3E7CC" alt="Website" />
+    </a>
+  </p>
+
+  <p>
+    <img src="https://img.shields.io/badge/Next.js%2014-2C1D14?style=flat-square&logo=next.js&logoColor=F3E7CC" alt="Next.js 14" />
+    <img src="https://img.shields.io/badge/TypeScript-2C1D14?style=flat-square&logo=typescript&logoColor=F3E7CC" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Tailwind%20CSS-2C1D14?style=flat-square&logo=tailwindcss&logoColor=F3E7CC" alt="Tailwind CSS" />
+    <img src="https://img.shields.io/badge/Firebase-2C1D14?style=flat-square&logo=firebase&logoColor=F3E7CC" alt="Firebase" />
+    <img src="https://img.shields.io/badge/Razorpay-2C1D14?style=flat-square&logo=razorpay&logoColor=F3E7CC" alt="Razorpay" />
+  </p>
+
+  <p>
+    Made by
+    <a href="https://harsh.radiancelaser.in"><b>Harsh Shah</b></a>
+  </p>
+
+  <img src="https://img.shields.io/badge/-%20-E8DDC9?style=flat-square" alt="" width="800" height="4" />
+</div>
+
+## What it is
 
 A multi-clinic SaaS platform for laser/aesthetics clinics: clinics sign
 themselves up for a free trial, land in their own portal, and pay annually
@@ -6,6 +40,53 @@ once it ends — with data isolated per clinic in Firestore. Covers
 day-to-day clinic operations end to end — patients, treatment sessions,
 appointments, prepaid packages, consent forms, receipts, and before/after
 photos — not just the auth/tenancy/billing layer around them.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="public/screenshots/dashboard-today.png" width="100%" alt="Dashboard" /><br />
+      <sub><b>Dashboard</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="public/screenshots/appointments.png" width="100%" alt="Appointments" /><br />
+      <sub><b>Appointments</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="public/screenshots/appointments-mini-panel.png" width="100%" alt="Appointment detail panel" /><br />
+      <sub><b>Appointment Detail</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <img src="public/screenshots/patients-list.png" width="100%" alt="Patients list" /><br />
+      <sub><b>Patients</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="public/screenshots/patient-detail.png" width="100%" alt="Patient detail" /><br />
+      <sub><b>Patient Record</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="public/screenshots/analytics.png" width="100%" alt="Analytics" /><br />
+      <sub><b>Analytics</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <img src="public/screenshots/documents-receipts.png" width="100%" alt="Receipts" /><br />
+      <sub><b>Receipts</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="public/screenshots/documents.png" width="100%" alt="Documents" /><br />
+      <sub><b>Consent Forms</b></sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="public/screenshots/settings-import.png" width="100%" alt="Bulk import" /><br />
+      <sub><b>Bulk Import</b></sub>
+    </td>
+  </tr>
+</table>
 
 ## Stack
 
