@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { extendAccessAction, terminateAccessAction } from "@/app/admin/actions";
+import { deleteClinicAction, extendAccessAction, terminateAccessAction } from "@/app/admin/actions";
 import { getClinicAccess, type ClinicAccess } from "@/lib/subscription";
 import type { Clinic } from "@/types";
 
@@ -58,6 +58,26 @@ function ClinicRow({ clinic }: { clinic: Clinic }) {
     else router.refresh();
   }
 
+  // Typing the exact clinic name is a stronger safeguard than a plain
+  // confirm() dialog for something this irreversible — a stray click on
+  // "OK" is easy, retyping a specific name isn't.
+  async function handleDelete() {
+    const typed = prompt(
+      `This permanently deletes "${clinic.name}" — every patient, visit, package, appointment, receipt, ` +
+        `staff login, and document. There is no undo.\n\nType the clinic's exact name to confirm:`
+    );
+    if (typed !== clinic.name) {
+      if (typed !== null) alert("Name didn't match — nothing was deleted.");
+      return;
+    }
+    setIsPending(true);
+    setError(null);
+    const result = await deleteClinicAction(clinic.id);
+    setIsPending(false);
+    if (result.error) setError(result.error);
+    else router.refresh();
+  }
+
   return (
     <tr className="border-b border-beige-300 last:border-0">
       <td className="px-4 py-3">
@@ -97,6 +117,13 @@ function ClinicRow({ clinic }: { clinic: Clinic }) {
             className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
           >
             Terminate
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={isPending}
+            className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-50"
+          >
+            Delete
           </button>
         </div>
         {error && <div className="mt-1 text-xs text-red-700">{error}</div>}
