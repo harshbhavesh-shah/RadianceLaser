@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { addDoc, collection, deleteDoc, deleteField, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { numericFieldKeysFor } from "@/lib/sessionTypes";
@@ -99,24 +100,6 @@ export default function VisitFormModal({
   const [error, setError] = useState<string | null>(null);
   const [permissionError, setPermissionError] = useState(false);
 
-  // The actual complaint wasn't about any individual field being too
-  // technical — it's that adding a second treated area duplicated the
-  // *entire* field set again (all 8 Q-Switch fields), when in practice the
-  // machine settings (Carbon/Mode/HP/Eng/Pass/Repeat, or HR/SHR/Stack for
-  // LHR) are the same for the whole session; only the area name and its fee
-  // actually differ area to area. "Area"/"Fee" are the one pair of column
-  // keys both built-in types share for exactly this reason, so they're the
-  // per-area fields; everything else is entered once and applied to every
-  // area. A clinic-defined custom machine type isn't guaranteed to have
-  // "area"/"fee" keys at all (Settings → Machine Types lets a clinic name
-  // its own columns anything), so this simplification only applies when
-  // those keys are actually present — otherwise every column still gets
-  // its own copy per area, same as before, since there's no reliable way to
-  // guess which of a custom type's columns are meant to vary per area.
-  const perAreaColumns = config.columns.filter((c) => c.key === "area" || c.key === "fee");
-  const sharedColumns = config.columns.filter((c) => c.key !== "area" && c.key !== "fee");
-  const useSimplifiedAreaFlow = perAreaColumns.length > 0;
-
   const selectedPackage = activePackages.find((p) => p.id === packageId);
   const machinesForType = machines.filter((m) => m.sessionType === sessionType);
 
@@ -126,22 +109,16 @@ export default function VisitFormModal({
     );
   }
 
-  // Shared (session-level) fields are the same value across every area, so
-  // editing one writes it into all of them at once — there's only ever one
-  // visible input for e.g. "Mode", not one per area.
-  function updateSharedField(key: string, value: string) {
-    setAreaEntries((prev) => prev.map((entry) => ({ ...entry, [key]: value })));
-  }
-
+  // A new row starts as a copy of the previous one — machine settings
+  // (Mode/HP/Eng/Pass/Repeat, or HR/SHR/Stack) are usually the same pass to
+  // pass, only the treated area and its fee actually change — except
+  // "area" and "fee" themselves, which almost always need a fresh value,
+  // so those two start blank rather than duplicating the last row's.
+  // Each row is its own real entry — often a separate pass with its own
+  // settings, not a repeat of the previous one — so a new row starts
+  // completely blank rather than guessing values from the last row.
   function addArea() {
-    // New areas inherit the current shared-field values (carried over from
-    // the first area) rather than starting blank, since those settings are
-    // meant to apply to the whole session, not just the first area entered.
-    setAreaEntries((prev) => {
-      const shared: AreaInput = {};
-      for (const col of sharedColumns) shared[col.key] = prev[0]?.[col.key] || "";
-      return [...prev, { ...blankAreaInput(columnKeys), ...shared }];
-    });
+    setAreaEntries((prev) => [...prev, blankAreaInput(columnKeys)]);
   }
 
   function removeArea(index: number) {
@@ -279,9 +256,9 @@ export default function VisitFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface p-5 shadow-card sm:p-6">
-        <div className="mb-1 flex items-center gap-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4 py-6">
+      <div className="flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-surface p-5 shadow-card sm:p-6">
+        <div className="mb-1 flex flex-shrink-0 items-center gap-2">
           <span
             className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${config.badgeClassName}`}
           >
@@ -291,305 +268,197 @@ export default function VisitFormModal({
             {isEditing ? "Edit Visit" : "Log New Visit"}
           </h2>
         </div>
-        <div className="mb-5 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-4 h-[2px] w-8 flex-shrink-0 bg-gold-500" />
 
-        <div className="mb-4">
-          <label className="mb-1.5 block text-sm font-medium text-brown-700">Date</label>
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-            />
-            <button
-              type="button"
-              onClick={() => setDate(todayLocalStr())}
-              className="flex-shrink-0 rounded-md border border-beige-300 px-3 py-2 text-sm font-medium text-brown-600 transition-colors hover:border-gold-500 hover:text-gold-600"
-            >
-              Today
-            </button>
-          </div>
-        </div>
-
-        {activePackages.length > 0 && (
+        <div className="flex-shrink-0 overflow-y-auto">
           <div className="mb-4">
-            <label className="mb-1.5 block text-sm font-medium text-brown-700">Package</label>
-            <select
-              value={packageId}
-              onChange={(e) => handlePackageChange(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-            >
-              <option value="">None — pay per visit</option>
-              {activePackages.map((pkg) => (
-                <option key={pkg.id} value={pkg.id}>
-                  {pkg.label}
-                </option>
-              ))}
-            </select>
-            {selectedPackage && (
-              <p className="mt-1.5 text-xs text-gold-600">
-                Covered by {selectedPackage.label} — no separate fee for this visit.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Only meaningful for a direct-pay visit — a package-covered
-            session has no new payment of its own (see PaymentMethod in
-            types/index.ts). */}
-        {!packageId && (
-          <div className="mb-4">
-            <label className="mb-1.5 block text-sm font-medium text-brown-700">
-              Payment Method <span className="text-brown-400">(optional)</span>
-            </label>
+            <label className="mb-1.5 block text-sm font-medium text-brown-700">Date</label>
             <div className="flex gap-2">
-              {(["cash", "online"] as const).map((method) => (
-                <button
-                  key={method}
-                  type="button"
-                  onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
-                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
-                    paymentMethod === method
-                      ? "border-gold-500 bg-gold-100 text-gold-600"
-                      : "border-beige-300 text-brown-600 hover:border-gold-500"
-                  }`}
-                >
-                  {method}
-                </button>
-              ))}
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              />
+              <button
+                type="button"
+                onClick={() => setDate(todayLocalStr())}
+                className="flex-shrink-0 rounded-md border border-beige-300 px-3 py-2 text-sm font-medium text-brown-600 transition-colors hover:border-gold-500 hover:text-gold-600"
+              >
+                Today
+              </button>
             </div>
           </div>
-        )}
 
-        <div className="mb-4">
-          <label className="mb-1.5 block text-sm font-medium text-brown-700">
-            Follow-up Date <span className="text-brown-400">(optional)</span>
-          </label>
-          <input
-            type="date"
-            value={followUpDate}
-            onChange={(e) => setFollowUpDate(e.target.value)}
-            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-          />
-          {followUpDate && (
+          {activePackages.length > 0 && (
+            <div className="mb-4">
+              <label className="mb-1.5 block text-sm font-medium text-brown-700">Package</label>
+              <select
+                value={packageId}
+                onChange={(e) => handlePackageChange(e.target.value)}
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              >
+                <option value="">None — pay per visit</option>
+                {activePackages.map((pkg) => (
+                  <option key={pkg.id} value={pkg.id}>
+                    {pkg.label}
+                  </option>
+                ))}
+              </select>
+              {selectedPackage && (
+                <p className="mt-1.5 text-xs text-gold-600">
+                  Covered by {selectedPackage.label} — no separate fee for this visit.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Only meaningful for a direct-pay visit — a package-covered
+              session has no new payment of its own (see PaymentMethod in
+              types/index.ts). */}
+          {!packageId && (
+            <div className="mb-4">
+              <label className="mb-1.5 block text-sm font-medium text-brown-700">
+                Payment Method <span className="text-brown-400">(optional)</span>
+              </label>
+              <div className="flex gap-2">
+                {(["cash", "online"] as const).map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
+                      paymentMethod === method
+                        ? "border-gold-500 bg-gold-100 text-gold-600"
+                        : "border-beige-300 text-brown-600 hover:border-gold-500"
+                    }`}
+                  >
+                    {method}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mb-4">
+            <label className="mb-1.5 block text-sm font-medium text-brown-700">
+              Follow-up Date <span className="text-brown-400">(optional)</span>
+            </label>
             <input
-              value={followUpNote}
-              onChange={(e) => setFollowUpNote(e.target.value)}
-              placeholder="What's this follow-up about? e.g. Check for reaction"
-              className="mt-2 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              type="date"
+              value={followUpDate}
+              onChange={(e) => setFollowUpDate(e.target.value)}
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
             />
+            {followUpDate && (
+              <input
+                value={followUpNote}
+                onChange={(e) => setFollowUpNote(e.target.value)}
+                placeholder="What's this follow-up about? e.g. Check for reaction"
+                className="mt-2 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              />
+            )}
+          </div>
+
+          {(machinesForType.length > 0 || staff.length > 0) && (
+            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {machinesForType.length > 0 && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-brown-700">Machine</label>
+                  <select
+                    value={machineId}
+                    onChange={(e) => setMachineId(e.target.value)}
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  >
+                    <option value="">— None —</option>
+                    {machinesForType.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {staff.length > 0 && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-brown-700">Performed By</label>
+                  <select
+                    value={performedByUid}
+                    onChange={(e) => setPerformedByUid(e.target.value)}
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  >
+                    <option value="">— None —</option>
+                    {staff.map((s) => (
+                      <option key={s.uid} value={s.uid}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-brown-700">Duration (min)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                />
+              </div>
+            </div>
           )}
         </div>
 
-        {(machinesForType.length > 0 || staff.length > 0) && (
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {machinesForType.length > 0 && (
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-brown-700">Machine</label>
-                <select
-                  value={machineId}
-                  onChange={(e) => setMachineId(e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-                >
-                  <option value="">— None —</option>
-                  {machinesForType.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {staff.length > 0 && (
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-brown-700">Performed By</label>
-                <select
-                  value={performedByUid}
-                  onChange={(e) => setPerformedByUid(e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-                >
-                  <option value="">— None —</option>
-                  {staff.map((s) => (
-                    <option key={s.uid} value={s.uid}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-brown-700">Duration (min)</label>
-              <input
-                type="number"
-                min={0}
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-              />
-            </div>
+        {/* Spreadsheet-style entry — one row per pass/area, every column
+            editable per row, styled after the clinic's old Excel-based
+            sheet so multi-pass/multi-area sessions are fast to type across
+            (tab or click cell to cell) instead of filling in a separate
+            card per area. */}
+        <div className="mt-4 flex min-h-0 flex-1 flex-col">
+          <div className="mb-2 flex flex-shrink-0 items-center justify-between">
+            <label className="font-display text-base font-medium text-brown-900">Session Entries</label>
+            <button
+              type="button"
+              onClick={addArea}
+              className="text-sm font-medium text-gold-600 hover:underline"
+            >
+              + Add Row
+            </button>
           </div>
-        )}
 
-        {useSimplifiedAreaFlow ? (
-          <>
-            {/* Session-level settings — entered once, applied to every area
-                below, since these are normally the same machine settings for
-                the whole sitting (e.g. one Mode/HP/Energy for the session),
-                not something that varies area to area. */}
-            {sharedColumns.length > 0 && (
-              <div className="mb-4">
-                <label className="mb-1.5 block text-sm font-medium text-brown-700">
-                  Session Settings
-                </label>
-                <div className="grid grid-cols-1 gap-4 rounded-lg border border-beige-300 p-3 sm:grid-cols-2">
-                  {sharedColumns.map((col) => (
-                    <div key={col.key}>
-                      <label className="mb-1.5 block text-sm font-medium text-brown-700">
-                        {col.label}
-                      </label>
-                      {col.type === "select" ? (
-                        <select
-                          value={areaEntries[0]?.[col.key] || ""}
-                          onChange={(e) => updateSharedField(col.key, e.target.value)}
-                          className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-                        >
-                          <option value="">— Select —</option>
-                          {col.options?.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type={col.type === "number" ? "number" : "text"}
-                          min={col.type === "number" ? 0 : undefined}
-                          value={areaEntries[0]?.[col.key] || ""}
-                          onChange={(e) => updateSharedField(col.key, e.target.value)}
-                          className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
-                        />
-                      )}
-                    </div>
+          <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-beige-300">
+            <table className="w-full min-w-[640px] border-collapse text-base">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-beige-300 bg-beige-100">
+                  {config.columns.map((col) => (
+                    <th
+                      key={col.key}
+                      className="whitespace-nowrap border border-beige-300 px-3 py-3 text-left text-sm font-semibold uppercase tracking-wide text-brown-600"
+                    >
+                      {col.label}
+                    </th>
                   ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-medium text-brown-700">
-                Treated Area{areaEntries.length > 1 ? "s" : ""}
-              </label>
-              <button
-                type="button"
-                onClick={addArea}
-                className="text-sm font-medium text-gold-600 hover:underline"
-              >
-                + Add Another Area
-              </button>
-            </div>
-
-            {/* Each area is just its own fields (Area name, Fee) on one
-                line — not a full duplicated card — since everything else
-                about the session is already set once above. */}
-            <div className="space-y-2">
-              {areaEntries.map((entry, index) => {
-                const isFeeLockedByPackage = !!packageId;
-                return (
-                  <div key={index} className="flex items-start gap-2">
-                    {perAreaColumns.map((col) => {
-                      const isFeeLocked = col.key === "fee" && isFeeLockedByPackage;
-                      return (
-                        <div key={col.key} className="flex-1">
-                          {index === 0 && (
-                            <label className="mb-1.5 block text-sm font-medium text-brown-700">
-                              {col.label}
-                            </label>
-                          )}
-                          <input
-                            type={col.type === "number" ? "number" : "text"}
-                            min={col.type === "number" ? 0 : undefined}
-                            value={entry[col.key] || ""}
-                            onChange={(e) => updateAreaField(index, col.key, e.target.value)}
-                            disabled={isFeeLocked}
-                            placeholder={col.label}
-                            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500 disabled:bg-beige-200 disabled:text-brown-400"
-                          />
-                        </div>
-                      );
-                    })}
-                    {areaEntries.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeArea(index)}
-                        className={`flex-shrink-0 rounded-md border border-beige-300 px-2.5 py-2 text-xs font-medium text-red-700 hover:bg-red-50 ${index === 0 ? "mt-6" : ""}`}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {areaEntries.length > 1 && (
-              <p className="mt-3 text-xs text-brown-400">
-                Fee shown on receipts/reports for this visit will be the total across all areas above.
-              </p>
-            )}
-          </>
-        ) : (
-          <>
-            {/* Fallback for a clinic-defined custom machine type with no
-                "area"/"fee" columns to split on — same full-duplication
-                behavior as before, since there's no reliable way to guess
-                which of this type's own columns are meant to vary per area. */}
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-medium text-brown-700">
-                Treated Area{areaEntries.length > 1 ? "s" : ""}
-              </label>
-              <button
-                type="button"
-                onClick={addArea}
-                className="text-sm font-medium text-gold-600 hover:underline"
-              >
-                + Add Another Area
-              </button>
-            </div>
-            <div className="space-y-3">
-              {areaEntries.map((entry, index) => {
-                const isFeeLockedByPackage = !!packageId;
-                return (
-                  <div key={index} className="rounded-lg border border-beige-300 p-3">
-                    {areaEntries.length > 1 && (
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-brown-400">
-                          Area {index + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeArea(index)}
-                          className="text-xs font-medium text-red-700 hover:underline"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      {config.columns.map((col) => {
-                        const isFeeLocked = col.key === "fee" && isFeeLockedByPackage;
+                  {areaEntries.length > 1 && <th className="w-10 border border-beige-300" />}
+                </tr>
+              </thead>
+              <tbody>
+                {areaEntries.map((entry, index) => {
+                  const isLastRow = index === areaEntries.length - 1;
+                  return (
+                    <tr key={index}>
+                      {config.columns.map((col, colIndex) => {
+                        const isFeeLocked = col.key === "fee" && !!packageId;
+                        const isLastCell = isLastRow && colIndex === config.columns.length - 1;
                         return (
-                          <div key={col.key}>
-                            <label className="mb-1.5 block text-sm font-medium text-brown-700">
-                              {col.label}
-                            </label>
+                          <td key={col.key} className="border border-beige-200 p-1.5">
                             {col.type === "select" ? (
                               <select
                                 value={entry[col.key] || ""}
                                 onChange={(e) => updateAreaField(index, col.key, e.target.value)}
-                                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                                className="w-full min-w-[6rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-gold-100/40 focus:ring-1 focus:ring-gold-500"
                               >
-                                <option value="">— Select —</option>
+                                <option value="">—</option>
                                 {col.options?.map((opt) => (
                                   <option key={opt} value={opt}>
                                     {opt}
@@ -602,34 +471,56 @@ export default function VisitFormModal({
                                 min={col.type === "number" ? 0 : undefined}
                                 value={entry[col.key] || ""}
                                 onChange={(e) => updateAreaField(index, col.key, e.target.value)}
+                                onKeyDown={(e) => {
+                                  // Mirrors a spreadsheet's "Enter adds a new
+                                  // row" — only from the last cell of the
+                                  // last row, so it never fires mid-row.
+                                  if (isLastCell && e.key === "Enter") {
+                                    e.preventDefault();
+                                    addArea();
+                                  }
+                                }}
                                 disabled={isFeeLocked}
-                                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500 disabled:bg-beige-200 disabled:text-brown-400"
+                                className="w-full min-w-[5.5rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-gold-100/40 focus:ring-1 focus:ring-gold-500 disabled:text-brown-400"
                               />
                             )}
-                          </div>
+                          </td>
                         );
                       })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {areaEntries.length > 1 && (
-              <p className="mt-3 text-xs text-brown-400">
-                Fee shown on receipts/reports for this visit will be the total across all areas above.
-              </p>
-            )}
-          </>
-        )}
+                      {areaEntries.length > 1 && (
+                        <td className="border border-beige-200 p-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removeArea(index)}
+                            className="rounded p-1.5 text-brown-400 hover:bg-red-50 hover:text-red-600"
+                            aria-label="Remove row"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {areaEntries.length > 1 && (
+            <p className="mt-2 flex-shrink-0 text-xs text-brown-400">
+              Fee shown on receipts/reports for this visit will be the total across all rows above.
+            </p>
+          )}
+        </div>
 
         {error && permissionError && (
-          <div className="mt-4">
+          <div className="mt-4 flex-shrink-0">
             <PermissionErrorNotice message={error} />
           </div>
         )}
-        {error && !permissionError && <p className="mt-4 text-sm text-red-700">{error}</p>}
+        {error && !permissionError && <p className="mt-4 flex-shrink-0 text-sm text-red-700">{error}</p>}
 
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-4 flex flex-shrink-0 items-center justify-between">
           <div>
             {isEditing && (
               <button

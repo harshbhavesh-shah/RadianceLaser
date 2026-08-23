@@ -1,7 +1,7 @@
 "use client";
 
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import type { SessionType, Visit } from "@/types";
+import type { SessionColumnDef, SessionType, Visit } from "@/types";
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "No date set";
@@ -10,7 +10,8 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function formatFieldValue(key: string, value: string | number): string {
+function formatCellValue(key: string, value: string | number | undefined): string {
+  if (value === undefined || value === "" || value === null) return "";
   if (key === "fee") return `₹${Number(value).toLocaleString("en-IN")}`;
   return String(value);
 }
@@ -29,6 +30,11 @@ export default function VisitTimeline({
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
   const sorted = [...visits].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  // Whether this session type distinguishes treated areas at all — if so,
+  // consecutive rows sharing the same Area value are further passes of the
+  // SAME area (a thin divider between them), not a new one (a thick
+  // divider) — see isNewAreaGroup below.
+  const hasAreaColumn = config.columns.some((c) => c.key === "area");
 
   return (
     <div>
@@ -48,22 +54,32 @@ export default function VisitTimeline({
       ) : (
         <div className="space-y-3">
           {sorted.map((visit) => {
-            // Multiple treated areas in one visit each get their own row of
-            // details below the date; a single area (or an older visit
-            // logged before multi-area existed, which only has `fields`)
-            // falls back to one flat row, same as before this feature.
-            const multiArea = (visit.areas?.length || 0) > 1;
-            const areaRows = multiArea
-              ? visit.areas!.map((entry) =>
-                  config.columns
-                    .map((col) => [col, entry.fields[col.key]] as const)
-                    .filter(([, value]) => value !== undefined && value !== "" && value !== null)
-                )
-              : [
-                  config.columns
-                    .map((col) => [col, visit.fields?.[col.key]] as const)
-                    .filter(([, value]) => value !== undefined && value !== "" && value !== null),
-                ];
+            // Each area entry is a real row (usually one pass) — a visit
+            // logged before multi-area entry existed only has `fields`,
+            // which is equivalent to a single row.
+            const rows =
+              visit.areas && visit.areas.length > 0
+                ? visit.areas.map((entry) => entry.fields)
+                : visit.fields
+                  ? [visit.fields]
+                  : [];
+            const hasAnyDetails = rows.some((row) =>
+              config.columns.some((col) => row[col.key] !== undefined && row[col.key] !== "" && row[col.key] !== null)
+            );
+
+            // A row with no Area filled in isn't a new area of its own —
+            // it's read as "still working on whichever area was named
+            // last," so it inherits the thin divider rather than earning a
+            // thick one. Tracking the last *named* area (not just the
+            // previous row) is what makes that work even after more than
+            // one blank row in a row.
+            let lastNamedArea: string | number | undefined;
+            const isNewAreaGroup = rows.map((row, i) => {
+              const area = row["area"];
+              const isNew = i > 0 && hasAreaColumn && !!area && area !== lastNamedArea;
+              if (area) lastNamedArea = area;
+              return isNew;
+            });
 
             return (
               <button
@@ -87,29 +103,46 @@ export default function VisitTimeline({
                   </span>
                 </div>
 
-                {areaRows.every((row) => row.length === 0) ? (
+                {!hasAnyDetails ? (
                   <p className="mt-2 text-sm italic text-brown-400">No details recorded</p>
                 ) : (
-                  <div className="mt-2 space-y-1.5">
-                    {areaRows.map((row, i) => (
-                      <div key={i} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-brown-600">
-                        {multiArea && (
-                          <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brown-600">
-                            Area {i + 1}
-                          </span>
-                        )}
-                        {row.length > 0 ? (
-                          row.map(([col, value]) => (
-                            <span key={col.key}>
-                              <span className="text-brown-400">{col.label}:</span>{" "}
-                              <span className="text-brown-900">{formatFieldValue(col.key, value!)}</span>
-                            </span>
-                          ))
-                        ) : (
-                          <span className="italic text-brown-400">No details recorded</span>
-                        )}
-                      </div>
-                    ))}
+                  <div className="mt-3 overflow-x-auto rounded-lg border border-beige-300">
+                    <table className="w-full min-w-[420px] border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-beige-300 bg-beige-100">
+                          {config.columns.map((col: SessionColumnDef) => (
+                            <th
+                              key={col.key}
+                              className="whitespace-nowrap border-r border-beige-200 px-2.5 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-brown-600 last:border-r-0"
+                            >
+                              {col.label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row, i) => {
+                          const topBorder =
+                            i === 0
+                              ? ""
+                              : isNewAreaGroup[i]
+                                ? "border-t-2 border-gold-500"
+                                : "border-t border-beige-200";
+                          return (
+                            <tr key={i} className={topBorder}>
+                              {config.columns.map((col) => (
+                                <td
+                                  key={col.key}
+                                  className="whitespace-nowrap border-r border-beige-200 px-2.5 py-1.5 text-brown-900 last:border-r-0"
+                                >
+                                  {formatCellValue(col.key, row[col.key])}
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </button>
