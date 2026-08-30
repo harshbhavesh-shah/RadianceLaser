@@ -1,27 +1,32 @@
 import "server-only";
-import { readFileSync } from "fs";
-import { join } from "path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { RDS_GLOBAL_CA_BUNDLE } from "@/lib/db/rdsCaBundle";
 
 // Prisma 7 requires an explicit driver adapter at runtime (separate from
 // prisma.config.ts, which only covers the CLI/migrations) — see
 // https://pris.ly/d/driver-adapters.
 //
-// The `ssl` option is passed explicitly (CA contents read from disk) rather
-// than relying on `pg` to parse `sslmode`/`sslrootcert` out of the
-// connection string itself — that parsing is inconsistent across `pg`
-// versions, so this is the reliable way to get AWS RDS's required
-// verify-full TLS working. global-bundle.pem is AWS's public RDS CA
-// bundle (https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem),
-// checked into the project root and INTO git (see .gitignore's explicit
-// `!global-bundle.pem` exception to the general `*.pem` rule) — it's not a
-// secret, and a deploy that clones from git needs the actual file on disk
-// for this readFileSync to find at runtime.
+// The `ssl` option is passed explicitly rather than relying on `pg` to
+// parse `sslmode`/`sslrootcert` out of the connection string itself — that
+// parsing is inconsistent across `pg` versions, so this is the reliable
+// way to get AWS RDS's required verify-full TLS working.
+//
+// The CA bundle used to be read from disk at runtime (readFileSync a
+// global-bundle.pem in the project root) — that broke in production on
+// Vercel: a serverless function's deployed bundle only includes files its
+// code statically imports/requires (via @vercel/nft file tracing), so a
+// file only ever touched through a dynamic fs call was silently dropped,
+// throwing ENOENT even though `next build && next start` locally (running
+// from the full repo, not a traced bundle) never showed the problem, and
+// even though outputFileTracingIncludes (tried first) didn't reliably fix
+// it either. Embedding the cert as a source-level string constant (see
+// lib/db/rdsCaBundle.ts) sidesteps the whole file-tracing question — there
+// is no runtime file read to trace.
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    ca: readFileSync(join(process.cwd(), "global-bundle.pem"), "utf-8"),
+    ca: RDS_GLOBAL_CA_BUNDLE,
     rejectUnauthorized: true,
   },
 });
