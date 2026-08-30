@@ -32,7 +32,7 @@ export default function ConsentFormsPanel({
   templates: ConsentFormTemplate[];
   initialForms: ConsentForm[];
   // Cursor for the next page of clinic-wide consent forms (see
-  // lib/firestore/consentForms.ts getClinicConsentFormsPage) — null once the
+  // lib/db/consentForms.ts getClinicConsentFormsPage) — null once the
   // whole signing history has been loaded, or if there was never more than
   // one page.
   initialCursor: string | null;

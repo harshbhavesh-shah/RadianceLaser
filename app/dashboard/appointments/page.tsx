@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getPatients } from "@/lib/firestore/patients";
-import { getClinicAppointments } from "@/lib/firestore/appointments";
-import { getClinicVisits } from "@/lib/firestore/visits";
-import { getClinicPackages } from "@/lib/firestore/packages";
-import { getClinicReceipts } from "@/lib/firestore/receipts";
+import { getPatients } from "@/lib/db/patients";
+import { getClinicAppointments } from "@/lib/db/appointments";
+import { getClinicVisits } from "@/lib/db/visits";
+import { getClinicPackages } from "@/lib/db/packages";
+import { getClinicReceipts } from "@/lib/db/receipts";
 import { computeAppointmentPipelineMaps } from "@/lib/overview";
 import AppointmentsClient from "@/components/appointments/AppointmentsClient";
 

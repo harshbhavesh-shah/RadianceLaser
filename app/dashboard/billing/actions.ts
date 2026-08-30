@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { createOrder, verifyCheckoutSignature } from "@/lib/razorpay";
 import { createPendingPayment, confirmPayment } from "@/lib/firestore/payments";
-import { clinicCacheTag } from "@/lib/firestore/clinics";
+import { clinicCacheTag } from "@/lib/db/clinics";
 import { ANNUAL_PRICE_PAISE } from "@/lib/subscription";
 import type { Session } from "@/types";
 

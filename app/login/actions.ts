@@ -1,7 +1,9 @@
 "use server";
 
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminAuth } from "@/lib/firebase/admin";
 import { issueTwoFactorChallenge, verifyTwoFactorCode } from "@/lib/twoFactor";
+import { getStaffMemberByUid, createStaffMember } from "@/lib/db/staff";
+import { createClinic } from "@/lib/db/clinics";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -27,8 +29,8 @@ export async function requestTwoFactorIfEnabledAction(idToken: string): Promise<
     const clinicId = decoded.clinicId as string | undefined;
     if (!clinicId) return { required: false }; // super-admin-only account, or not provisioned yet
 
-    const staffSnap = await adminDb().collection("staff").doc(decoded.uid).get();
-    if (staffSnap.data()?.twoFactorEnabled !== true) return { required: false };
+    const staff = await getStaffMemberByUid(decoded.uid);
+    if (staff?.twoFactorEnabled !== true) return { required: false };
 
     await issueTwoFactorChallenge(decoded.uid, decoded.email || "");
     return { required: true };
@@ -99,26 +101,17 @@ export async function provisionGoogleClinicAction(
       return { error: "This account is already attached to a clinic." };
     }
 
-    const db = adminDb();
-    const clinicRef = db.collection("clinics").doc();
     const trialEndsAt = Date.now() + TRIAL_LENGTH_DAYS * DAY_MS;
+    const clinic = await createClinic({ name: trimmedName, subscriptionStatus: "trialing", trialEndsAt });
 
-    await clinicRef.set({
-      name: trimmedName,
-      createdAt: Date.now(),
-      subscriptionStatus: "trialing",
-      trialEndsAt,
-    });
+    await adminAuth().setCustomUserClaims(decoded.uid, { clinicId: clinic.id, role: "owner" });
 
-    await adminAuth().setCustomUserClaims(decoded.uid, { clinicId: clinicRef.id, role: "owner" });
-
-    await db.collection("staff").doc(decoded.uid).set({
-      clinicId: clinicRef.id,
+    await createStaffMember({
       uid: decoded.uid,
+      clinicId: clinic.id,
       name: decoded.name || decoded.email || "Clinic Owner",
       email: decoded.email || "",
       role: "owner",
-      createdAt: Date.now(),
     });
 
     return { success: true };

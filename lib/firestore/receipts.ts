@@ -27,18 +27,41 @@ export async function getPatientReceipts(clinicId: string, patientId: string): P
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
-/** Every receipt across the whole clinic, in one read — used by pages that
- * need to check receipts clinic-wide regardless of how many there are (the
- * Overview stats and the appointment auto-complete check in
- * app/dashboard/appointments/page.tsx). The Documents page's receipts *list*
- * uses getClinicReceiptsPage below instead, since that's the one place
- * someone scrolls through the full history growing over a clinic's
- * lifetime. */
+/** Every receipt across the whole clinic, in one read. EXPENSIVE at real
+ * scale — avoid this for anything that only needs to check a handful of
+ * specific appointments (see getReceiptsByAppointmentIds below), which is
+ * what the pipeline auto-complete check on Dashboard/Appointments actually
+ * needs. The Documents page's receipts *list* uses getClinicReceiptsPage
+ * below instead, since that's the one place someone scrolls through the
+ * full history growing over a clinic's lifetime. */
 export async function getClinicReceipts(clinicId: string): Promise<Receipt[]> {
   const snap = await adminDb().collection("receipts").where("clinicId", "==", clinicId).get();
   return snap.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }) as Receipt)
     .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+const FIRESTORE_IN_CHUNK_SIZE = 10; // Admin SDK "in" queries max out at 30; chunked well under that
+
+/** Receipts linked to any of the given appointments — backs the "has this
+ * appointment already been receipted?" pipeline check (see
+ * lib/overview.ts computeAppointmentPipelineMaps) for just the
+ * appointments actually on screen, instead of scanning every receipt the
+ * clinic has ever issued. Needs a composite index (clinicId Asc,
+ * appointmentId Asc) — see firestore.indexes.json. */
+export async function getReceiptsByAppointmentIds(clinicId: string, appointmentIds: string[]): Promise<Receipt[]> {
+  if (appointmentIds.length === 0) return [];
+  const results: Receipt[] = [];
+  for (let i = 0; i < appointmentIds.length; i += FIRESTORE_IN_CHUNK_SIZE) {
+    const chunk = appointmentIds.slice(i, i + FIRESTORE_IN_CHUNK_SIZE);
+    const snap = await adminDb()
+      .collection("receipts")
+      .where("clinicId", "==", clinicId)
+      .where("appointmentId", "in", chunk)
+      .get();
+    results.push(...snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Receipt));
+  }
+  return results;
 }
 
 export interface ReceiptsPage {

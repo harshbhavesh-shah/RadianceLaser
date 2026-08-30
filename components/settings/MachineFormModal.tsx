@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import { createMachineAction, updateMachineAction, deleteMachineAction } from "@/app/dashboard/settings/machineActions";
 import type { Machine, MachineStatus, SessionType } from "@/types";
 
 const STATUS_OPTIONS: { value: MachineStatus; label: string }[] = [
@@ -46,23 +45,31 @@ export default function MachineFormModal({
     setError(null);
 
     const payload = {
-      clinicId,
       name: name.trim(),
       sessionType,
       status,
-      ...(serialNumber.trim() ? { serialNumber: serialNumber.trim() } : {}),
-      ...(purchaseDate ? { purchaseDate } : {}),
-      ...(notes.trim() ? { notes: notes.trim() } : {}),
+      serialNumber: serialNumber.trim() || undefined,
+      purchaseDate: purchaseDate || undefined,
+      notes: notes.trim() || undefined,
     };
 
     try {
       if (isEditing && machine) {
-        await updateDoc(doc(db, "machines", machine.id), payload);
+        const result = await updateMachineAction(machine.id, payload);
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
         onSaved({ ...machine, ...payload });
       } else {
-        const createPayload = { ...payload, createdAt: Date.now() };
-        const docRef = await addDoc(collection(db, "machines"), createPayload);
-        onSaved({ id: docRef.id, ...createPayload });
+        const result = await createMachineAction(payload);
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
+        onSaved({ id: result.id, clinicId, createdAt: Date.now(), ...payload });
       }
     } catch (err) {
       console.error("Failed to save machine:", err);
@@ -79,7 +86,12 @@ export default function MachineFormModal({
 
     setDeleting(true);
     try {
-      await deleteDoc(doc(db, "machines", machine.id));
+      const result = await deleteMachineAction(machine.id);
+      if ("error" in result) {
+        setError(result.error);
+        setDeleting(false);
+        return;
+      }
       onDeleted?.(machine.id);
     } catch (err) {
       console.error("Failed to delete machine:", err);

@@ -10,8 +10,11 @@ function isOnOrAfterLocalDate(epochMs: number, dateStr: string): boolean {
   return epochMs >= new Date(`${dateStr}T00:00:00`).getTime();
 }
 
-/** Start date (inclusive, YYYY-MM-DD) of the given window, ending today. */
-function windowStartStr(window: StatsWindow): string {
+/** Start date (inclusive, YYYY-MM-DD) of the given window, ending today.
+ * Exported so callers can scope a Firestore query to exactly this range
+ * (see getClinicVisitsSince in lib/db/visits.ts) instead of fetching
+ * a clinic's entire visit history and filtering down in memory. */
+export function windowStartStr(window: StatsWindow): string {
   const now = new Date();
   if (window === "today") return todayLocalStr();
   if (window === "week") {

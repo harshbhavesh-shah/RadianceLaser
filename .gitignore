@@ -20,3 +20,10 @@ serviceAccountKey.json
 .DS_Store
 *.pem
 npm-debug.log*
+
+# global-bundle.pem IS committed, despite the *.pem rule above — it's AWS's
+# public RDS CA bundle (no secret in it), and lib/db/client.ts reads it from
+# disk at runtime (readFileSync(process.cwd())). Without it committed, every
+# Postgres connection on a fresh deploy (Vercel clones from git, this file
+# was never pushed) throws ENOENT the moment a request touches Prisma.
+!global-bundle.pem

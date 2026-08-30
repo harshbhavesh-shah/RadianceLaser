@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getPatient } from "@/lib/firestore/patients";
+import { getPatient } from "@/lib/db/patients";
 import EditPatientForm from "./EditPatientForm";
 
 export default async function EditPatientPage({ params }: { params: { id: string } }) {

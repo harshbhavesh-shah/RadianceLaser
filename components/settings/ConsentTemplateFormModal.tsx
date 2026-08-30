@@ -1,10 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { addDoc, collection, deleteDoc, deleteField, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { CONSENT_STARTER_TEMPLATES, CONSENT_VARIABLES } from "@/lib/consentForms";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import {
+  createConsentFormTemplateAction,
+  updateConsentFormTemplateAction,
+  deleteConsentFormTemplateAction,
+} from "@/app/dashboard/settings/consentFormActions";
 import type { ConsentFormTemplate, SessionType } from "@/types";
 
 export default function ConsentTemplateFormModal({
@@ -37,7 +40,12 @@ export default function ConsentTemplateFormModal({
     if (!confirm(`Delete "${editing.title}"? Forms already signed from it are kept.`)) return;
     setDeleting(true);
     try {
-      await deleteDoc(doc(db, "consentFormTemplates", editing.id));
+      const result = await deleteConsentFormTemplateAction(editing.id);
+      if ("error" in result) {
+        setError(result.error);
+        setDeleting(false);
+        return;
+      }
       onDeleted?.(editing.id);
     } catch (err) {
       console.error("Failed to delete consent template:", err);
@@ -77,35 +85,22 @@ export default function ConsentTemplateFormModal({
     setSaving(true);
     setError(null);
 
+    const fields = { title: trimmedTitle, body, sessionType: sessionType || undefined };
+
     try {
-      let saved: ConsentFormTemplate;
-      if (isEditing && editing) {
-        // Firestore's updateDoc only touches fields you name — clearing
-        // sessionType back to "General" needs an explicit deleteField(),
-        // otherwise the stale value would silently stay on the document.
-        const updatePayload = { title: trimmedTitle, body, sessionType: sessionType || deleteField() };
-        await updateDoc(doc(db, "consentFormTemplates", editing.id), updatePayload);
-        saved = { ...editing, title: trimmedTitle, body, sessionType: sessionType || undefined };
-      } else {
-        const payload = {
-          clinicId,
-          title: trimmedTitle,
-          body,
-          ...(sessionType ? { sessionType } : {}),
-          createdAt: Date.now(),
-        };
-        const docRef = await addDoc(collection(db, "consentFormTemplates"), payload);
-        saved = { id: docRef.id, ...payload };
+      const result =
+        isEditing && editing
+          ? await updateConsentFormTemplateAction(editing.id, fields)
+          : await createConsentFormTemplateAction(fields);
+      if ("error" in result) {
+        setError(result.error);
+        setSaving(false);
+        return;
       }
-      onSaved(saved);
+      onSaved(result.template);
     } catch (err) {
       console.error("Failed to save consent template:", err);
-      const code = (err as { code?: string })?.code;
-      setError(
-        code === "permission-denied"
-          ? "You don't have permission to save this. Check that Firestore rules are deployed and try signing in again."
-          : "Couldn't save this template. Please try again."
-      );
+      setError("Couldn't save this template. Please try again.");
       setSaving(false);
       return;
     }

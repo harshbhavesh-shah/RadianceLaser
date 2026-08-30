@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { addDoc, collection, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { slugifySessionTypeKey, sessionTypeDefToConfig } from "@/lib/sessionTypes";
 import { useAddSessionType } from "@/lib/sessionTypeConfigContext";
+import { createSessionTypeDefAction, updateSessionTypeDefAction } from "@/app/dashboard/settings/sessionTypeDefActions";
 import type { SessionColumnDef, SessionFieldType, SessionTypeDef } from "@/types";
 
 const COLOR_PRESETS = [
@@ -153,26 +152,30 @@ export default function MachineTypeFormModal({
       if (isEditing && editing!.docId) {
         // Updating an existing custom type, or a built-in that already has
         // an override doc from a previous edit.
-        await updateDoc(doc(db, "sessionTypeDefs", editing!.docId), fields);
-        saved = { id: editing!.docId, clinicId, key, createdAt: Date.now(), ...fields };
+        const result = await updateSessionTypeDefAction(editing!.docId, fields);
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
+        saved = result.def;
       } else {
         // Either a brand-new custom type, or the *first* edit of a built-in
         // (which creates its first override doc, keyed to the built-in's
         // fixed key — e.g. "qs" — so it takes over from the hardcoded default).
-        const payload = { clinicId, key, createdAt: Date.now(), ...fields };
-        const docRef = await addDoc(collection(db, "sessionTypeDefs"), payload);
-        saved = { id: docRef.id, ...payload };
+        const result = await createSessionTypeDefAction({ key, ...fields });
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
+        saved = result.def;
       }
       addSessionType(key, sessionTypeDefToConfig(saved));
       onSaved(saved);
     } catch (err) {
       console.error("Failed to save machine type:", err);
-      const code = (err as { code?: string })?.code;
-      setError(
-        code === "permission-denied"
-          ? "You don't have permission to save this. Check that Firestore rules are deployed and try signing in again."
-          : "Couldn't save this machine type. Please try again."
-      );
+      setError("Couldn't save this machine type. Please try again.");
       setSaving(false);
       return;
     }

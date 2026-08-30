@@ -1,4 +1,4 @@
-import { getAllClinics } from "@/lib/firestore/clinics";
+import { getAllClinics } from "@/lib/db/clinics";
 import ClinicsTable from "@/components/admin/ClinicsTable";
 
 export default async function AdminClinicsPage() {

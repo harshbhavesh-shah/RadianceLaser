@@ -1,0 +1,431 @@
+// Chunk 1 of the Firestore → Postgres (AWS RDS) migration: Patient and
+// Visit — the two collections actually responsible for blowing through
+// Firestore's daily read quota (a single clinic's imported history put
+// them at 1,095 and 8,129 documents respectively; every one of those
+// documents was being read on nearly every page load before the query
+// fixes in lib/firestore/*.ts). Everything else (Package, Appointment,
+// Receipt, StaffMember, Clinic, etc.) stays on Firestore for now — see
+// lib/firestore/ for those. patientId below is a real foreign key since
+// both tables live here together; appointmentId/packageId/machineId are
+// plain text columns (not FKs) since Appointment/Package/Machine still
+// live in Firestore — there's no way to enforce that relationship at the
+// database level until those are migrated too.
+//
+// Deliberately NOT importing the clinic's existing Firestore data as part
+// of this chunk — these tables start empty. The clinic's historical data
+// (from the old Access system) will be re-imported directly into Postgres
+// from the original .mdb file at a later date, the same way it was
+// originally imported into Firestore (see scripts/importAdvanceSMS.mjs).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Mirrors types/index.ts Patient. `fields`-style dynamic data doesn't apply
+// here (unlike Visit) — every column below is a fixed, known field.
+model Patient {
+  id                String  @id @default(cuid())
+  clinicId          String
+  name              String
+  phone             String
+  email             String?
+  age               Int?
+  gender            String?
+  address           String?
+  patientCode       String
+  // Digits-only form of `phone`, kept in sync on every write — see
+  // lib/phone.ts normalizePhone in the app. Indexed for the "search by
+  // phone" lookup, same reasoning as the Firestore version.
+  phoneNormalized   String
+  // Lowercased form of `name`, kept in sync on every write, for
+  // case-insensitive prefix search without a separate search service.
+  nameLower         String
+  skinType          String?
+  contraindications String?
+  // The patient's numeric ID in the clinic's old Access-based system
+  // (AdvanceSMS.mdb `patientno`) — set only for patients re-imported from
+  // that file, never for ones created in the app itself.
+  legacyPatientNo   Int?
+  // Epoch milliseconds, matching every other timestamp field across the
+  // app (Date.now()) — kept as a plain integer rather than a native
+  // timestamp type so all the app's existing date-math (subtraction,
+  // comparison) keeps working unchanged against whichever database a
+  // given piece of data happens to live in during the migration.
+  createdAt         BigInt
+
+  visits       Visit[]
+  packages     Package[]
+  appointments Appointment[]
+  receipts     Receipt[]
+  consentForms ConsentForm[]
+  photos       PatientPhoto[]
+
+  @@index([clinicId])
+  @@index([clinicId, phoneNormalized])
+  @@index([clinicId, nameLower])
+  @@index([clinicId, patientCode])
+  @@index([clinicId, createdAt])
+  @@map("patients")
+}
+
+// Mirrors types/index.ts Visit. `fields` and `areas` are stored as JSONB
+// rather than fixed columns because their actual keys depend on the
+// clinic's SessionTypeDef config (built-in "qs"/"lhr", or a clinic-defined
+// custom machine type with its own column set) — the same reason they were
+// schemaless documents in Firestore. A clinic adding a new machine type
+// from Settings must never require a database migration here.
+model Visit {
+  id              String  @id @default(cuid())
+  clinicId        String
+  patientId       String
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sessionType     String
+  // YYYY-MM-DD, or "" if genuinely unset — kept as text (not a native DATE
+  // column) specifically to preserve that empty-string case unchanged; see
+  // types/index.ts Visit.date.
+  date            String
+  fields          Json
+  areas           Json?
+  // Firestore document ids — not FKs, since Appointment/Package/Machine
+  // still live in Firestore, not this database.
+  appointmentId   String?
+  packageId       String?
+  machineId       String?
+  performedByUid  String?
+  performedByName String?
+  durationMinutes Int?
+  paymentMethod   String?
+  followUpDate    String?
+  followUpNote    String?
+  // The row's `xauto` id in the clinic's old Access-based system — see
+  // Patient.legacyPatientNo above for the same reasoning.
+  legacyVisitNo   Int?
+  createdAt       BigInt
+
+  @@index([clinicId])
+  @@index([clinicId, createdAt])
+  @@index([clinicId, date])
+  @@index([clinicId, followUpDate])
+  @@index([clinicId, packageId])
+  @@index([clinicId, appointmentId])
+  @@index([patientId])
+  @@map("visits")
+}
+
+// Mirrors types/index.ts Package. Chunk 3 of the migration — Package is a
+// much smaller/simpler table than Patient or Visit (no update/delete path
+// even existed on the Firestore version; see components/PackageFormModal.tsx),
+// migrated now mainly because it already has a real FK target (Patient) and
+// keeps package/visit revenue math (lib/packages.ts computePackageLedger) on
+// one database instead of split across two. Visit.packageId stays a plain
+// text column rather than a real FK to this table — same reasoning as
+// Visit.appointmentId/machineId in the model above, kept consistent even
+// though Package now technically could be a real FK: not worth a data
+// migration to backfill/enforce it for a field that's optional either way.
+model Package {
+  id            String  @id @default(cuid())
+  clinicId      String
+  patientId     String
+  patient       Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sessionType   String
+  label         String
+  totalSessions Int
+  totalAmount   Float
+  purchaseDate  String // YYYY-MM-DD
+  expiryDate    String? // YYYY-MM-DD
+  paymentMethod String?
+  createdAt     BigInt
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@map("packages")
+}
+
+// Mirrors types/index.ts Appointment — chunk 4 of the migration, with one
+// wrinkle the earlier chunks didn't have: this clinic's marketing website
+// (a separate deployed project, advancedskinclinic-new) writes new "lhr"
+// bookings straight into Firestore's appointments collection from an
+// anonymous browser, allowed by firestore.rules' isValidPublicLhrBooking —
+// there's no server of this app's in that write path to redirect to
+// Postgres. So this table only ever holds appointments booked from inside
+// this app (patientId always a real Patient — never ""). A publicly-booked
+// Firestore doc (always patientId: "") gets copied in here — "promoted",
+// see lib/db/appointments.ts promoteAppointment — the first time staff
+// actually touches it (linking it to a patient, or editing/saving it),
+// and deleted from Firestore at that point so it doesn't show up twice.
+// Until then, reads merge this table with Firestore's unlinked public
+// bookings — see lib/db/appointments.ts.
+model Appointment {
+  id              String  @id @default(cuid())
+  clinicId        String
+  patientId       String
+  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  // Denormalized from Patient at booking time — same reasoning as
+  // Visit.performedByName: rendering the calendar never needs a join, and a
+  // later name change shouldn't rewrite what a past appointment showed.
+  patientName     String
+  patientPhone    String
+  sessionType     String
+  date            String // YYYY-MM-DD
+  time            String // HH:MM, 24-hour
+  durationMinutes Int
+  status          String
+  notes           String?
+  createdAt       BigInt
+
+  @@index([clinicId])
+  @@index([clinicId, date])
+  @@map("appointments")
+}
+
+// Mirrors types/index.ts Receipt — chunk 5. Like Package, only ever
+// read + created (no update/delete UI even existed on Firestore — see
+// components/documents/ReceiptFormModal.tsx). `items` is JSONB for the
+// same reason Visit.fields/areas are: a receipt's line items are free-form,
+// not a fixed set of columns. visitId/packageId/appointmentId stay plain
+// text rather than real FKs, same reasoning as Visit's own loose refs to
+// Package/Appointment/Machine in the model above — every one of them is
+// optional either way, so there's nothing to actually enforce.
+model Receipt {
+  id               String  @id @default(cuid())
+  clinicId         String
+  patientId        String
+  patient          Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientName      String
+  patientPhone     String?
+  patientAge       Int?
+  patientGender    String?
+  patientAddress   String?
+  consultingDoctor String?
+  receiptNumber    String // e.g. "RCPT-000123" — see lib/db/receiptNumber.ts
+  date             String // YYYY-MM-DD
+  items            Json // ReceiptItem[]
+  amount           Float // sum of (item.amount - item.discount), denormalized for list rendering
+  visitId          String?
+  packageId        String?
+  appointmentId    String?
+  notes            String?
+  issuedByUid      String
+  issuedByName     String
+  createdAt        BigInt
+
+  @@index([clinicId])
+  @@index([clinicId, createdAt])
+  @@index([clinicId, appointmentId])
+  @@index([patientId])
+  @@map("receipts")
+}
+
+// Mirrors types/index.ts Machine — chunk 6. Unlike every table above, this
+// one isn't patient-scoped at all (just clinicId), so there's no Patient FK
+// here — a machine belongs to the clinic, full stop. Read + create + update
+// + delete all exist, same as the Firestore version (see
+// components/settings/MachineFormModal.tsx).
+model Machine {
+  id           String  @id @default(cuid())
+  clinicId     String
+  name         String
+  sessionType  String
+  serialNumber String?
+  purchaseDate String? // YYYY-MM-DD
+  status       String
+  notes        String?
+  createdAt    BigInt
+
+  @@index([clinicId])
+  @@map("machines")
+}
+
+// Mirrors types/index.ts StaffMember — chunk 7. `id` is deliberately NOT
+// @default(cuid()) like every other table's — a StaffMember's id must equal
+// its Firebase Auth uid (the two are the same value everywhere in the app,
+// e.g. StaffSection.tsx's `member.uid === currentUid`), since this table is
+// a mirror of the Auth user for display/preferences, not its own identity
+// space. The actual authorization boundary stays entirely in Firebase Auth
+// custom claims (clinicId/role) — see lib/session.ts, which reads those
+// claims directly and never touches this table. This table only backs the
+// Settings → Staff list and each person's own preferences (2FA opt-in,
+// onboarding flags) — nothing here gates access to anything.
+model StaffMember {
+  id                  String   @id
+  clinicId            String
+  name                String
+  email               String
+  role                String
+  twoFactorEnabled    Boolean?
+  tourCompleted       Boolean?
+  onboardingDismissed Boolean?
+  createdAt           BigInt
+
+  @@index([clinicId])
+  @@map("staff")
+}
+
+// Mirrors types/index.ts SessionTypeDef — chunk 8. Clinic-defined machine
+// types (e.g. "CO2 Laser") layered on top of the built-in Q-Switch/LHR
+// types — see lib/sessionTypes.ts for how these merge into the effective
+// config. `columns` is JSONB for the same reason Visit.fields/areas are:
+// each type defines its own free-form set of session data-entry fields.
+// No uniqueness constraint on (clinicId, key) here — there wasn't one on
+// the Firestore version either (components/settings/MachineTypeFormModal.tsx
+// only enforces it client-side via the existingKeys set passed in).
+model SessionTypeDef {
+  id             String @id @default(cuid())
+  clinicId       String
+  key            String // slug used as the SessionType value, e.g. "co2"
+  label          String
+  badgeText      String
+  badgeClassName String
+  chartColor     String
+  columns        Json // SessionColumnDef[]
+  createdAt      BigInt
+
+  @@index([clinicId])
+  @@map("sessionTypeDefs")
+}
+
+// Mirrors types/index.ts ConsentFormTemplate — chunk 9, migrated together
+// with ConsentForm below (same reasoning as bundling Patient+Visit in
+// chunk 1: a signed ConsentForm always denormalizes its template's
+// title/body at signing time, so the two only ever make sense read
+// together). Clinic-scoped only, no Patient FK — a template isn't tied to
+// any one patient.
+model ConsentFormTemplate {
+  id          String  @id @default(cuid())
+  clinicId    String
+  title       String
+  body        String
+  sessionType String?
+  createdAt   BigInt
+
+  @@index([clinicId])
+  @@map("consentFormTemplates")
+}
+
+// Mirrors types/index.ts ConsentForm — a *signed* instance of a template
+// for a specific patient. renderedBody/templateTitle are frozen snapshots
+// at signing time (see the Firestore version's comment in
+// lib/firestore/consentForms.ts) so editing/deleting a template later never
+// rewrites what a patient actually signed — which is also why templateId
+// stays a plain text column rather than a real FK to ConsentFormTemplate:
+// deleting a template must never cascade into deleting the forms signed
+// from it. signatureDataUrl is a base64 PNG data URL, same as the
+// Firestore version — TEXT here has no meaningful size ceiling the way
+// Firestore's 1MiB document limit did, so no format change was needed.
+model ConsentForm {
+  id               String  @id @default(cuid())
+  clinicId         String
+  patientId        String
+  patient          Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  templateId       String
+  templateTitle    String
+  visitId          String?
+  renderedBody     String
+  signatureDataUrl String
+  signedByName     String
+  witnessUid       String?
+  witnessName      String?
+  signedAt         BigInt
+  createdAt        BigInt
+
+  @@index([clinicId])
+  @@index([clinicId, signedAt])
+  @@index([patientId])
+  @@map("consentForms")
+}
+
+// Mirrors types/index.ts PatientPhoto — chunk 10, migrated together with
+// MessageTemplate below (unrelated to each other, just the last two
+// collections still writing to Firestore straight from the browser before
+// Clinic's turn — see the chunk-8 comment on SessionTypeDef for why that
+// order matters). visitId stays a plain text column, same reasoning as
+// Visit's own loose refs. dataUrl is a base64 image (resized/compressed
+// client-side — see lib/imageCompression.ts) stored as TEXT; unlike the
+// Firestore version this replaces, there's no 1MiB-per-document ceiling
+// forcing aggressive compression here, though the compression step itself
+// hasn't been loosened as part of this migration — no behavior change,
+// just one less reason it's tuned that tight.
+model PatientPhoto {
+  id             String  @id @default(cuid())
+  clinicId       String
+  patientId      String
+  patient        Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  visitId        String?
+  sessionType    String?
+  area           String?
+  date           String? // YYYY-MM-DD
+  dataUrl        String
+  label          String?
+  sensitive      Boolean
+  uploadedByUid  String
+  uploadedByName String
+  createdAt      BigInt
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@map("patientPhotos")
+}
+
+// Mirrors types/index.ts MessageTemplate — chunk 10's other half. Unlike
+// PatientPhoto, this one never had a client-side Firestore write path to
+// begin with (see app/dashboard/communication/actions.ts) — it was already
+// admin-SDK-only, so this is a pure swap with no client component to
+// convert. Clinic-scoped only, no Patient FK.
+model MessageTemplate {
+  id             String  @id @default(cuid())
+  clinicId       String
+  name           String
+  category       String
+  variableLabels Json // string[]
+  bodyPreview    String?
+  createdAt      BigInt
+  updatedAt      BigInt
+
+  @@index([clinicId])
+  @@map("messageTemplates")
+}
+
+// Mirrors types/index.ts Clinic — chunk 11, the last one, and the only
+// hybrid table left standing on purpose (see lib/db/clinics.ts): every
+// other collection that used to depend on firestore.rules' clinicIsActive()
+// reading a Firestore clinics/{id} doc has been converted to a Postgres +
+// server-action write path over chunks 8-10, EXCEPT the one thing that can
+// never move server-side — the marketing site's public LHR booking form,
+// which writes straight into Firestore from an anonymous browser (see the
+// Appointment model above). So this table is the real source of truth for
+// everything (name/address/statsWindow/subscription state), but every write
+// that touches subscriptionStatus/trialEndsAt/subscriptionRenewsAt also
+// mirrors those three fields into Firestore's clinics/{id} doc, purely so
+// clinicIsActive() keeps evaluating correctly for that one remaining public
+// write path. clinicId elsewhere in this schema (Patient.clinicId etc.)
+// stays a plain string, not a real FK to this table — same reasoning as
+// every other cross-table clinicId reference here: those tables already
+// existed before this one did, unenforced, and backfilling/validating that
+// relationship isn't part of this migration.
+model Clinic {
+  id                   String  @id @default(cuid())
+  name                 String
+  address              String?
+  statsWindow          String?
+  subscriptionStatus   String
+  trialEndsAt          BigInt
+  subscriptionRenewsAt BigInt?
+  createdAt            BigInt
+
+  @@map("clinics")
+}
+
+// Backs lib/db/receiptNumber.ts's atomic per-clinic sequence — the Postgres
+// equivalent of the Firestore transaction against counters/{clinicId}_receipts
+// that lib/receiptNumber.ts (now unused) used. A dedicated table rather than
+// a column on Clinic since Clinic itself hasn't moved to Postgres yet.
+model ReceiptCounter {
+  clinicId String @id
+  value    Int
+
+  @@map("receipt_counters")
+}

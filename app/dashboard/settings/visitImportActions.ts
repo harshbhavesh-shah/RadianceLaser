@@ -1,9 +1,9 @@
 "use server";
 
 import { getSession } from "@/lib/session";
-import { getPatients } from "@/lib/firestore/patients";
-import { getClinicVisits, createVisit, updateVisit } from "@/lib/firestore/visits";
-import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { getPatients } from "@/lib/db/patients";
+import { getClinicVisits, createVisit, updateVisit } from "@/lib/db/visits";
+import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import { rollupAreaFields } from "@/lib/visitAreas";
 import { normalizePhone } from "@/lib/phone";
@@ -132,7 +132,7 @@ export async function importVisitsAction(
           if (duplicateAction === "skip") {
             return "duplicate" as const;
           }
-          await updateVisit(existingVisitId, { date: row.date, fields, areas });
+          await updateVisit(session.clinicId, existingVisitId, { date: row.date, fields, areas });
           return "updated" as const;
         }
 

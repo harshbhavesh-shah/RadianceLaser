@@ -9,14 +9,28 @@
  * Usage:
  *   node scripts/disableTwoFactor.mjs --email owner@example.com
  *
- * Requires .env.local to be filled in with FIREBASE_ADMIN_* values.
+ * Requires .env.local to be filled in with FIREBASE_ADMIN_* and
+ * DATABASE_URL values.
  */
 
 import { config } from "dotenv";
 config({ path: ".env.local" });
+import { readFileSync } from "fs";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
+
+// Same driver-adapter setup as lib/db/client.ts, duplicated here since this
+// is a plain Node script, not compiled through Next's TypeScript/path-alias
+// setup — see scripts/createClinic.mjs for the same pattern.
+function createPrismaClient() {
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { ca: readFileSync("global-bundle.pem", "utf-8"), rejectUnauthorized: true },
+  });
+  return new PrismaClient({ adapter });
+}
 
 function parseArgs() {
   const args = {};
@@ -46,25 +60,31 @@ async function main() {
     process.exit(1);
   }
 
+  if (!process.env.DATABASE_URL) {
+    console.error("Missing DATABASE_URL in .env.local");
+    process.exit(1);
+  }
+
   initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
   const auth = getAuth();
-  const db = getFirestore();
+  const prisma = createPrismaClient();
 
   const userRecord = await auth.getUserByEmail(email);
-  const staffRef = db.collection("staff").doc(userRecord.uid);
-  const staffSnap = await staffRef.get();
-  if (!staffSnap.exists) {
+  const staff = await prisma.staffMember.findUnique({ where: { id: userRecord.uid } });
+  if (!staff) {
     console.error(`No staff record found for ${email} (uid ${userRecord.uid}).`);
     process.exit(1);
   }
 
-  const wasEnabled = staffSnap.data()?.twoFactorEnabled === true;
-  await staffRef.update({ twoFactorEnabled: false });
+  const wasEnabled = staff.twoFactorEnabled === true;
+  await prisma.staffMember.update({ where: { id: userRecord.uid }, data: { twoFactorEnabled: false } });
   console.log(
     wasEnabled
       ? `✓ Disabled 2FA for ${email}. They can sign in normally now.`
       : `2FA was already off for ${email} — nothing to change.`
   );
+
+  await prisma.$disconnect();
 }
 
 main().catch((err) => {

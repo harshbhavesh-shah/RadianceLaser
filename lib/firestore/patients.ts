@@ -17,12 +17,15 @@ function generatePatientCode(): string {
   return `PT-${code}`;
 }
 
-/** Every patient in the clinic, in one read. Still used by call sites that
- * genuinely need the whole roster at once — pickers, name-lookup joins
- * (receipts/consent forms/analytics), and bulk import dedup — where the
- * alternative would be paginating through the same data N times over. The
- * Patients list page itself uses getPatientsPage below instead, since that's
- * the one place someone scrolls through the roster growing into the
+/** Every patient in the clinic, in one read. EXPENSIVE at real scale —
+ * confirmed 1,000+ reads per call once a clinic's roster has real history
+ * (a single import brought one clinic to 1,095 patients). Only genuine
+ * "need the whole roster" call sites should use this — bulk import dedup,
+ * clinic-wide CSV export. Name-lookup joins (Dashboard/Appointments/
+ * Packages/Documents building a patientId → name map) do NOT need this —
+ * use getPatientsByIds below with just the ids actually referenced. The
+ * Patients list page itself uses getPatientsPage below instead, since
+ * that's the one place someone scrolls through the roster growing into the
  * thousands over a clinic's lifetime. */
 export async function getPatients(clinicId: string): Promise<Patient[]> {
   // This where+orderBy combo needs a composite index. Firestore will throw
@@ -36,6 +39,61 @@ export async function getPatients(clinicId: string): Promise<Patient[]> {
     .get();
 
   return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Patient);
+}
+
+/** Whether this clinic has ever added a single patient — backs the
+ * onboarding checklist's "Add your first patient" step. A `limit(1)`
+ * existence check costs at most 1 read, instead of fetching the whole
+ * roster just to check `.length > 0`. */
+export async function clinicHasAnyPatient(clinicId: string): Promise<boolean> {
+  const snap = await adminDb().collection("patients").where("clinicId", "==", clinicId).limit(1).get();
+  return !snap.empty;
+}
+
+/** Total patient count — backs Dashboard's "Total Patients" stat. A
+ * Firestore count() aggregation is billed as roughly 1 read regardless of
+ * how many documents match, unlike fetching every patient just to read
+ * `.length`. */
+export async function getClinicPatientCount(clinicId: string): Promise<number> {
+  const snap = await adminDb().collection("patients").where("clinicId", "==", clinicId).count().get();
+  return snap.data().count;
+}
+
+/** Patients created on or after a given time — backs Dashboard's "New
+ * Patients {window}" stat without reading the whole roster. Reuses the
+ * same (clinicId Asc, createdAt Desc) index getPatients already needs —
+ * Firestore can serve a range filter on an indexed field in either
+ * direction, so this doesn't need its own index. */
+export async function getPatientsCreatedSince(clinicId: string, sinceMs: number): Promise<Patient[]> {
+  const snap = await adminDb()
+    .collection("patients")
+    .where("clinicId", "==", clinicId)
+    .where("createdAt", ">=", sinceMs)
+    .get();
+  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Patient);
+}
+
+const FIRESTORE_IN_CHUNK_SIZE = 10; // Admin SDK "in"/documentId() queries max out at 30; chunked well under that
+
+/** Just the patients actually referenced by whatever's on screen (e.g.
+ * today's appointments, the last few visits, a clinic's active packages) —
+ * the replacement for calling getPatients() to build a name-lookup map,
+ * which read the entire roster just to label a handful of ids. `ids` is
+ * trusted to already be scoped to this clinic (it always comes from other
+ * clinicId-scoped documents — appointments/visits/packages this same
+ * request already fetched), so this skips a redundant clinicId filter and
+ * just reads by document id directly; no composite index needed for that. */
+export async function getPatientsByIds(ids: string[]): Promise<Patient[]> {
+  const uniqueIds = Array.from(new Set(ids)).filter(Boolean);
+  if (uniqueIds.length === 0) return [];
+
+  const results: Patient[] = [];
+  for (let i = 0; i < uniqueIds.length; i += FIRESTORE_IN_CHUNK_SIZE) {
+    const chunk = uniqueIds.slice(i, i + FIRESTORE_IN_CHUNK_SIZE);
+    const snap = await adminDb().collection("patients").where(FieldPath.documentId(), "in", chunk).get();
+    results.push(...snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Patient));
+  }
+  return results;
 }
 
 export interface PatientsPage {

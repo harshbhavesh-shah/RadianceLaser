@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { isLikelySensitiveArea } from "@/lib/patientPhotos";
 import { compressImageToDataUrl } from "@/lib/imageCompression";
+import { createPatientPhotoAction } from "@/app/dashboard/patients/[id]/patientPhotoActions";
 import type { PatientPhoto, Visit } from "@/types";
 
 const LABEL_PRESETS = ["Before", "After", "Front", "Side", "Back", "Progress"];
@@ -83,36 +82,31 @@ export default function PatientPhotoUploadModal({
       const uploaded: PatientPhoto[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const id = crypto.randomUUID();
         const dataUrl = await compressImageToDataUrl(file);
 
-        const payload = {
-          clinicId,
+        const result = await createPatientPhotoAction({
           patientId,
-          ...(visitId ? { visitId } : {}),
-          ...(selectedVisit ? { sessionType: selectedVisit.sessionType } : {}),
-          ...(area ? { area } : {}),
-          ...(selectedVisit?.date ? { date: selectedVisit.date } : {}),
+          visitId: visitId || undefined,
+          sessionType: selectedVisit?.sessionType,
+          area,
+          date: selectedVisit?.date,
           dataUrl,
-          ...(label ? { label } : {}),
+          label: label || undefined,
           sensitive,
-          uploadedByUid: currentUid,
           uploadedByName: currentName,
-          createdAt: Date.now(),
-        };
-        await setDoc(doc(db, "patientPhotos", id), payload);
-        uploaded.push({ id, ...payload });
+        });
+        if ("error" in result) {
+          setError(result.error);
+          setUploading(false);
+          return;
+        }
+        uploaded.push(result.photo);
         setProgress(i + 1);
       }
       onUploaded(uploaded);
     } catch (err) {
       console.error("Failed to upload photo:", err);
-      const code = (err as { code?: string })?.code;
-      setError(
-        code === "permission-denied"
-          ? "You don't have permission to save this. Check that Firestore rules are deployed and try signing in again."
-          : "Couldn't save one or more photos. Please try again."
-      );
+      setError("Couldn't save one or more photos. Please try again.");
       setUploading(false);
       return;
     }

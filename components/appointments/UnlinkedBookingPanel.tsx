@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
 import { X } from "lucide-react";
-import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { formatTime12h, parseDateStr } from "@/lib/calendar";
 import { quickCreatePatientAction } from "@/app/dashboard/appointments/actions";
+import { linkPublicBookingAction } from "@/app/dashboard/appointments/appointmentActions";
 import { STATUS_STYLES, STATUS_LABELS } from "./statusStyles";
 import type { Appointment, Patient } from "@/types";
 
@@ -26,7 +25,7 @@ export default function UnlinkedBookingPanel({
 }: {
   appointment: Appointment;
   onClose: () => void;
-  onLinked: (appointment: Appointment, patient: Patient) => void;
+  onLinked: (appointment: Appointment, patient: Patient, previousId: string) => void;
   onEditAppointment: () => void;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
@@ -52,8 +51,13 @@ export default function UnlinkedBookingPanel({
         return;
       }
 
-      await updateDoc(doc(db, "appointments", appointment.id), { patientId: patient.id });
-      onLinked({ ...appointment, patientId: patient.id }, patient);
+      const linkResult = await linkPublicBookingAction(appointment, patient.id, patient.name, patient.phone);
+      if ("error" in linkResult) {
+        setError(linkResult.error);
+        setLinking(false);
+        return;
+      }
+      onLinked(linkResult.appointment, patient, appointment.id);
     } catch (err) {
       console.error("Failed to link booking to a patient:", err);
       setError("Something went wrong. Please try again.");

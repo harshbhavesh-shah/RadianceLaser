@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { deleteDoc, doc } from "firebase/firestore";
 import { Eye, EyeOff, Images, X } from "lucide-react";
-import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import { deletePatientPhotoAction } from "@/app/dashboard/patients/[id]/patientPhotoActions";
 import PatientPhotoUploadModal from "./PatientPhotoUploadModal";
 import PhotoCompareSlider from "./PhotoCompareSlider";
 import type { PatientPhoto, Visit } from "@/types";
@@ -112,7 +111,12 @@ export default function PatientPhotoGallery({
     if (!confirm("Delete this photo? This can't be undone.")) return;
     setDeletingId(photo.id);
     try {
-      await deleteDoc(doc(db, "patientPhotos", photo.id));
+      const result = await deletePatientPhotoAction(photo.id);
+      if ("error" in result) {
+        alert(result.error);
+        setDeletingId(null);
+        return;
+      }
       setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
       setLightboxPhoto(null);
     } catch (err) {

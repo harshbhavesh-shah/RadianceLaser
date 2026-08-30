@@ -1,12 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { UserPlus } from "lucide-react";
-import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { todayLocalStr } from "@/lib/calendar";
 import { quickCreatePatientAction } from "@/app/dashboard/appointments/actions";
+import { createAppointmentAction, updateAppointmentAction, deleteAppointmentAction } from "@/app/dashboard/appointments/appointmentActions";
 import type { Appointment, AppointmentStatus, Patient, SessionType } from "@/types";
 
 const DURATION_OPTIONS = [15, 30, 45, 60];
@@ -36,7 +35,9 @@ export default function AppointmentFormModal({
   presetDate?: string;
   presetTime?: string;
   onClose: () => void;
-  onSaved: (appt: Appointment) => void;
+  // previousId is set (and differs from appt.id) when saving this appointment
+  // promoted it out of Firestore into Postgres — see appointmentActions.ts.
+  onSaved: (appt: Appointment, previousId?: string) => void;
   onDeleted?: (id: string) => void;
   // Lets a patient created right here (see the "no matches" quick-add form
   // below) also land in the parent's patient list — otherwise it'd only
@@ -138,7 +139,6 @@ export default function AppointmentFormModal({
     setError(null);
 
     const payload = {
-      clinicId,
       patientId: selectedPatient.id,
       patientName: selectedPatient.name,
       patientPhone: selectedPatient.phone,
@@ -147,17 +147,31 @@ export default function AppointmentFormModal({
       time,
       durationMinutes,
       status,
-      ...(notes.trim() ? { notes: notes.trim() } : {}),
+      notes: notes.trim() || undefined,
     };
 
     try {
       if (isEditing && appointment) {
-        await updateDoc(doc(db, "appointments", appointment.id), payload);
-        onSaved({ ...appointment, ...payload });
+        // A still-unlinked public booking (from the marketing site's online
+        // form) has patientId "" until staff touch it — saving one promotes
+        // it into Postgres under a new id, not an in-place update. See
+        // appointmentActions.ts updateAppointmentAction.
+        const isPublicBooking = appointment.patientId === "";
+        const result = await updateAppointmentAction(appointment.id, isPublicBooking, payload);
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
+        onSaved({ id: result.id, clinicId, createdAt: appointment.createdAt, ...payload }, appointment.id);
       } else {
-        const createPayload = { ...payload, createdAt: Date.now() };
-        const docRef = await addDoc(collection(db, "appointments"), createPayload);
-        onSaved({ id: docRef.id, ...createPayload });
+        const result = await createAppointmentAction(payload);
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
+        onSaved({ id: result.id, clinicId, createdAt: Date.now(), ...payload });
       }
     } catch (err) {
       console.error("Failed to save appointment:", err);
@@ -174,7 +188,12 @@ export default function AppointmentFormModal({
 
     setDeleting(true);
     try {
-      await deleteDoc(doc(db, "appointments", appointment.id));
+      const result = await deleteAppointmentAction(appointment.id, appointment.patientId === "");
+      if ("error" in result) {
+        setError(result.error);
+        setDeleting(false);
+        return;
+      }
       onDeleted?.(appointment.id);
     } catch (err) {
       console.error("Failed to delete appointment:", err);

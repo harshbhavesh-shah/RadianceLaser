@@ -2,8 +2,14 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
-import { clinicCacheTag } from "@/lib/firestore/clinics";
+import { adminAuth } from "@/lib/firebase/admin";
+import {
+  clinicCacheTag,
+  updateClinicName as updateClinicNameInDb,
+  updateClinicAddress as updateClinicAddressInDb,
+  updateStatsWindow as updateStatsWindowInDb,
+} from "@/lib/db/clinics";
+import { createStaffMember, updateStaffRole as updateStaffRoleInDb, removeStaffMember as removeStaffMemberInDb, updateStaffFlags } from "@/lib/db/staff";
 import type { StaffMember, StatsWindow, UserRole } from "@/types";
 
 async function requireOwner() {
@@ -51,18 +57,16 @@ export async function addStaffMember(
       role,
     });
 
-    const staffDoc = {
-      clinicId: session.clinicId,
+    const staff = await createStaffMember({
       uid: userRecord.uid,
+      clinicId: session.clinicId,
       name: name.trim(),
       email: email.trim(),
       role,
-      createdAt: Date.now(),
-    };
-    await adminDb().collection("staff").doc(userRecord.uid).set(staffDoc);
+    });
 
     revalidatePath("/dashboard/settings");
-    return { success: { staff: { id: userRecord.uid, ...staffDoc }, tempPassword } };
+    return { success: { staff, tempPassword } };
   } catch (err) {
     console.error("Failed to add staff member:", err);
     const message = (err as { errorInfo?: { message?: string } })?.errorInfo?.message;
@@ -85,7 +89,7 @@ export async function updateStaffRole(uid: string, newRole: UserRole): Promise<{
     const userRecord = await adminAuth().getUser(uid);
     const existingClaims = userRecord.customClaims || {};
     await adminAuth().setCustomUserClaims(uid, { ...existingClaims, role: newRole });
-    await adminDb().collection("staff").doc(uid).update({ role: newRole });
+    await updateStaffRoleInDb(session.clinicId, uid, newRole);
 
     revalidatePath("/dashboard/settings");
     return {};
@@ -104,7 +108,7 @@ export async function removeStaffMember(uid: string): Promise<{ error?: string }
     }
 
     await adminAuth().deleteUser(uid);
-    await adminDb().collection("staff").doc(uid).delete();
+    await removeStaffMemberInDb(session.clinicId, uid);
 
     revalidatePath("/dashboard/settings");
     return {};
@@ -119,7 +123,7 @@ export async function updateClinicName(name: string): Promise<{ error?: string }
     const session = await requireOwner();
     if (!name.trim()) return { error: "Clinic name can't be empty." };
 
-    await adminDb().collection("clinics").doc(session.clinicId).update({ name: name.trim() });
+    await updateClinicNameInDb(session.clinicId, name.trim());
     revalidateTag(clinicCacheTag(session.clinicId));
     revalidatePath("/dashboard");
     return {};
@@ -132,10 +136,7 @@ export async function updateClinicName(name: string): Promise<{ error?: string }
 export async function updateClinicAddress(address: string): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();
-    await adminDb()
-      .collection("clinics")
-      .doc(session.clinicId)
-      .update({ address: address.trim() });
+    await updateClinicAddressInDb(session.clinicId, address.trim());
     revalidateTag(clinicCacheTag(session.clinicId));
     revalidatePath("/dashboard");
     return {};
@@ -148,7 +149,7 @@ export async function updateClinicAddress(address: string): Promise<{ error?: st
 export async function updateStatsWindow(window: StatsWindow): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();
-    await adminDb().collection("clinics").doc(session.clinicId).update({ statsWindow: window });
+    await updateStatsWindowInDb(session.clinicId, window);
     revalidateTag(clinicCacheTag(session.clinicId));
     revalidatePath("/dashboard");
     return {};
@@ -167,7 +168,7 @@ export async function toggleTwoFactorAction(enabled: boolean): Promise<{ error?:
     const session = await getSession();
     if (!session) throw new Error("Not signed in.");
 
-    await adminDb().collection("staff").doc(session.uid).update({ twoFactorEnabled: enabled });
+    await updateStaffFlags(session.uid, { twoFactorEnabled: enabled });
     revalidatePath("/dashboard/settings");
     return {};
   } catch (err) {

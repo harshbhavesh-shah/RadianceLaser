@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { addDoc, collection, deleteDoc, deleteField, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { numericFieldKeysFor } from "@/lib/sessionTypes";
 import { rollupAreaFields } from "@/lib/visitAreas";
 import { maybeAutoCompleteAppointment } from "@/lib/pipeline";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import PermissionErrorNotice from "@/components/PermissionErrorNotice";
+import { createVisitAction, updateVisitAction, deleteVisitAction } from "@/app/dashboard/patients/[id]/visitActions";
 import type { Machine, Package, PaymentMethod, SessionType, StaffMember, Visit, VisitAreaEntry } from "@/types";
 
 function todayLocalStr(): string {
@@ -98,7 +96,6 @@ export default function VisitFormModal({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [permissionError, setPermissionError] = useState(false);
 
   const selectedPackage = activePackages.find((p) => p.id === packageId);
   const machinesForType = machines.filter((m) => m.sessionType === sessionType);
@@ -162,78 +159,44 @@ export default function VisitFormModal({
 
     const performedByStaff = staff.find((s) => s.uid === performedByUid);
 
+    const formFields = {
+      date,
+      fields: rolledUpFields,
+      areas: parsedAreas,
+      packageId: packageId || undefined,
+      paymentMethod: !packageId && paymentMethod ? paymentMethod : undefined,
+      followUpDate: followUpDate || undefined,
+      followUpNote: followUpDate && followUpNote ? followUpNote : undefined,
+      machineId: machineId || undefined,
+      performedByUid: performedByUid || undefined,
+      performedByName: performedByStaff?.name,
+      durationMinutes: durationMinutes ? Number(durationMinutes) : undefined,
+    };
+
     try {
       if (isEditing && visit) {
-        const updatePayload: Record<string, unknown> = {
-          date,
-          fields: rolledUpFields,
-          areas: parsedAreas,
-        };
-        // Firestore rejects `undefined` field values — clearing an optional
-        // link (package, machine, staff) needs an explicit deleteField(),
-        // otherwise the stale value would silently stay on the document.
-        updatePayload.packageId = packageId ? packageId : deleteField();
-        updatePayload.paymentMethod = !packageId && paymentMethod ? paymentMethod : deleteField();
-        updatePayload.followUpDate = followUpDate ? followUpDate : deleteField();
-        updatePayload.followUpNote = followUpDate && followUpNote ? followUpNote : deleteField();
-        updatePayload.machineId = machineId ? machineId : deleteField();
-        updatePayload.performedByUid = performedByUid ? performedByUid : deleteField();
-        updatePayload.performedByName = performedByStaff ? performedByStaff.name : deleteField();
-        updatePayload.durationMinutes = durationMinutes ? Number(durationMinutes) : deleteField();
-        await updateDoc(doc(db, "visits", visit.id), updatePayload);
-        onSaved({
-          ...visit,
-          date,
-          fields: rolledUpFields,
-          areas: parsedAreas,
-          packageId: packageId || undefined,
-          paymentMethod: !packageId && paymentMethod ? paymentMethod : undefined,
-          followUpDate: followUpDate || undefined,
-          followUpNote: followUpDate && followUpNote ? followUpNote : undefined,
-          machineId: machineId || undefined,
-          performedByUid: performedByUid || undefined,
-          performedByName: performedByStaff?.name,
-          durationMinutes: durationMinutes ? Number(durationMinutes) : undefined,
-        });
+        const result = await updateVisitAction(visit.id, formFields);
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
+        onSaved({ ...visit, ...formFields });
       } else {
-        const createPayload = {
-          clinicId,
-          patientId,
-          sessionType,
-          date,
-          fields: rolledUpFields,
-          areas: parsedAreas,
-          ...(packageId ? { packageId } : {}),
-          ...(!packageId && paymentMethod ? { paymentMethod } : {}),
-          ...(followUpDate ? { followUpDate } : {}),
-          ...(followUpDate && followUpNote ? { followUpNote } : {}),
-          ...(machineId ? { machineId } : {}),
-          ...(performedByUid ? { performedByUid, performedByName: performedByStaff?.name } : {}),
-          ...(durationMinutes ? { durationMinutes: Number(durationMinutes) } : {}),
-          ...(appointmentId ? { appointmentId } : {}),
-          createdAt: Date.now(),
-        };
-        const docRef = await addDoc(collection(db, "visits"), createPayload);
-        onSaved({ id: docRef.id, ...createPayload });
+        const result = await createVisitAction(patientId, sessionType, appointmentId, formFields);
+        if ("error" in result) {
+          setError(result.error);
+          setSaving(false);
+          return;
+        }
+        onSaved({ id: result.id, clinicId, patientId, sessionType, createdAt: Date.now(), ...formFields });
         // Best-effort, non-blocking — if a receipt already exists for this
         // appointment too, this flips it to Completed automatically.
         if (appointmentId) void maybeAutoCompleteAppointment(appointmentId);
       }
     } catch (err) {
       console.error("Failed to save visit:", err);
-      const code = (err as { code?: string })?.code;
-      const isPermissionError = code === "permission-denied";
-      setPermissionError(isPermissionError);
-      setError(
-        isPermissionError
-          ? // This almost always means the browser's cached sign-in token
-            // predates a clinicId/role claim change — Firebase bakes custom
-            // claims into the ID token at sign-in and doesn't refresh them
-            // automatically. Signing out and back in (button below) fetches
-            // a token with the current claims. See PermissionErrorNotice.
-            "You don't have permission to save this — most likely your sign-in needs refreshing."
-          : `Couldn't save (${code || "unknown error"}). Please try again.`
-      );
+      setError("Couldn't save. Please try again.");
       setSaving(false);
       return;
     }
@@ -246,7 +209,12 @@ export default function VisitFormModal({
 
     setDeleting(true);
     try {
-      await deleteDoc(doc(db, "visits", visit.id));
+      const result = await deleteVisitAction(visit.id);
+      if ("error" in result) {
+        setError(result.error);
+        setDeleting(false);
+        return;
+      }
       onDeleted?.(visit.id);
     } catch (err) {
       console.error("Failed to delete visit:", err);
@@ -513,12 +481,7 @@ export default function VisitFormModal({
           )}
         </div>
 
-        {error && permissionError && (
-          <div className="mt-4 flex-shrink-0">
-            <PermissionErrorNotice message={error} />
-          </div>
-        )}
-        {error && !permissionError && <p className="mt-4 flex-shrink-0 text-sm text-red-700">{error}</p>}
+        {error && <p className="mt-4 flex-shrink-0 text-sm text-red-700">{error}</p>}
 
         <div className="mt-4 flex flex-shrink-0 items-center justify-between">
           <div>

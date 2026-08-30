@@ -130,22 +130,28 @@ export default function AppointmentsClient({
     };
   }, [setTemporaryOverride]);
 
-  function handleSaved(saved: Appointment) {
+  // previousId differs from saved.id exactly when a still-unlinked public
+  // booking got promoted into Postgres as part of this save (see
+  // app/dashboard/appointments/appointmentActions.ts) — the row that used
+  // to be at previousId no longer exists anywhere, so it has to be dropped
+  // from state explicitly rather than just upserted by (the new) saved.id.
+  function handleSaved(saved: Appointment, previousId?: string) {
     setAppointments((prev) => {
-      const exists = prev.some((a) => a.id === saved.id);
-      return exists ? prev.map((a) => (a.id === saved.id ? saved : a)) : [saved, ...prev];
+      const withoutStale = previousId && previousId !== saved.id ? prev.filter((a) => a.id !== previousId) : prev;
+      const exists = withoutStale.some((a) => a.id === saved.id);
+      return exists ? withoutStale.map((a) => (a.id === saved.id ? saved : a)) : [saved, ...withoutStale];
     });
     setModalState({ mode: "closed" });
     // Keep the panel in sync if we just edited the appointment it's showing.
-    setPanelAppointment((prev) => (prev && prev.id === saved.id ? saved : prev));
-    setRenderedPanelAppointment((prev) => (prev && prev.id === saved.id ? saved : prev));
+    setPanelAppointment((prev) => (prev && (prev.id === saved.id || prev.id === previousId) ? saved : prev));
+    setRenderedPanelAppointment((prev) =>
+      prev && (prev.id === saved.id || prev.id === previousId) ? saved : prev
+    );
   }
 
-  function handleLinked(updatedAppointment: Appointment, patient: Patient) {
-    setAppointments((prev) => prev.map((a) => (a.id === updatedAppointment.id ? updatedAppointment : a)));
+  function handleLinked(updatedAppointment: Appointment, patient: Patient, previousId: string) {
+    handleSaved(updatedAppointment, previousId);
     setPatients((prev) => (prev.some((p) => p.id === patient.id) ? prev : [...prev, patient]));
-    setPanelAppointment((prev) => (prev && prev.id === updatedAppointment.id ? updatedAppointment : prev));
-    setRenderedPanelAppointment((prev) => (prev && prev.id === updatedAppointment.id ? updatedAppointment : prev));
   }
 
   function handleDeleted(id: string) {

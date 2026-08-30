@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getClinic } from "@/lib/firestore/clinics";
-import { getPatients } from "@/lib/firestore/patients";
-import { getClinicVisits } from "@/lib/firestore/visits";
-import { getClinicPackages } from "@/lib/firestore/packages";
-import { getClinicStaff } from "@/lib/firestore/staff";
-import { getClinicConsentTemplates, getClinicConsentFormsPage } from "@/lib/firestore/consentForms";
-import { getClinicReceiptsPage } from "@/lib/firestore/receipts";
+import { getClinic } from "@/lib/db/clinics";
+import { getPatients } from "@/lib/db/patients";
+import { getClinicVisits } from "@/lib/db/visits";
+import { getClinicPackages } from "@/lib/db/packages";
+import { getClinicStaff } from "@/lib/db/staff";
+import { getClinicConsentTemplates, getClinicConsentFormsPage } from "@/lib/db/consentForms";
+import { getClinicReceiptsPage } from "@/lib/db/receipts";
 import DocumentsTabs from "@/components/documents/DocumentsTabs";
 
 export default async function DocumentsPage({

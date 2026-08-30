@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getClinic } from "@/lib/firestore/clinics";
-import { getClinicStaff } from "@/lib/firestore/staff";
-import { getClinicMachines } from "@/lib/firestore/machines";
-import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicStaff } from "@/lib/db/staff";
+import { getClinicMachines } from "@/lib/db/machines";
+import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { getClinicPayments } from "@/lib/firestore/payments";
 import { getClinicAccess } from "@/lib/subscription";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";

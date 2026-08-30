@@ -5,10 +5,10 @@
  * on for tenant isolation. There's no self-serve signup UI yet, so this is
  * how you create clinic #1, #2, #3... for now.
  *
- * Also creates the user's Firestore staff mirror doc (see
- * app/dashboard/settings/actions.ts) so this first owner shows up correctly
- * in their own Settings → Staff list, same as anyone added later from the
- * app itself.
+ * Also creates the user's StaffMember row in Postgres (see
+ * app/dashboard/settings/actions.ts, lib/db/staff.ts) so this first owner
+ * shows up correctly in their own Settings → Staff list, same as anyone
+ * added later from the app itself.
  *
  * Usage:
  *   node scripts/createClinic.mjs \
@@ -18,14 +18,29 @@
  *     --password "some-temporary-password" \
  *     --role owner
  *
- * Requires .env.local to be filled in with FIREBASE_ADMIN_* values.
+ * Requires .env.local to be filled in with FIREBASE_ADMIN_* and
+ * DATABASE_URL values.
  */
 
 import { config } from "dotenv";
 config({ path: ".env.local" });
+import { readFileSync } from "fs";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
+
+// Same driver-adapter setup as lib/db/client.ts, duplicated here since this
+// is a plain Node script, not compiled through Next's TypeScript/path-alias
+// setup (see the TRIAL_LENGTH_DAYS comment below for the same reasoning).
+function createPrismaClient() {
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { ca: readFileSync("global-bundle.pem", "utf-8"), rejectUnauthorized: true },
+  });
+  return new PrismaClient({ adapter });
+}
 
 // Keep in sync with TRIAL_LENGTH_DAYS in lib/subscription.ts (duplicated
 // here since this is a plain Node script, not compiled through Next's
@@ -70,26 +85,36 @@ async function main() {
     process.exit(1);
   }
 
+  if (!process.env.DATABASE_URL) {
+    console.error("Missing DATABASE_URL in .env.local.");
+    process.exit(1);
+  }
+
   initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
   const auth = getAuth();
   const db = getFirestore();
+  const prisma = createPrismaClient();
 
-  // 1. Create the clinic document. Starts on a free trial — see
-  //    lib/subscription.ts getClinicAccess for how trialEndsAt/
-  //    subscriptionStatus combine into the actual access decision, and
-  //    firestore.rules' clinicIsActive() for where that's actually
-  //    enforced.
-  const clinicRef = db.collection("clinics").doc();
+  // 1. Create the clinic. Starts on a free trial — see lib/subscription.ts
+  //    getClinicAccess for how trialEndsAt/subscriptionStatus combine into
+  //    the actual access decision. The row lives in Postgres (see
+  //    lib/db/clinics.ts) — its id is Postgres-generated (@default(cuid())
+  //    in prisma/schema.prisma), not a Firestore auto-id, so everything
+  //    below uses clinicId from this insert, not a Firestore doc ref.
+  //    subscriptionStatus/trialEndsAt also get mirrored into a Firestore
+  //    clinics/{id} doc, same as lib/db/clinics.ts's createClinic does —
+  //    that mirror is what firestore.rules' clinicIsActive() actually
+  //    reads, since Firestore security rules can't query Postgres.
   const trialEndsAt = Date.now() + TRIAL_LENGTH_DAYS * 24 * 60 * 60 * 1000;
-  await clinicRef.set({
-    name: clinicName,
-    createdAt: Date.now(),
-    subscriptionStatus: "trialing",
-    trialEndsAt,
+  const clinic = await prisma.clinic.create({
+    data: { name: clinicName, subscriptionStatus: "trialing", trialEndsAt, createdAt: Date.now() },
   });
-  console.log(
-    `✓ Created clinic "${clinicName}" (id: ${clinicRef.id}), trial ends ${new Date(trialEndsAt).toDateString()}`
+  const clinicId = clinic.id;
+  await db.collection("clinics").doc(clinicId).set(
+    { subscriptionStatus: "trialing", trialEndsAt },
+    { merge: true }
   );
+  console.log(`✓ Created clinic "${clinicName}" (id: ${clinicId}), trial ends ${new Date(trialEndsAt).toDateString()}`);
 
   // 2. Create the Firebase Auth user for the first staff account.
   const userRecord = await auth.createUser({ email, password, displayName: staffName });
@@ -98,21 +123,23 @@ async function main() {
   // 3. Set custom claims — this is what ties the user to this clinic and
   //    role. lib/session.ts reads these claims on every request.
   await auth.setCustomUserClaims(userRecord.uid, {
-    clinicId: clinicRef.id,
+    clinicId,
     role,
   });
-  console.log(`✓ Set custom claims: { clinicId: "${clinicRef.id}", role: "${role}" }`);
+  console.log(`✓ Set custom claims: { clinicId: "${clinicId}", role: "${role}" }`);
 
-  // 4. Mirror the staff record into Firestore so this user shows up
+  // 4. Mirror the staff record into Postgres so this user shows up
   //    correctly in Settings → Staff, exactly like anyone added later
   //    through the app itself.
-  await db.collection("staff").doc(userRecord.uid).set({
-    clinicId: clinicRef.id,
-    uid: userRecord.uid,
-    name: staffName,
-    email,
-    role,
-    createdAt: Date.now(),
+  await prisma.staffMember.create({
+    data: {
+      id: userRecord.uid,
+      clinicId,
+      name: staffName,
+      email,
+      role,
+      createdAt: Date.now(),
+    },
   });
   console.log(`✓ Created staff record for "${staffName}"`);
 
@@ -121,6 +148,8 @@ async function main() {
     "Note: if they were already signed in anywhere, they'll need to sign out and back " +
     "in for the new claims to take effect (Firebase caches the token client-side)."
   );
+
+  await prisma.$disconnect();
 }
 
 main().catch((err) => {

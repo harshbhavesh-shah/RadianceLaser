@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getPatient, updatePatient, findPatientByPhone } from "@/lib/firestore/patients";
+import { getPatient, updatePatient, findPatientByPhone } from "@/lib/db/patients";
 import { isValidPhone } from "@/lib/phone";
 import type { SkinType } from "@/types";
 

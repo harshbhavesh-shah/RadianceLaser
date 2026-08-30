@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/lib/session";
-import { createPatient, findPatientByPhone, getPatient } from "@/lib/firestore/patients";
+import { createPatient, findPatientByPhone, getPatient } from "@/lib/db/patients";
 import { isValidPhone } from "@/lib/phone";
 import type { Patient } from "@/types";
 

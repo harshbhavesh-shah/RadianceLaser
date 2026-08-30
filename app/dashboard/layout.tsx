@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getClinic } from "@/lib/firestore/clinics";
-import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import { getClinicAccess } from "@/lib/subscription";
 import { SessionTypeConfigProvider } from "@/lib/sessionTypeConfigContext";

@@ -63,9 +63,9 @@ export function sessionTypeDefToConfig(def: SessionTypeDef): SessionTypeConfig {
 }
 
 /** Merges the built-in Q-Switch/LHR config with a clinic's own custom
- * machine types (fetched from Firestore — see lib/firestore/sessionTypeDefs.ts)
- * into the single lookup table used everywhere a SessionType needs to be
- * rendered or have its data-entry columns resolved. */
+ * machine types (see lib/db/sessionTypeDefs.ts) into the single lookup
+ * table used everywhere a SessionType needs to be rendered or have its
+ * data-entry columns resolved. */
 export function buildSessionTypeConfig(
   customTypes: SessionTypeDef[] = []
 ): Record<string, SessionTypeConfig> {

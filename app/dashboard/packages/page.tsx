@@ -2,11 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Package } from "lucide-react";
 import { getSession } from "@/lib/session";
-import { getPatients } from "@/lib/firestore/patients";
-import { getClinicPackages } from "@/lib/firestore/packages";
-import { getClinicVisits } from "@/lib/firestore/visits";
+import { getPatientsByIds } from "@/lib/db/patients";
+import { getClinicPackages } from "@/lib/db/packages";
+import { getVisitsByPackageId } from "@/lib/db/visits";
 import { computePackageLedger } from "@/lib/packages";
-import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -24,24 +24,29 @@ export default async function PackagesPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [packages, visits, patients, sessionTypeDefs] = await Promise.all([
+  const [packages, sessionTypeDefs] = await Promise.all([
     getClinicPackages(session.clinicId),
-    getClinicVisits(session.clinicId),
-    getPatients(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
   ]);
   const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
 
+  // One targeted query per package (its own redeemed visits, not the whole
+  // clinic's visit history filtered down per package) plus one lookup for
+  // just the patients these packages actually belong to — not the entire
+  // roster. computePackageLedger only ever uses the visits matching this
+  // package's id anyway (see lib/packages.ts), so this is the same ledger
+  // result for a fraction of the reads.
+  const [packageVisitsByPackage, patients] = await Promise.all([
+    Promise.all(packages.map((pkg) => getVisitsByPackageId(session.clinicId, pkg.id))),
+    getPatientsByIds(packages.map((pkg) => pkg.patientId)),
+  ]);
   const patientsById = new Map(patients.map((p) => [p.id, p]));
 
   const rows = packages
-    .map((pkg) => ({
+    .map((pkg, i) => ({
       pkg,
       patientName: patientsById.get(pkg.patientId)?.name || "Unknown patient",
-      ledger: computePackageLedger(
-        pkg,
-        visits.filter((v) => v.patientId === pkg.patientId)
-      ),
+      ledger: computePackageLedger(pkg, packageVisitsByPackage[i]),
     }))
     .sort((a, b) => b.pkg.createdAt - a.pkg.createdAt);
 

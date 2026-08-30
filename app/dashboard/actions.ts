@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
-import { adminDb } from "@/lib/firebase/admin";
+import { updateStaffFlags } from "@/lib/db/staff";
 
 /** Called once the guided product tour finishes or is skipped, so it never
  * auto-launches again for this person — see components/onboarding/. */
@@ -11,7 +11,7 @@ export async function completeTourAction(): Promise<{ error?: string }> {
     const session = await getSession();
     if (!session) throw new Error("Not signed in.");
 
-    await adminDb().collection("staff").doc(session.uid).update({ tourCompleted: true });
+    await updateStaffFlags(session.uid, { tourCompleted: true });
     revalidatePath("/dashboard");
     return {};
   } catch (err) {
@@ -28,7 +28,7 @@ export async function dismissOnboardingAction(): Promise<{ error?: string }> {
     const session = await getSession();
     if (!session) throw new Error("Not signed in.");
 
-    await adminDb().collection("staff").doc(session.uid).update({ onboardingDismissed: true });
+    await updateStaffFlags(session.uid, { onboardingDismissed: true });
     revalidatePath("/dashboard");
     return {};
   } catch (err) {

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getClinicVisits } from "@/lib/firestore/visits";
-import { getClinicPackages } from "@/lib/firestore/packages";
-import { getClinicMachines } from "@/lib/firestore/machines";
-import { getClinicAppointments } from "@/lib/firestore/appointments";
+import { getClinicVisits } from "@/lib/db/visits";
+import { getClinicPackages } from "@/lib/db/packages";
+import { getClinicMachines } from "@/lib/db/machines";
+import { getClinicAppointments } from "@/lib/db/appointments";
 import {
   computeRevenueSummary,
   computeYearlyRevenueTrend,
@@ -14,7 +14,7 @@ import {
   computeAppointmentReliability,
   computePackageUtilization,
 } from "@/lib/analyticsPage";
-import { getClinicSessionTypeDefs } from "@/lib/firestore/sessionTypeDefs";
+import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import PieChart from "@/components/analytics/PieChart";
 import YearlyRevenueChart from "@/components/analytics/YearlyRevenueChart";

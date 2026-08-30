@@ -8,7 +8,7 @@ import { loadMorePatientsAction, searchPatientsAction } from "@/app/dashboard/pa
 import EmptyState from "@/components/ui/EmptyState";
 
 const SEARCH_DEBOUNCE_MS = 300;
-// Keep in sync with SEARCH_RESULT_LIMIT in lib/firestore/patients.ts.
+// Keep in sync with SEARCH_RESULT_LIMIT in lib/db/patients.ts.
 const SEARCH_RESULT_LIMIT = 20;
 
 /** Patients list with a search bar. Below a couple hundred patients this
@@ -16,7 +16,7 @@ const SEARCH_RESULT_LIMIT = 20;
  * the thousands over its lifetime, so the list is paginated ("Load more")
  * and the search bar runs a real query against the whole clinic
  * (searchPatientsAction) rather than only ever seeing whatever page happens
- * to be loaded — see lib/firestore/patients.ts searchPatients for how that
+ * to be loaded — see lib/db/patients.ts searchPatients for how that
  * query works (name/phone/code prefix match, not substring, which is the
  * one behavior change from the old fully-client-side version of this
  * component). This is the "find a patient" entry point for the app —

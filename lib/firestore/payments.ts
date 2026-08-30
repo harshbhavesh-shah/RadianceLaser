@@ -1,5 +1,7 @@
 import "server-only";
 import { adminDb } from "@/lib/firebase/admin";
+import { prisma } from "@/lib/db/client";
+import { updateClinicSubscription } from "@/lib/db/clinics";
 import { SUBSCRIPTION_LENGTH_DAYS } from "@/lib/subscription";
 import type { Payment } from "@/types";
 
@@ -55,6 +57,20 @@ export async function getClinicPayments(clinicId: string): Promise<Payment[]> {
  * subscriptionRenewsAt, not just "now + 1 year" — so renewing a few days
  * early (e.g. from the reminder banner) doesn't forfeit time already paid
  * for.
+ *
+ * Payment stays on Firestore; Clinic's subscription fields moved to
+ * Postgres (see lib/db/clinics.ts) — the two can no longer be flipped in
+ * one atomic transaction the way they were before that move, since they're
+ * different databases. Instead: a Firestore-only transaction still does
+ * the idempotency claim (payment "created" -> "paid") — that guard has to
+ * stay atomic, since it's what stops the webhook and the client-side
+ * callback from double-extending the clinic if both fire for the same
+ * payment — and only once that transaction confirms *this* call actually
+ * won the race does the Postgres write happen afterward. If the process
+ * died between those two steps, the payment would be marked "paid" with
+ * the clinic never actually extended — a narrow gap the previous
+ * single-transaction version didn't have, worth knowing about even though
+ * nothing here has hit it.
  */
 export async function confirmPayment(input: {
   razorpayOrderId: string;
@@ -83,24 +99,32 @@ export async function confirmPayment(input: {
     return { clinicId: paymentData.clinicId }; // already processed by the other path
   }
 
-  const clinicRef = db.collection("clinics").doc(paymentData.clinicId);
-
-  await db.runTransaction(async (tx) => {
-    const [freshPayment, clinicSnap] = await Promise.all([tx.get(paymentDoc.ref), tx.get(clinicRef)]);
-    if ((freshPayment.data() as Payment).status === "paid") return; // re-check inside the transaction
-
-    const currentRenewsAt = (clinicSnap.data()?.subscriptionRenewsAt as number | undefined) ?? 0;
-    const newRenewsAt = Math.max(Date.now(), currentRenewsAt) + SUBSCRIPTION_LENGTH_DAYS * DAY_MS;
+  const claimed = await db.runTransaction(async (tx) => {
+    const freshPayment = await tx.get(paymentDoc.ref);
+    if ((freshPayment.data() as Payment).status === "paid") return false; // re-check inside the transaction
 
     tx.update(paymentDoc.ref, {
       status: "paid",
       razorpayPaymentId: input.razorpayPaymentId,
       paidAt: Date.now(),
     });
-    tx.update(clinicRef, {
-      subscriptionStatus: "active",
-      subscriptionRenewsAt: newRenewsAt,
-    });
+    return true;
+  });
+
+  if (!claimed) {
+    return { clinicId: paymentData.clinicId }; // the other path won the race
+  }
+
+  const clinic = await prisma.clinic.findUnique({
+    where: { id: paymentData.clinicId },
+    select: { subscriptionRenewsAt: true },
+  });
+  const currentRenewsAt = Number(clinic?.subscriptionRenewsAt ?? 0);
+  const newRenewsAt = Math.max(Date.now(), currentRenewsAt) + SUBSCRIPTION_LENGTH_DAYS * DAY_MS;
+
+  await updateClinicSubscription(paymentData.clinicId, {
+    subscriptionStatus: "active",
+    subscriptionRenewsAt: newRenewsAt,
   });
 
   return { clinicId: paymentData.clinicId };

@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { doc, setDoc } from "firebase/firestore";
 import { Plus, Trash2 } from "lucide-react";
-import { db } from "@/lib/firebase/client";
-import { allocateReceiptNumber } from "@/lib/receiptNumber";
 import { maybeAutoCompleteAppointment } from "@/lib/pipeline";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import { createReceiptAction } from "@/app/dashboard/documents/receiptActions";
 import type { Patient, Package, Receipt, ReceiptItem, Visit } from "@/types";
 
 function formatCurrency(n: number): string {
@@ -126,41 +124,29 @@ export default function ReceiptFormModal({
     setError(null);
 
     try {
-      const receiptNumber = await allocateReceiptNumber(clinicId);
-      const id = crypto.randomUUID();
       const amount = cleaned.reduce((sum, it) => sum + (it.amount - it.discount), 0);
-      const payload = {
-        clinicId,
+      const result = await createReceiptAction({
         patientId: patient.id,
-        patientName: patient.name,
-        ...(patient.phone ? { patientPhone: patient.phone } : {}),
-        ...(patient.age !== undefined ? { patientAge: patient.age } : {}),
-        ...(patient.gender ? { patientGender: patient.gender } : {}),
-        ...(patient.address ? { patientAddress: patient.address } : {}),
-        ...(consultingDoctor.trim() ? { consultingDoctor: consultingDoctor.trim() } : {}),
-        receiptNumber,
         date,
         items: cleaned,
         amount,
-        ...(sourceVisitId ? { visitId: sourceVisitId } : {}),
-        ...(sourcePackageId ? { packageId: sourcePackageId } : {}),
-        ...(sourceAppointmentId ? { appointmentId: sourceAppointmentId } : {}),
-        ...(notes.trim() ? { notes: notes.trim() } : {}),
-        issuedByUid: currentUid,
+        consultingDoctor: consultingDoctor.trim() || undefined,
+        visitId: sourceVisitId,
+        packageId: sourcePackageId,
+        appointmentId: sourceAppointmentId,
+        notes: notes.trim() || undefined,
         issuedByName: currentName,
-        createdAt: Date.now(),
-      };
-      await setDoc(doc(db, "receipts", id), payload);
-      onCreated({ id, ...payload });
+      });
+      if ("error" in result) {
+        setError(result.error);
+        setSaving(false);
+        return;
+      }
+      onCreated(result.receipt);
       if (sourceAppointmentId) void maybeAutoCompleteAppointment(sourceAppointmentId);
     } catch (err) {
       console.error("Failed to save receipt:", err);
-      const code = (err as { code?: string })?.code;
-      setError(
-        code === "permission-denied"
-          ? "You don't have permission to save this. Check that Firestore rules are deployed and try signing in again."
-          : "Couldn't save this receipt. Please try again."
-      );
+      setError("Couldn't save this receipt. Please try again.");
       setSaving(false);
       return;
     }

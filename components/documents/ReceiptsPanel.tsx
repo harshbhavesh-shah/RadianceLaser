@@ -43,7 +43,7 @@ export default function ReceiptsPanel({
   packages: Package[];
   initialReceipts: Receipt[];
   // Cursor for the next page of clinic-wide receipts (see
-  // lib/firestore/receipts.ts getClinicReceiptsPage) — null once the whole
+  // lib/db/receipts.ts getClinicReceiptsPage) — null once the whole
   // history has been loaded, or if there was never more than one page.
   initialCursor: string | null;
   currentUid: string;

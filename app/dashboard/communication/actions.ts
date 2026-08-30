@@ -5,9 +5,10 @@ import { getSession } from "@/lib/session";
 import { adminDb } from "@/lib/firebase/admin";
 import { sendTemplateMessage } from "@/lib/bhashsms/client";
 import { sendSms } from "@/lib/smsgate/client";
-import { getWhatsAppConnection, getClinicMessageTemplates } from "@/lib/firestore/whatsapp";
-import { getReceipt } from "@/lib/firestore/receipts";
-import { getClinic } from "@/lib/firestore/clinics";
+import { getWhatsAppConnection } from "@/lib/firestore/whatsapp";
+import { getClinicMessageTemplates, createMessageTemplate, deleteMessageTemplate } from "@/lib/db/messageTemplates";
+import { getReceipt } from "@/lib/db/receipts";
+import { getClinic } from "@/lib/db/clinics";
 import { normalizePhone } from "@/lib/phone";
 import { TEMPLATE_VARIABLE_LABELS } from "@/types";
 import type { MessageTemplate, MessageTemplateCategory } from "@/types";
@@ -96,19 +97,15 @@ export async function createTemplateAction(input: {
     const variableLabels =
       input.category === "custom" ? input.variableLabels : TEMPLATE_VARIABLE_LABELS[input.category];
 
-    const now = Date.now();
-    const docData = {
+    const template = await createMessageTemplate({
       clinicId: session.clinicId,
       name: input.name.trim(),
       category: input.category,
       variableLabels,
-      ...(input.bodyPreview?.trim() ? { bodyPreview: input.bodyPreview.trim() } : {}),
-      createdAt: now,
-      updatedAt: now,
-    };
-    const docRef = await adminDb().collection("messageTemplates").add(docData);
+      bodyPreview: input.bodyPreview?.trim() || undefined,
+    });
     revalidatePath("/dashboard/communication");
-    return { template: { id: docRef.id, ...docData } };
+    return { template };
   } catch (err) {
     console.error("Failed to create message template:", err);
     return { error: "Couldn't save this template. Please try again." };
@@ -118,11 +115,7 @@ export async function createTemplateAction(input: {
 export async function deleteTemplateAction(templateId: string): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();
-    const doc = await adminDb().collection("messageTemplates").doc(templateId).get();
-    if (!doc.exists || doc.data()?.clinicId !== session.clinicId) {
-      throw new Error("Template not found.");
-    }
-    await doc.ref.delete();
+    await deleteMessageTemplate(session.clinicId, templateId);
     revalidatePath("/dashboard/communication");
     return {};
   } catch (err) {

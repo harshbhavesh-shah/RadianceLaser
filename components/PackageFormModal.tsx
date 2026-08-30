@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { addDoc, collection } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { todayLocalStr } from "@/lib/packages";
+import { createPackageAction } from "@/app/dashboard/patients/[id]/packageActions";
 import type { Package, PaymentMethod, SessionType } from "@/types";
 
 export default function PackageFormModal({
@@ -42,33 +41,24 @@ export default function PackageFormModal({
     setSaving(true);
     setError(null);
 
-    try {
-      const docRef = await addDoc(collection(db, "packages"), {
-        clinicId,
-        patientId,
-        sessionType,
-        label: label.trim() || config.label,
-        totalSessions: sessions,
-        totalAmount: amount,
-        purchaseDate,
-        ...(expiryDate ? { expiryDate } : {}),
-        ...(paymentMethod ? { paymentMethod } : {}),
-        createdAt: Date.now(),
-      });
+    const formFields = {
+      sessionType,
+      label: label.trim() || config.label,
+      totalSessions: sessions,
+      totalAmount: amount,
+      purchaseDate,
+      expiryDate: expiryDate || undefined,
+      paymentMethod: paymentMethod || undefined,
+    };
 
-      onCreated({
-        id: docRef.id,
-        clinicId,
-        patientId,
-        sessionType,
-        label: label.trim() || config.label,
-        totalSessions: sessions,
-        totalAmount: amount,
-        purchaseDate,
-        ...(expiryDate ? { expiryDate } : {}),
-        ...(paymentMethod ? { paymentMethod } : {}),
-        createdAt: Date.now(),
-      });
+    try {
+      const result = await createPackageAction(patientId, formFields);
+      if ("error" in result) {
+        setError(result.error);
+        setSaving(false);
+        return;
+      }
+      onCreated({ id: result.id, clinicId, patientId, createdAt: Date.now(), ...formFields });
     } catch (err) {
       console.error("Failed to create package:", err);
       setError("Couldn't save this package. Please try again.");

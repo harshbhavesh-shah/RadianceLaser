@@ -1,6 +1,8 @@
 "use server";
 
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminAuth } from "@/lib/firebase/admin";
+import { createClinic } from "@/lib/db/clinics";
+import { createStaffMember } from "@/lib/db/staff";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,7 +45,6 @@ export async function createTrialClinicAction(input: {
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
 
   const auth = adminAuth();
-  const db = adminDb();
 
   let uid: string;
   try {
@@ -59,25 +60,18 @@ export async function createTrialClinicAction(input: {
   }
 
   try {
-    const clinicRef = db.collection("clinics").doc();
     const trialEndsAt = Date.now() + TRIAL_LENGTH_DAYS * DAY_MS;
 
-    await clinicRef.set({
-      name: clinicName,
-      createdAt: Date.now(),
-      subscriptionStatus: "trialing",
-      trialEndsAt,
-    });
+    const clinic = await createClinic({ name: clinicName, subscriptionStatus: "trialing", trialEndsAt });
 
-    await auth.setCustomUserClaims(uid, { clinicId: clinicRef.id, role: "owner" });
+    await auth.setCustomUserClaims(uid, { clinicId: clinic.id, role: "owner" });
 
-    await db.collection("staff").doc(uid).set({
-      clinicId: clinicRef.id,
+    await createStaffMember({
       uid,
+      clinicId: clinic.id,
       name: ownerName,
       email,
       role: "owner",
-      createdAt: Date.now(),
     });
 
     return { success: true };

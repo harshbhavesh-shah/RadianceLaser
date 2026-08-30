@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { deleteDoc, doc } from "firebase/firestore";
 import { Printer, X } from "lucide-react";
-import { db } from "@/lib/firebase/client";
+import { deleteConsentFormAction } from "@/app/dashboard/settings/consentFormActions";
 import type { ConsentForm } from "@/types";
 
 function formatDateTime(ms: number): string {
@@ -33,7 +32,12 @@ export default function ConsentFormViewModal({
     setDeleting(true);
     setError(null);
     try {
-      await deleteDoc(doc(db, "consentForms", form.id));
+      const result = await deleteConsentFormAction(form.id);
+      if ("error" in result) {
+        setError(result.error);
+        setDeleting(false);
+        return;
+      }
       onDeleted(form.id);
     } catch (err) {
       console.error("Failed to delete consent form:", err);

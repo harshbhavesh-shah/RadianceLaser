@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { getPatientsPage } from "@/lib/firestore/patients";
+import { getPatientsPage } from "@/lib/db/patients";
 import { redirect } from "next/navigation";
 import PatientsTable from "@/components/patients/PatientsTable";
 

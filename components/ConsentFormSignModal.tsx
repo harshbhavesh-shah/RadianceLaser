@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import { renderConsentTemplate } from "@/lib/consentForms";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import { createConsentFormAction } from "@/app/dashboard/settings/consentFormActions";
 import SignaturePad, { type SignaturePadHandle } from "./SignaturePad";
 import type { ConsentForm, ConsentFormTemplate, Visit } from "@/types";
 
@@ -72,31 +71,25 @@ export default function ConsentFormSignModal({
       const signatureDataUrl = signatureRef.current?.getDataUrl();
       if (!signatureDataUrl) throw new Error("Couldn't capture signature.");
 
-      const id = crypto.randomUUID();
-      const payload = {
-        clinicId,
+      const result = await createConsentFormAction({
         patientId,
         templateId: template.id,
         templateTitle: template.title,
-        ...(visitId ? { visitId } : {}),
+        visitId: visitId || undefined,
         renderedBody,
         signatureDataUrl,
         signedByName: signedByName.trim(),
-        witnessUid: currentUid,
         witnessName: currentName,
-        signedAt: Date.now(),
-        createdAt: Date.now(),
-      };
-      await setDoc(doc(db, "consentForms", id), payload);
-      onSigned({ id, ...payload });
+      });
+      if ("error" in result) {
+        setError(result.error);
+        setSaving(false);
+        return;
+      }
+      onSigned(result.form);
     } catch (err) {
       console.error("Failed to save consent form:", err);
-      const code = (err as { code?: string })?.code;
-      setError(
-        code === "permission-denied"
-          ? "You don't have permission to save this. Check that Firestore rules are deployed and try signing in again."
-          : "Couldn't save this consent form. Please try again."
-      );
+      setError("Couldn't save this consent form. Please try again.");
       setSaving(false);
       return;
     }

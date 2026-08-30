@@ -3,8 +3,9 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getAdminSession } from "@/lib/session";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
-import { clinicCacheTag } from "@/lib/firestore/clinics";
-import type { AdminSession, Clinic } from "@/types";
+import { prisma } from "@/lib/db/client";
+import { clinicCacheTag, updateClinicSubscription, deleteClinic } from "@/lib/db/clinics";
+import type { AdminSession } from "@/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -36,21 +37,23 @@ export async function extendAccessAction(clinicId: string, days: number): Promis
       return { error: "Enter a positive number of days." };
     }
 
-    const clinicRef = adminDb().collection("clinics").doc(clinicId);
-    const snap = await clinicRef.get();
-    if (!snap.exists) return { error: "Clinic not found." };
+    // A direct, uncached Postgres read (not lib/db/clinics.ts getClinic,
+    // which caches for 5 minutes) — the max(now, current) extension math
+    // below needs this clinic's actual current deadline, not a stale one
+    // from before another admin action just changed it.
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+    if (!clinic) return { error: "Clinic not found." };
 
-    const clinic = snap.data() as Clinic;
     const hasEverPaid = clinic.subscriptionStatus === "active" || clinic.subscriptionRenewsAt != null;
 
     if (hasEverPaid) {
-      const current = clinic.subscriptionRenewsAt ?? 0;
+      const current = Number(clinic.subscriptionRenewsAt ?? 0);
       const newRenewsAt = Math.max(Date.now(), current) + days * DAY_MS;
-      await clinicRef.update({ subscriptionStatus: "active", subscriptionRenewsAt: newRenewsAt });
+      await updateClinicSubscription(clinicId, { subscriptionStatus: "active", subscriptionRenewsAt: newRenewsAt });
     } else {
-      const current = clinic.trialEndsAt ?? 0;
+      const current = Number(clinic.trialEndsAt ?? 0);
       const newTrialEndsAt = Math.max(Date.now(), current) + days * DAY_MS;
-      await clinicRef.update({ subscriptionStatus: "trialing", trialEndsAt: newTrialEndsAt });
+      await updateClinicSubscription(clinicId, { subscriptionStatus: "trialing", trialEndsAt: newTrialEndsAt });
     }
 
     revalidateTag(clinicCacheTag(clinicId));
@@ -69,11 +72,10 @@ export async function terminateAccessAction(clinicId: string): Promise<AdminActi
   try {
     await requireSuperAdmin();
 
-    const clinicRef = adminDb().collection("clinics").doc(clinicId);
-    const snap = await clinicRef.get();
-    if (!snap.exists) return { error: "Clinic not found." };
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true } });
+    if (!clinic) return { error: "Clinic not found." };
 
-    await clinicRef.update({ subscriptionStatus: "canceled" });
+    await updateClinicSubscription(clinicId, { subscriptionStatus: "canceled" });
 
     revalidateTag(clinicCacheTag(clinicId));
     revalidatePath("/admin");
@@ -90,6 +92,18 @@ export async function terminateAccessAction(clinicId: string): Promise<AdminActi
 // silent gap in what delete actually removes. whatsappConnections is
 // deliberately not here — its doc id is the clinicId itself, deleted
 // directly below instead of via a where() query.
+//
+// Patient/Visit/Package/Appointment/Receipt/Machine/StaffMember/
+// SessionTypeDef/ConsentFormTemplate/ConsentForm/PatientPhoto/
+// MessageTemplate have moved to Postgres (see prisma/schema.prisma) and
+// are deleted from there separately, below — but "patients"/"visits"/
+// "packages"/"receipts"/"machines"/"staff"/"sessionTypeDefs"/
+// "consentFormTemplates"/"consentForms"/"patientPhotos"/"messageTemplates"
+// stay in this list too, as a safety net for any clinic whose
+// Firestore-era records were never touched by that move, and
+// "appointments" has to stay regardless since a clinic can still have
+// live, not-yet-promoted public bookings sitting in Firestore (see
+// lib/db/appointments.ts) at the moment it's deleted.
 const CLINIC_SCOPED_COLLECTIONS = [
   "patients",
   "visits",
@@ -138,19 +152,48 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
 
     const db = adminDb();
     const auth = adminAuth();
-    const clinicRef = db.collection("clinics").doc(clinicId);
-    const snap = await clinicRef.get();
-    if (!snap.exists) return { error: "Clinic not found." };
+    // Checked in both stores, same reasoning as the staff uid collection
+    // just below: a clinic created before Clinic moved to Postgres (see
+    // lib/db/clinics.ts) may only exist as a Firestore doc.
+    const [clinicRow, clinicSnap] = await Promise.all([
+      prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true } }),
+      db.collection("clinics").doc(clinicId).get(),
+    ]);
+    if (!clinicRow && !clinicSnap.exists) return { error: "Clinic not found." };
 
-    // Staff docs double as the id of who to delete from Firebase Auth —
-    // collect their uids before the docs themselves get deleted below.
-    const staffSnap = await db.collection("staff").where("clinicId", "==", clinicId).get();
-    const staffUids = staffSnap.docs.map((d) => d.id);
+    // Staff docs/rows double as the id of who to delete from Firebase Auth —
+    // collect their uids before deleting them below. Checked in both
+    // stores: StaffMember moved to Postgres (see lib/db/staff.ts), but a
+    // clinic whose staff were created before that move may still have
+    // Firestore-era staff docs that were never touched by it (this
+    // migration deliberately doesn't backfill old data — see
+    // prisma/schema.prisma's chunk-1 comment) — missing either would leave
+    // orphaned Auth accounts behind.
+    const [staffSnap, staffRows] = await Promise.all([
+      db.collection("staff").where("clinicId", "==", clinicId).get(),
+      prisma.staffMember.findMany({ where: { clinicId }, select: { id: true } }),
+    ]);
+    const staffUids = Array.from(new Set([...staffSnap.docs.map((d) => d.id), ...staffRows.map((r) => r.id)]));
 
     for (const collection of CLINIC_SCOPED_COLLECTIONS) {
       await deleteQueryInChunks(db.collection(collection).where("clinicId", "==", clinicId));
     }
     await db.collection("whatsappConnections").doc(clinicId).delete().catch(() => {});
+
+    // Patient rows cascade-delete their Visits, Packages, Appointments,
+    // Receipts, ConsentForms, and PatientPhotos (each FK'd to Patient with
+    // onDelete: Cascade) — one query covers all seven Postgres tables.
+    // ReceiptCounter, Machine, StaffMember, SessionTypeDef,
+    // ConsentFormTemplate, and MessageTemplate aren't FK'd to anything
+    // (all keyed by clinicId directly, not patientId — see
+    // prisma/schema.prisma), so each needs its own explicit delete.
+    await prisma.patient.deleteMany({ where: { clinicId } });
+    await prisma.receiptCounter.deleteMany({ where: { clinicId } });
+    await prisma.machine.deleteMany({ where: { clinicId } });
+    await prisma.staffMember.deleteMany({ where: { clinicId } });
+    await prisma.sessionTypeDef.deleteMany({ where: { clinicId } });
+    await prisma.consentFormTemplate.deleteMany({ where: { clinicId } });
+    await prisma.messageTemplate.deleteMany({ where: { clinicId } });
 
     for (const uid of staffUids) {
       await db.collection("twoFactorChallenges").doc(uid).delete().catch(() => {});
@@ -161,7 +204,14 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
       });
     }
 
-    await clinicRef.delete();
+    // deleteClinic handles both the Postgres row (if any) and the Firestore
+    // mirror doc; a clinic pre-dating the Postgres move has no Postgres row
+    // to delete, so guard that half of it explicitly.
+    if (clinicRow) {
+      await deleteClinic(clinicId);
+    } else {
+      await db.collection("clinics").doc(clinicId).delete();
+    }
 
     revalidateTag(clinicCacheTag(clinicId));
     revalidatePath("/admin");
