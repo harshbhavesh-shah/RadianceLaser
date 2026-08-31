@@ -26,15 +26,27 @@ export async function createPendingPayment(input: {
   return docRef.id;
 }
 
+/** Fails soft (logs and returns []) rather than letting a Firestore-side
+ * problem take down the whole Settings page this backs (its Billing
+ * section) — same reasoning as lib/db/appointments.ts
+ * getUnlinkedPublicBookings. Never applied to createPendingPayment or
+ * confirmPayment below — those are real money-moving writes, where
+ * silently swallowing a failure would be actively wrong, not just
+ * unhelpful. */
 export async function getClinicPayments(clinicId: string): Promise<Payment[]> {
-  // Needs a composite index (clinicId Ascending, createdAt Descending) —
-  // same pattern as getPatients in lib/firestore/patients.ts.
-  const snap = await adminDb()
-    .collection("payments")
-    .where("clinicId", "==", clinicId)
-    .orderBy("createdAt", "desc")
-    .get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Payment);
+  try {
+    // Needs a composite index (clinicId Ascending, createdAt Descending) —
+    // same pattern as getPatients in lib/firestore/patients.ts.
+    const snap = await adminDb()
+      .collection("payments")
+      .where("clinicId", "==", clinicId)
+      .orderBy("createdAt", "desc")
+      .get();
+    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Payment);
+  } catch (err) {
+    console.error(`Failed to fetch payments for clinic ${clinicId}:`, err);
+    return [];
+  }
 }
 
 /**

@@ -34,13 +34,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing clinicId, sessionType, or date" }, { status: 400, headers: CORS_HEADERS });
   }
 
-  const [firestoreSnap, postgresRows] = await Promise.all([
+  // The Firestore half fails soft (logs and falls back to []) rather than
+  // 500ing this whole public endpoint over a Firestore-side problem — a
+  // quota limit, an outage. Degraded (Postgres-only) availability, which
+  // can under-report taken slots and risk a double-booking against a
+  // Firestore-native one, is still a better failure mode for the
+  // marketing site's booking form than the fetch failing outright and
+  // blocking booking entirely.
+  const [firestoreDocs, postgresRows] = await Promise.all([
     adminDb()
       .collection("appointments")
       .where("clinicId", "==", clinicId)
       .where("sessionType", "==", sessionType)
       .where("date", "==", date)
-      .get(),
+      .get()
+      .then((snap) => snap.docs.map((doc) => doc.data()))
+      .catch((err) => {
+        console.error(`Failed to fetch Firestore appointments for availability (clinic ${clinicId}):`, err);
+        return [];
+      }),
     prisma.appointment.findMany({
       where: { clinicId, sessionType, date },
       select: { time: true, status: true },
@@ -48,7 +60,7 @@ export async function GET(request: Request) {
   ]);
 
   const bookedTimes = [
-    ...firestoreSnap.docs.map((doc) => doc.data()).filter((a) => a.status !== "cancelled").map((a) => a.time as string),
+    ...firestoreDocs.filter((a) => a.status !== "cancelled").map((a) => a.time as string),
     ...postgresRows.filter((a) => a.status !== "cancelled").map((a) => a.time),
   ];
 
