@@ -1,22 +1,19 @@
 import "server-only";
 import { prisma } from "@/lib/db/client";
-import { adminDb } from "@/lib/firebase/admin";
 import type { Appointment as PrismaAppointmentRow } from "@prisma/client";
 import type { Appointment, AppointmentStatus, SessionType } from "@/types";
 
-// Postgres migration, chunk 4 — see prisma/schema.prisma's Appointment
-// model comment for the one wrinkle this chunk has that Patient/Visit/
-// Package didn't: the marketing site's public booking form writes straight
-// into Firestore, outside this app entirely, so this module is genuinely
-// hybrid rather than a clean swap. Every exported read here merges this
-// table with Firestore's still-unlinked public bookings; every exported
-// write only ever touches one store, picking the right one per call.
+// Postgres migration, chunk 4 originally, revised in chunk 15 (going
+// Firestore-free) — see prisma/schema.prisma's Appointment model comment
+// for the full picture. This is now a clean, single-store module: public
+// bookings from the marketing site land here directly (via
+// app/api/public/appointments/route.ts) with patientId left null, and
+// "linking" one to a patient is just a normal update.
 
 function toAppointment(row: PrismaAppointmentRow): Appointment {
   return {
     id: row.id,
     clinicId: row.clinicId,
-    patientId: row.patientId,
     patientName: row.patientName,
     patientPhone: row.patientPhone,
     sessionType: row.sessionType as SessionType,
@@ -25,69 +22,32 @@ function toAppointment(row: PrismaAppointmentRow): Appointment {
     durationMinutes: row.durationMinutes,
     status: row.status as AppointmentStatus,
     createdAt: Number(row.createdAt),
+    ...(row.patientId ? { patientId: row.patientId } : {}),
     ...(row.notes ? { notes: row.notes } : {}),
   };
 }
 
-/** Publicly-booked appointments still sitting in Firestore, not yet
- * promoted into this table — always patientId: "" (the only shape
- * firestore.rules' isValidPublicLhrBooking allows an anonymous write to
- * create). See promoteAppointment below for how they leave this list.
- *
- * Deliberately fails soft (logs and returns []) rather than letting a
- * Firestore-side problem — a quota limit, an outage, anything — take down
- * every page that reads appointments. This merge is a nice-to-have (public
- * bookings show up here at all before staff manually notice/link them);
- * every one of this app's own bookings lives in Postgres regardless and
- * keeps working. A confirmed real incident: Firestore's free-tier daily
- * quota got exhausted from testing traffic, and every page calling this
- * (unguarded, at the time) went down with it. */
-async function getUnlinkedPublicBookings(clinicId: string): Promise<Appointment[]> {
-  try {
-    const snap = await adminDb()
-      .collection("appointments")
-      .where("clinicId", "==", clinicId)
-      .where("patientId", "==", "")
-      .get();
-    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Appointment);
-  } catch (err) {
-    console.error(`Failed to fetch unlinked public bookings for clinic ${clinicId}:`, err);
-    return [];
-  }
-}
-
-/** Every appointment across the whole clinic — this table's rows plus any
- * still-unlinked public bookings, so the calendar/list views show both
- * without staff having to know which store an appointment actually lives
- * in. */
+/** Every appointment across the whole clinic. */
 export async function getClinicAppointments(clinicId: string): Promise<Appointment[]> {
-  const [rows, publicBookings] = await Promise.all([
-    prisma.appointment.findMany({ where: { clinicId } }),
-    getUnlinkedPublicBookings(clinicId),
-  ]);
-  return [...rows.map(toAppointment), ...publicBookings];
+  const rows = await prisma.appointment.findMany({ where: { clinicId } });
+  return rows.map(toAppointment);
 }
 
 /** Just one day's appointments — backs Dashboard's "Today's Schedule". */
 export async function getAppointmentsForDate(clinicId: string, dateStr: string): Promise<Appointment[]> {
-  const [rows, publicBookings] = await Promise.all([
-    prisma.appointment.findMany({ where: { clinicId, date: dateStr } }),
-    getUnlinkedPublicBookings(clinicId),
-  ]);
-  return [...rows.map(toAppointment), ...publicBookings.filter((a) => a.date === dateStr)];
+  const rows = await prisma.appointment.findMany({ where: { clinicId, date: dateStr } });
+  return rows.map(toAppointment);
 }
 
 /** Whether this clinic has ever booked a single appointment — backs the
  * onboarding checklist's "Book an appointment" step. */
 export async function clinicHasAnyAppointment(clinicId: string): Promise<boolean> {
   const row = await prisma.appointment.findFirst({ where: { clinicId }, select: { id: true } });
-  if (row) return true;
-  const publicBookings = await getUnlinkedPublicBookings(clinicId);
-  return publicBookings.length > 0;
+  return row !== null;
 }
 
 export interface AppointmentInput {
-  patientId: string;
+  patientId?: string;
   patientName: string;
   patientPhone: string;
   sessionType: SessionType;
@@ -106,7 +66,7 @@ export async function createAppointment(input: CreateAppointmentInput): Promise<
   const row = await prisma.appointment.create({
     data: {
       clinicId: input.clinicId,
-      patientId: input.patientId,
+      patientId: input.patientId ?? null,
       patientName: input.patientName,
       patientPhone: input.patientPhone,
       sessionType: input.sessionType,
@@ -129,7 +89,7 @@ export async function updateAppointment(clinicId: string, appointmentId: string,
   await prisma.appointment.update({
     where: { id: appointmentId },
     data: {
-      patientId: input.patientId,
+      patientId: input.patientId ?? null,
       patientName: input.patientName,
       patientPhone: input.patientPhone,
       sessionType: input.sessionType,
@@ -150,34 +110,29 @@ export async function deleteAppointment(clinicId: string, appointmentId: string)
   await prisma.appointment.delete({ where: { id: appointmentId } });
 }
 
-/** Deletes a still-unlinked public booking directly from Firestore —
- * used when staff discards one (e.g. a bogus/duplicate online booking)
- * without ever linking it to a patient, so it never gets promoted at all. */
-export async function deleteUnlinkedPublicBooking(firestoreId: string): Promise<void> {
-  await adminDb().collection("appointments").doc(firestoreId).delete();
-}
-
-/** Moves a publicly-booked Firestore appointment into this table — called
- * the first time staff actually touches one, whether that's linking it to
- * a patient (UnlinkedBookingPanel) or editing/saving it directly
- * (AppointmentFormModal). Creates the Postgres row with the finalized
- * fields, then deletes the Firestore doc so it stops showing up in
- * getUnlinkedPublicBookings. The promoted appointment gets a fresh
- * Postgres-native id rather than keeping the Firestore one — nothing
- * downstream depends on an unlinked public booking's id staying stable,
- * since Visit.appointmentId is only ever set once a real patientId already
- * exists (i.e. after promotion). Callers must use the returned id, not the
- * `firestoreId` they passed in. */
-export async function promoteAppointment(firestoreId: string, input: CreateAppointmentInput): Promise<string> {
-  const id = await createAppointment(input);
-  await deleteUnlinkedPublicBooking(firestoreId);
-  return id;
+/** Links a still-unlinked public booking to a (new-or-existing) patient —
+ * used by UnlinkedBookingPanel. Just sets patientId/patientName/
+ * patientPhone on the existing row; the appointment keeps its id, unlike
+ * the old Firestore "promotion" this replaced. */
+export async function linkAppointmentToPatient(
+  clinicId: string,
+  appointmentId: string,
+  patientId: string,
+  patientName: string,
+  patientPhone: string
+): Promise<void> {
+  const existing = await prisma.appointment.findUnique({ where: { id: appointmentId }, select: { clinicId: true } });
+  if (!existing || existing.clinicId !== clinicId) {
+    throw new Error("Appointment not found.");
+  }
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { patientId, patientName, patientPhone },
+  });
 }
 
 /** Flips an appointment's status — used by lib/pipeline.ts's auto-complete
- * check. Always a Postgres row: a visit can only ever be logged against an
- * appointment that already has a real patientId, which means it's already
- * been promoted out of Firestore by that point. */
+ * check. */
 export async function updateAppointmentStatus(appointmentId: string, status: AppointmentStatus): Promise<void> {
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
 }

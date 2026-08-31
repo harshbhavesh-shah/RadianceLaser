@@ -2,10 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
-import { adminDb } from "@/lib/firebase/admin";
 import { sendTemplateMessage } from "@/lib/bhashsms/client";
 import { sendSms } from "@/lib/smsgate/client";
-import { getWhatsAppConnection } from "@/lib/firestore/whatsapp";
+import { getWhatsAppConnection, upsertWhatsAppConnection, deleteWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates, createMessageTemplate, deleteMessageTemplate } from "@/lib/db/messageTemplates";
 import { getReceipt } from "@/lib/db/receipts";
 import { getClinic } from "@/lib/db/clinics";
@@ -47,19 +46,11 @@ export async function connectWhatsAppAction(
       if (!finalPass) return { error: "Password is required." };
     }
 
-    await adminDb()
-      .collection("whatsappConnections")
-      .doc(session.clinicId)
-      .set({
-        id: session.clinicId,
-        clinicId: session.clinicId,
-        status: "connected",
-        bhashUser: bhashUser.trim(),
-        bhashPass: finalPass,
-        senderId: senderId.trim(),
-        connectedAt: Date.now(),
-        updatedAt: Date.now(),
-      });
+    await upsertWhatsAppConnection(session.clinicId, {
+      bhashUser: bhashUser.trim(),
+      bhashPass: finalPass,
+      senderId: senderId.trim(),
+    });
     revalidatePath("/dashboard/communication");
     return {};
   } catch (err) {
@@ -71,7 +62,7 @@ export async function connectWhatsAppAction(
 export async function disconnectWhatsAppAction(): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();
-    await adminDb().collection("whatsappConnections").doc(session.clinicId).delete();
+    await deleteWhatsAppConnection(session.clinicId);
     revalidatePath("/dashboard/communication");
     return {};
   } catch (err) {

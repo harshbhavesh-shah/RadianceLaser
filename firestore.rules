@@ -62,32 +62,6 @@ function callerClinicIsActive() {
   return clinicIsActive(clinicId());
 }
 
-// Lets an unauthenticated visitor create exactly one narrow shape of
-// appointment: a Laser Hair Removal booking made through the marketing
-// site's public appointment form (see advancedskinclinic-new/src/
-// appointment.njk, which writes here directly since RadianceLaser has no
-// slot/queue system to route this through server-side). Tightly scoped so
-// this can't be abused to write arbitrary appointment data: fixed
-// sessionType/status, no patientId (public bookers aren't linked to an
-// existing Patient record), and only the expected fields — anything else
-// on the doc is rejected. Still gated on the target clinic being
-// active/trialing, same as every other write.
-function isValidPublicLhrBooking(data) {
-  return data.clinicId is string
-    && clinicIsActive(data.clinicId)
-    && data.patientId == ""
-    && data.sessionType == "lhr"
-    && data.status == "booked"
-    && data.patientName is string && data.patientName.size() > 0
-    && data.patientPhone is string && data.patientPhone.size() > 0
-    && data.date is string
-    && data.time is string
-    && data.durationMinutes is number
-    && data.keys().hasOnly(
-         ['clinicId', 'patientId', 'patientName', 'patientPhone', 'sessionType',
-          'date', 'time', 'durationMinutes', 'status', 'notes', 'createdAt']);
-}
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -109,14 +83,18 @@ service cloud.firestore {
     // request.resource.data. Checking request.resource.data on delete always
     // evaluates to false, silently blocking every delete. Keep update and
     // delete as separate allow statements, not combined, to avoid this.
+    // Appointment lives entirely in Postgres now (see
+    // prisma/schema.prisma) — internal writes go through server actions,
+    // and the marketing site's public booking form posts to
+    // app/api/public/appointments/route.ts instead of writing here
+    // directly, the way it used to under a narrower public-create rule
+    // this collection no longer needs. Deliberately read-only for clients,
+    // same reasoning as staff/payments below — nothing in this app reads
+    // it either, but there's no reason to leave a write path open that
+    // nothing uses.
     match /appointments/{appointmentId} {
       allow read: if belongsToClinic(resource.data);
-      allow create: if (belongsToClinic(request.resource.data) && callerClinicIsActive())
-        || isValidPublicLhrBooking(request.resource.data);
-      allow update: if belongsToClinic(resource.data)
-        && belongsToClinic(request.resource.data) // can't change clinicId on update
-        && callerClinicIsActive();
-      allow delete: if belongsToClinic(resource.data) && callerClinicIsActive();
+      allow write: if false;
     }
 
     match /patients/{patientId} {

@@ -263,7 +263,12 @@ export type AppointmentStatus = "booked" | "completed" | "cancelled" | "no-show"
 
 export interface Appointment extends TenantScoped {
   id: string;
-  patientId: string;
+  // Absent for a public booking (see app/api/public/appointments/route.ts)
+  // that staff haven't linked to a patient record yet — the anonymous
+  // booker isn't known to be any existing Patient. Set the moment staff
+  // link it (UnlinkedBookingPanel) or edit/save it directly
+  // (AppointmentFormModal), and never unset again after that.
+  patientId?: string;
   // Denormalized from the Patient record at booking time — same pattern as
   // Visit — so rendering the calendar/list never needs an extra join per
   // appointment. If a patient's name changes later, past appointments keep

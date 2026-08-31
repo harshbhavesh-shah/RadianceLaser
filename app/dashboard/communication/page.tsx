@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { getWhatsAppConnection } from "@/lib/firestore/whatsapp";
+import { getWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates } from "@/lib/db/messageTemplates";
 import WhatsAppSection from "@/components/communication/WhatsAppSection";
 import MessageTemplatesSection from "@/components/communication/MessageTemplatesSection";

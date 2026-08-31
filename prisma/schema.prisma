@@ -145,25 +145,24 @@ model Package {
   @@map("packages")
 }
 
-// Mirrors types/index.ts Appointment — chunk 4 of the migration, with one
-// wrinkle the earlier chunks didn't have: this clinic's marketing website
-// (a separate deployed project, advancedskinclinic-new) writes new "lhr"
-// bookings straight into Firestore's appointments collection from an
-// anonymous browser, allowed by firestore.rules' isValidPublicLhrBooking —
-// there's no server of this app's in that write path to redirect to
-// Postgres. So this table only ever holds appointments booked from inside
-// this app (patientId always a real Patient — never ""). A publicly-booked
-// Firestore doc (always patientId: "") gets copied in here — "promoted",
-// see lib/db/appointments.ts promoteAppointment — the first time staff
-// actually touches it (linking it to a patient, or editing/saving it),
-// and deleted from Firestore at that point so it doesn't show up twice.
-// Until then, reads merge this table with Firestore's unlinked public
-// bookings — see lib/db/appointments.ts.
+// Mirrors types/index.ts Appointment — chunk 4 of the original migration,
+// revised in chunk 15 (going Firestore-free) to drop the Firestore hybrid
+// that chunk 4 needed: the marketing site's public "lhr" booking form used
+// to write straight into Firestore (this app had no server in that write
+// path to redirect to Postgres), so an unlinked public booking had to live
+// as a separate Firestore doc merged in at read time and "promoted" here
+// once staff touched it. Now the marketing site posts to
+// app/api/public/appointments/route.ts instead, which writes directly here
+// with patientId left null — so patientId is genuinely optional (an
+// anonymous public booker isn't any known Patient yet), not a sentinel
+// value, and "linking" a booking to a patient is just a normal update that
+// sets it, never a row recreated under a new id the way the old Firestore
+// promotion was.
 model Appointment {
-  id              String  @id @default(cuid())
+  id              String   @id @default(cuid())
   clinicId        String
-  patientId       String
-  patient         Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId       String?
+  patient         Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
   // Denormalized from Patient at booking time — same reasoning as
   // Visit.performedByName: rendering the calendar never needs a join, and a
   // later name change shouldn't rewrite what a past appointment showed.
@@ -428,4 +427,63 @@ model ReceiptCounter {
   value    Int
 
   @@map("receipt_counters")
+}
+
+// Mirrors types/index.ts Payment — chunk 12 of the post-launch cleanup
+// (going Firestore-free past the original 11-chunk migration). Clinic-
+// scoped only, no Patient FK — a payment belongs to the clinic's
+// subscription, not any one patient. Migrating this alongside Clinic
+// already living in Postgres means confirmPayment (lib/db/payments.ts) can
+// go back to being one atomic transaction claiming the payment AND
+// extending the clinic's subscription together — the split
+// Firestore-transaction-then-Postgres-write it was using while Payment and
+// Clinic lived in different databases is gone.
+model Payment {
+  id                String  @id @default(cuid())
+  clinicId          String
+  razorpayOrderId   String
+  razorpayPaymentId String?
+  amount            Int // smallest currency unit (paise for INR), matching Razorpay
+  currency          String
+  status            String // "created" | "paid" | "failed"
+  createdAt         BigInt
+  paidAt            BigInt?
+
+  @@index([clinicId])
+  @@index([clinicId, createdAt])
+  @@index([razorpayOrderId])
+  @@map("payments")
+}
+
+// Backs lib/twoFactor.ts's email-OTP sign-in gate — chunk 13 of the
+// post-launch cleanup. Short-lived (10 minute TTL, enforced in app code,
+// not a DB-level expiry) and self-contained, no clinicId at all: `id` is
+// the Firebase Auth uid the code was issued to, which is enough to scope
+// it correctly on its own.
+model TwoFactorChallenge {
+  uid       String @id
+  codeHash  String
+  expiresAt BigInt
+  attempts  Int
+
+  @@map("twoFactorChallenges")
+}
+
+// Mirrors types/index.ts WhatsAppConnection — chunk 14 of the post-launch
+// cleanup. Migrated in its current BhashSMS-credential shape (username/
+// password/sender id) rather than redesigned, since that integration is
+// being replaced by the Meta Cloud API later anyway — not worth reshaping
+// a table about to be thrown out. `id` is the clinicId itself (one
+// connection per clinic), same as the Firestore doc id this replaces.
+model WhatsAppConnection {
+  id          String  @id
+  status      String
+  bhashUser   String
+  bhashPass   String?
+  senderId    String
+  lastError   String?
+  connectedAt BigInt?
+  updatedAt   BigInt
+
+  @@map("whatsappConnections")
 }

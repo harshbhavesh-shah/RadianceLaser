@@ -93,17 +93,15 @@ export async function terminateAccessAction(clinicId: string): Promise<AdminActi
 // deliberately not here — its doc id is the clinicId itself, deleted
 // directly below instead of via a where() query.
 //
-// Patient/Visit/Package/Appointment/Receipt/Machine/StaffMember/
-// SessionTypeDef/ConsentFormTemplate/ConsentForm/PatientPhoto/
-// MessageTemplate have moved to Postgres (see prisma/schema.prisma) and
-// are deleted from there separately, below — but "patients"/"visits"/
-// "packages"/"receipts"/"machines"/"staff"/"sessionTypeDefs"/
-// "consentFormTemplates"/"consentForms"/"patientPhotos"/"messageTemplates"
-// stay in this list too, as a safety net for any clinic whose
-// Firestore-era records were never touched by that move, and
-// "appointments" has to stay regardless since a clinic can still have
-// live, not-yet-promoted public bookings sitting in Firestore (see
-// lib/db/appointments.ts) at the moment it's deleted.
+// Every collection listed here has moved to Postgres (see
+// prisma/schema.prisma) and is deleted from there separately, below —
+// this list is now purely a safety net for any clinic whose Firestore-era
+// records were never touched by that move. Appointment no longer has the
+// "public bookings can still be live in Firestore at delete time" wrinkle
+// it used to: the marketing site's public booking form posts straight to
+// Postgres now (see app/api/public/appointments/route.ts), so there's
+// nothing new landing in Firestore's appointments collection to protect
+// against — same safety-net-only reasoning as everything else here.
 const CLINIC_SCOPED_COLLECTIONS = [
   "patients",
   "visits",
@@ -184,8 +182,8 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
     // Receipts, ConsentForms, and PatientPhotos (each FK'd to Patient with
     // onDelete: Cascade) — one query covers all seven Postgres tables.
     // ReceiptCounter, Machine, StaffMember, SessionTypeDef,
-    // ConsentFormTemplate, and MessageTemplate aren't FK'd to anything
-    // (all keyed by clinicId directly, not patientId — see
+    // ConsentFormTemplate, MessageTemplate, and Payment aren't FK'd to
+    // anything (all keyed by clinicId directly, not patientId — see
     // prisma/schema.prisma), so each needs its own explicit delete.
     await prisma.patient.deleteMany({ where: { clinicId } });
     await prisma.receiptCounter.deleteMany({ where: { clinicId } });
@@ -194,9 +192,13 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
     await prisma.sessionTypeDef.deleteMany({ where: { clinicId } });
     await prisma.consentFormTemplate.deleteMany({ where: { clinicId } });
     await prisma.messageTemplate.deleteMany({ where: { clinicId } });
+    await prisma.payment.deleteMany({ where: { clinicId } });
+    // WhatsAppConnection's Postgres id is the clinicId itself (see
+    // prisma/schema.prisma), same as its Firestore doc id above.
+    await prisma.whatsAppConnection.deleteMany({ where: { id: clinicId } });
 
     for (const uid of staffUids) {
-      await db.collection("twoFactorChallenges").doc(uid).delete().catch(() => {});
+      await prisma.twoFactorChallenge.deleteMany({ where: { uid } });
       await auth.deleteUser(uid).catch((err) => {
         // A uid with no matching Auth user (already removed some other way)
         // shouldn't block the rest of the deletion — log and move on.

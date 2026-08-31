@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { deleteDoc, doc } from "firebase/firestore";
 import { MessageCircle, Printer, Send, X } from "lucide-react";
-import { db } from "@/lib/firebase/client";
 import { sendReceiptMessageAction } from "@/app/dashboard/communication/actions";
+import { deleteReceiptAction } from "@/app/dashboard/documents/receiptActions";
 import type { Receipt } from "@/types";
 
 function formatCurrency(n: number): string {
@@ -53,7 +52,12 @@ export default function ReceiptViewModal({
     setDeleting(true);
     setError(null);
     try {
-      await deleteDoc(doc(db, "receipts", receipt.id));
+      const result = await deleteReceiptAction(receipt.id);
+      if ("error" in result) {
+        setError(result.error);
+        setDeleting(false);
+        return;
+      }
       onDeleted(receipt.id);
     } catch (err) {
       console.error("Failed to delete receipt:", err);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { verifyWebhookSignature } from "@/lib/razorpay";
-import { confirmPayment } from "@/lib/firestore/payments";
+import { confirmPayment } from "@/lib/db/payments";
 import { clinicCacheTag } from "@/lib/db/clinics";
 
 // Authoritative confirmation path for payments, independent of whether the

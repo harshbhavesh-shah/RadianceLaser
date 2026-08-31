@@ -130,27 +130,19 @@ export default function AppointmentsClient({
     };
   }, [setTemporaryOverride]);
 
-  // previousId differs from saved.id exactly when a still-unlinked public
-  // booking got promoted into Postgres as part of this save (see
-  // app/dashboard/appointments/appointmentActions.ts) — the row that used
-  // to be at previousId no longer exists anywhere, so it has to be dropped
-  // from state explicitly rather than just upserted by (the new) saved.id.
-  function handleSaved(saved: Appointment, previousId?: string) {
+  function handleSaved(saved: Appointment) {
     setAppointments((prev) => {
-      const withoutStale = previousId && previousId !== saved.id ? prev.filter((a) => a.id !== previousId) : prev;
-      const exists = withoutStale.some((a) => a.id === saved.id);
-      return exists ? withoutStale.map((a) => (a.id === saved.id ? saved : a)) : [saved, ...withoutStale];
+      const exists = prev.some((a) => a.id === saved.id);
+      return exists ? prev.map((a) => (a.id === saved.id ? saved : a)) : [saved, ...prev];
     });
     setModalState({ mode: "closed" });
     // Keep the panel in sync if we just edited the appointment it's showing.
-    setPanelAppointment((prev) => (prev && (prev.id === saved.id || prev.id === previousId) ? saved : prev));
-    setRenderedPanelAppointment((prev) =>
-      prev && (prev.id === saved.id || prev.id === previousId) ? saved : prev
-    );
+    setPanelAppointment((prev) => (prev && prev.id === saved.id ? saved : prev));
+    setRenderedPanelAppointment((prev) => (prev && prev.id === saved.id ? saved : prev));
   }
 
-  function handleLinked(updatedAppointment: Appointment, patient: Patient, previousId: string) {
-    handleSaved(updatedAppointment, previousId);
+  function handleLinked(updatedAppointment: Appointment, patient: Patient) {
+    handleSaved(updatedAppointment);
     setPatients((prev) => (prev.some((p) => p.id === patient.id) ? prev : [...prev, patient]));
   }
 
@@ -192,9 +184,10 @@ export default function AppointmentsClient({
         : formatMonthLabel(anchor);
 
   const isPanelOpen = !!panelAppointment;
-  const renderedPanelPatient = renderedPanelAppointment
-    ? patientsById.get(renderedPanelAppointment.patientId)
-    : null;
+  const renderedPanelPatient =
+    renderedPanelAppointment && renderedPanelAppointment.patientId
+      ? patientsById.get(renderedPanelAppointment.patientId)
+      : null;
 
   return (
     <div className="flex items-stretch gap-5">

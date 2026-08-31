@@ -140,7 +140,9 @@ export function computeContraindicationAlerts(
   const seen = new Set<string>();
 
   for (const appt of todayAppointments) {
-    if (seen.has(appt.patientId)) continue;
+    // No patientId means this is still an unlinked public booking (see
+    // types/index.ts Appointment.patientId) — nothing to look up yet.
+    if (!appt.patientId || seen.has(appt.patientId)) continue;
     const patient = patientsById.get(appt.patientId);
     if (!patient?.contraindications) continue;
     seen.add(appt.patientId);

@@ -1,17 +1,11 @@
 import "server-only";
 import crypto from "crypto";
-import { adminDb } from "@/lib/firebase/admin";
+import { prisma } from "@/lib/db/client";
 import { sendEmail } from "@/lib/email/resend";
 
 const CODE_LENGTH = 6;
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
-
-interface TwoFactorChallengeDoc {
-  codeHash: string;
-  expiresAt: number;
-  attempts: number;
-}
 
 function generateCode(): string {
   // crypto.randomInt is uniformly distributed across the range, unlike
@@ -39,12 +33,11 @@ function hashCode(code: string): string {
  */
 export async function issueTwoFactorChallenge(uid: string, email: string): Promise<void> {
   const code = generateCode();
-  const doc: TwoFactorChallengeDoc = {
-    codeHash: hashCode(code),
-    expiresAt: Date.now() + CODE_TTL_MS,
-    attempts: 0,
-  };
-  await adminDb().collection("twoFactorChallenges").doc(uid).set(doc);
+  await prisma.twoFactorChallenge.upsert({
+    where: { uid },
+    create: { uid, codeHash: hashCode(code), expiresAt: BigInt(Date.now() + CODE_TTL_MS), attempts: 0 },
+    update: { codeHash: hashCode(code), expiresAt: BigInt(Date.now() + CODE_TTL_MS), attempts: 0 },
+  });
 
   await sendEmail({
     to: email,
@@ -89,25 +82,22 @@ export type TwoFactorVerifyResult = "ok" | "invalid" | "expired" | "too-many-att
  * counter, so a genuine typo doesn't force requesting a whole new code.
  */
 export async function verifyTwoFactorCode(uid: string, code: string): Promise<TwoFactorVerifyResult> {
-  const ref = adminDb().collection("twoFactorChallenges").doc(uid);
-  const snap = await ref.get();
-  if (!snap.exists) return "no-challenge";
+  const data = await prisma.twoFactorChallenge.findUnique({ where: { uid } });
+  if (!data) return "no-challenge";
 
-  const data = snap.data() as TwoFactorChallengeDoc;
-
-  if (Date.now() > data.expiresAt) {
-    await ref.delete();
+  if (Date.now() > Number(data.expiresAt)) {
+    await prisma.twoFactorChallenge.delete({ where: { uid } });
     return "expired";
   }
   if (data.attempts >= MAX_ATTEMPTS) {
-    await ref.delete();
+    await prisma.twoFactorChallenge.delete({ where: { uid } });
     return "too-many-attempts";
   }
   if (hashCode(code) !== data.codeHash) {
-    await ref.update({ attempts: data.attempts + 1 });
+    await prisma.twoFactorChallenge.update({ where: { uid }, data: { attempts: data.attempts + 1 } });
     return "invalid";
   }
 
-  await ref.delete();
+  await prisma.twoFactorChallenge.delete({ where: { uid } });
   return "ok";
 }

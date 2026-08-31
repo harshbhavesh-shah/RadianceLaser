@@ -154,3 +154,11 @@ export async function createReceipt(input: CreateReceiptInput): Promise<string> 
   });
   return row.id;
 }
+
+export async function deleteReceipt(clinicId: string, receiptId: string): Promise<void> {
+  const existing = await prisma.receipt.findUnique({ where: { id: receiptId }, select: { clinicId: true } });
+  if (!existing || existing.clinicId !== clinicId) {
+    throw new Error("Receipt not found.");
+  }
+  await prisma.receipt.delete({ where: { id: receiptId } });
+}

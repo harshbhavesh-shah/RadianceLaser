@@ -100,7 +100,7 @@ export default async function DashboardPage() {
   // (today's appointments, a package, a due follow-up, recent activity),
   // never the clinic's whole roster just to label a handful of names.
   const patientIds = new Set<string>();
-  for (const a of todayAppointments) patientIds.add(a.patientId);
+  for (const a of todayAppointments) if (a.patientId) patientIds.add(a.patientId);
   for (const v of dueFollowUpVisits) patientIds.add(v.patientId);
   for (const pkg of packages) patientIds.add(pkg.patientId);
   for (const v of recentVisits) patientIds.add(v.patientId);

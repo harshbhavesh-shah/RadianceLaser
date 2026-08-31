@@ -2,7 +2,7 @@
 
 import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/db/patients";
-import { createReceipt } from "@/lib/db/receipts";
+import { createReceipt, deleteReceipt } from "@/lib/db/receipts";
 import { allocateReceiptNumber } from "@/lib/db/receiptNumber";
 import type { Receipt, ReceiptItem } from "@/types";
 
@@ -91,5 +91,18 @@ export async function createReceiptAction(
   } catch (err) {
     console.error("Failed to create receipt:", err);
     return { error: "Couldn't save this receipt. Please try again." };
+  }
+}
+
+export async function deleteReceiptAction(receiptId: string): Promise<{ ok: true } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Not signed in." };
+
+  try {
+    await deleteReceipt(session.clinicId, receiptId);
+    return { ok: true };
+  } catch (err) {
+    console.error("Failed to delete receipt:", err);
+    return { error: "Couldn't delete this receipt. Please try again." };
   }
 }

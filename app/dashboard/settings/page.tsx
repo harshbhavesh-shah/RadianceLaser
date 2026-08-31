@@ -4,7 +4,7 @@ import { getClinic } from "@/lib/db/clinics";
 import { getClinicStaff } from "@/lib/db/staff";
 import { getClinicMachines } from "@/lib/db/machines";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
-import { getClinicPayments } from "@/lib/firestore/payments";
+import { getClinicPayments } from "@/lib/db/payments";
 import { getClinicAccess } from "@/lib/subscription";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";

@@ -25,7 +25,7 @@ export default function UnlinkedBookingPanel({
 }: {
   appointment: Appointment;
   onClose: () => void;
-  onLinked: (appointment: Appointment, patient: Patient, previousId: string) => void;
+  onLinked: (appointment: Appointment, patient: Patient) => void;
   onEditAppointment: () => void;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
@@ -57,7 +57,7 @@ export default function UnlinkedBookingPanel({
         setLinking(false);
         return;
       }
-      onLinked(linkResult.appointment, patient, appointment.id);
+      onLinked(linkResult.appointment, patient);
     } catch (err) {
       console.error("Failed to link booking to a patient:", err);
       setError("Something went wrong. Please try again.");

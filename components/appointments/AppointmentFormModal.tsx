@@ -35,9 +35,7 @@ export default function AppointmentFormModal({
   presetDate?: string;
   presetTime?: string;
   onClose: () => void;
-  // previousId is set (and differs from appt.id) when saving this appointment
-  // promoted it out of Firestore into Postgres — see appointmentActions.ts.
-  onSaved: (appt: Appointment, previousId?: string) => void;
+  onSaved: (appt: Appointment) => void;
   onDeleted?: (id: string) => void;
   // Lets a patient created right here (see the "no matches" quick-add form
   // below) also land in the parent's patient list — otherwise it'd only
@@ -49,7 +47,9 @@ export default function AppointmentFormModal({
 
   const [patientQuery, setPatientQuery] = useState(appointment?.patientName || "");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
-    appointment ? { id: appointment.patientId, name: appointment.patientName, phone: appointment.patientPhone } as Patient : null
+    appointment?.patientId
+      ? ({ id: appointment.patientId, name: appointment.patientName, phone: appointment.patientPhone } as Patient)
+      : null
   );
   const [showPatientResults, setShowPatientResults] = useState(false);
 
@@ -152,18 +152,13 @@ export default function AppointmentFormModal({
 
     try {
       if (isEditing && appointment) {
-        // A still-unlinked public booking (from the marketing site's online
-        // form) has patientId "" until staff touch it — saving one promotes
-        // it into Postgres under a new id, not an in-place update. See
-        // appointmentActions.ts updateAppointmentAction.
-        const isPublicBooking = appointment.patientId === "";
-        const result = await updateAppointmentAction(appointment.id, isPublicBooking, payload);
+        const result = await updateAppointmentAction(appointment.id, payload);
         if ("error" in result) {
           setError(result.error);
           setSaving(false);
           return;
         }
-        onSaved({ id: result.id, clinicId, createdAt: appointment.createdAt, ...payload }, appointment.id);
+        onSaved({ id: appointment.id, clinicId, createdAt: appointment.createdAt, ...payload });
       } else {
         const result = await createAppointmentAction(payload);
         if ("error" in result) {
@@ -188,7 +183,7 @@ export default function AppointmentFormModal({
 
     setDeleting(true);
     try {
-      const result = await deleteAppointmentAction(appointment.id, appointment.patientId === "");
+      const result = await deleteAppointmentAction(appointment.id);
       if ("error" in result) {
         setError(result.error);
         setDeleting(false);
