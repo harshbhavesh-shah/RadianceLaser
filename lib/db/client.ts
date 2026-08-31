@@ -23,12 +23,20 @@ import { RDS_GLOBAL_CA_BUNDLE } from "@/lib/db/rdsCaBundle";
 // it either. Embedding the cert as a source-level string constant (see
 // lib/db/rdsCaBundle.ts) sidesteps the whole file-tracing question — there
 // is no runtime file read to trace.
+// `max` deliberately small: this pool lives inside one serverless function
+// instance, and Vercel can run many instances concurrently — each with its
+// own pool — so a large per-instance max risks collectively exceeding
+// RDS's own max_connections under load. connectionTimeoutMillis bounds how
+// long a single connection attempt waits before failing fast with a clear
+// error, rather than hanging until Prisma's own longer default timeout.
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     ca: RDS_GLOBAL_CA_BUNDLE,
     rejectUnauthorized: true,
   },
+  max: 3,
+  connectionTimeoutMillis: 10_000,
 });
 
 // Standard Next.js + Prisma singleton pattern — in dev, Next's hot reload
