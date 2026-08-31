@@ -32,14 +32,28 @@ function toAppointment(row: PrismaAppointmentRow): Appointment {
 /** Publicly-booked appointments still sitting in Firestore, not yet
  * promoted into this table — always patientId: "" (the only shape
  * firestore.rules' isValidPublicLhrBooking allows an anonymous write to
- * create). See promoteAppointment below for how they leave this list. */
+ * create). See promoteAppointment below for how they leave this list.
+ *
+ * Deliberately fails soft (logs and returns []) rather than letting a
+ * Firestore-side problem — a quota limit, an outage, anything — take down
+ * every page that reads appointments. This merge is a nice-to-have (public
+ * bookings show up here at all before staff manually notice/link them);
+ * every one of this app's own bookings lives in Postgres regardless and
+ * keeps working. A confirmed real incident: Firestore's free-tier daily
+ * quota got exhausted from testing traffic, and every page calling this
+ * (unguarded, at the time) went down with it. */
 async function getUnlinkedPublicBookings(clinicId: string): Promise<Appointment[]> {
-  const snap = await adminDb()
-    .collection("appointments")
-    .where("clinicId", "==", clinicId)
-    .where("patientId", "==", "")
-    .get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Appointment);
+  try {
+    const snap = await adminDb()
+      .collection("appointments")
+      .where("clinicId", "==", clinicId)
+      .where("patientId", "==", "")
+      .get();
+    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Appointment);
+  } catch (err) {
+    console.error(`Failed to fetch unlinked public bookings for clinic ${clinicId}:`, err);
+    return [];
+  }
 }
 
 /** Every appointment across the whole clinic — this table's rows plus any
