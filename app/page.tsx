@@ -95,30 +95,29 @@ function Eyebrow({ index, label }: { index: string; label: string }) {
   );
 }
 
-/** Decorative hero linework — concentric rings and a crosshair, reading as
- * a laser's targeting reticle rather than the soft gradient-blob glow this
- * replaced. Ties the hero back to what the clinic's machines actually do,
- * instead of a generic colorful wash. Purely linework (no fill), so it
- * reads as precise/technical rather than decorative-for-its-own-sake, and
- * stays legible at low opacity behind the product screenshot. Static — no
- * animation, on scroll or otherwise. */
-function LaserMark() {
+/** The hero's dual-panel product shot — a dimmed, slightly-rotated copy of
+ * the screenshot sitting behind the real (interactive-looking) one, so the
+ * hero reads as a stack of screens rather than one flat rectangle. The back
+ * copy is purely decorative (aria-hidden, no alt text, no hover response)
+ * and deliberately doesn't reuse the ProductShot component below — that
+ * component's hover-lift is for the real, single screenshots used further
+ * down the page, and would look wrong applied to a decorative backing
+ * layer. */
+function LayeredProductShot() {
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 600 600"
-      className="pointer-events-none absolute -right-24 -top-28 hidden h-[520px] w-[520px] text-gold-500/25 lg:block"
-      fill="none"
-    >
-      <circle cx="300" cy="300" r="280" stroke="currentColor" strokeWidth="1" />
-      <circle cx="300" cy="300" r="200" stroke="currentColor" strokeWidth="1" />
-      <circle cx="300" cy="300" r="120" stroke="currentColor" strokeWidth="1" />
-      <circle cx="300" cy="300" r="44" stroke="currentColor" strokeWidth="1.5" className="text-brown-900/15" />
-      <line x1="300" y1="0" x2="300" y2="184" stroke="currentColor" strokeWidth="1" />
-      <line x1="300" y1="416" x2="300" y2="600" stroke="currentColor" strokeWidth="1" />
-      <line x1="0" y1="300" x2="184" y2="300" stroke="currentColor" strokeWidth="1" />
-      <line x1="416" y1="300" x2="600" y2="300" stroke="currentColor" strokeWidth="1" />
-    </svg>
+    <div className="relative">
+      <div
+        aria-hidden
+        className="absolute -right-3 top-8 w-[92%] rotate-[0.9deg] overflow-hidden rounded-xl opacity-80 brightness-[0.82] saturate-[0.85] sm:-right-6 sm:top-10"
+      >
+        <Image src="/screenshots/dashboard-today.png" alt="" width={1440} height={900} className="h-auto w-full" />
+      </div>
+      <ProductShot
+        src="/screenshots/dashboard-today.png"
+        alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard"
+        className="relative shadow-2xl ring-white/10 -rotate-[0.6deg]"
+      />
+    </div>
   );
 }
 
@@ -130,68 +129,83 @@ export default async function HomePage() {
   const trialLengthLabel = `${trialMonths} month${trialMonths === 1 ? "" : "s"}`;
 
   return (
-    <div className="relative bg-canvas">
+    <div className="relative">
+      {/* The hero's dark ground — sized generously (rather than precisely)
+          to outlast the hero's actual rendered height at every breakpoint,
+          since a plain CSS height guess can't track variable text/image
+          height exactly. Erring tall is free: the canvas-backed wrapper
+          right after the hero is opaque and painted in normal flow, so any
+          backdrop that runs past the hero's real bottom edge just gets
+          covered, never the other way around (which would leave a visible
+          canvas-colored gap at the bottom of the hero). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[1500px] bg-gradient-to-b from-brown-800 to-brown-900 sm:h-[1300px] md:h-[1000px] lg:h-[780px]"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_1000px_600px_at_78%_18%,rgba(169,129,47,0.22),transparent_65%)]" />
+      </div>
+
       <div className="relative z-10">
         <SiteHeader />
 
         {/* Hero — asymmetric split rather than centered-text-then-full-width-
             screenshot-below: the headline gets to be the widest thing on its
             own line instead of competing for center-stage width with a
-            paragraph under it, and the screenshot reads as a product shot
-            (offset, layered shadow, laser-reticle linework behind it) rather
-            than a framed illustration floating on a gradient blob. The
-            fade-up here plays once, on mount — not re-triggered per section
-            on scroll. */}
-        <section className="relative mx-auto max-w-7xl overflow-hidden px-6 pt-14 pb-20 sm:pt-20">
-          <LaserMark />
-          <div className="relative grid grid-cols-1 items-center gap-14 lg:grid-cols-[0.9fr_1.25fr] lg:gap-12">
+            paragraph under it. Sits on the dark backdrop above (no background
+            of its own), with a layered dual-panel product shot instead of one
+            flat rectangle. The fade-up here plays once, on mount — not
+            re-triggered per section on scroll. Container is wider than the
+            rest of the page's sections (1600px vs the usual ~1280px) so the
+            hero actually uses the available width on a wide monitor instead
+            of leaving dead margins either side. */}
+        <section className="relative mx-auto max-w-[1600px] px-6 pt-14 pb-20 sm:pt-20 lg:px-12">
+          <div className="relative grid grid-cols-1 items-center gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
             <div className="animate-fade-up" style={{ animationDelay: "0ms" }}>
-              <h1 className="font-display text-[2.75rem] font-medium leading-[1.05] tracking-tight text-brown-900 sm:text-6xl">
+              <h1 className="font-display text-[2.5rem] font-medium leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[3.4rem]">
                 Run your laser &amp; aesthetics clinic without the spreadsheets.
               </h1>
-              <p className="mt-6 max-w-md text-lg text-brown-600">
+              <p className="mt-6 max-w-md text-lg text-beige-300">
                 One simple system for patients, appointments, billing, and everything else your
                 clinic does every day.
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-4">
                 <Link
                   href="/signup"
-                  className="rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-200 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-gold-600 hover:shadow-card active:scale-[0.97] active:duration-75"
+                  className="rounded-md bg-gold-500 px-6 py-3 text-sm font-semibold text-brown-900 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-gold-400 hover:shadow-card active:scale-[0.97] active:duration-75"
                 >
                   Start Your Free Trial
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-md border border-beige-300 px-6 py-3 text-sm font-semibold text-brown-700 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-gold-500 hover:text-gold-600 active:scale-[0.97] active:duration-75"
+                  className="rounded-md border border-white/20 px-6 py-3 text-sm font-semibold text-beige-100 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-gold-400 hover:text-gold-400 active:scale-[0.97] active:duration-75"
                 >
                   Log In
                 </Link>
               </div>
-              <p className="mt-5 text-sm text-brown-400">
+              <p className="mt-5 text-sm text-beige-300/70">
                 Free for {trialLengthLabel}. No credit card required to start.
               </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium text-brown-600">
-                <span className="rounded-full border border-beige-300 bg-surface px-3 py-1">
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium text-beige-300">
+                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
                   Data hosted in India
                 </span>
-                <span className="rounded-full border border-beige-300 bg-surface px-3 py-1">
+                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
                   DPDP Act 2023 compliant
                 </span>
               </div>
             </div>
 
             <div className="animate-fade-up" style={{ animationDelay: "120ms" }}>
-              <div className="relative lg:pl-6">
-                <ProductShot
-                  src="/screenshots/dashboard-today.png"
-                  alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard"
-                  className="shadow-2xl ring-brown-900/10 lg:rotate-[0.6deg]"
-                />
-              </div>
+              <LayeredProductShot />
             </div>
           </div>
         </section>
+      </div>
 
+      {/* Everything below the hero sits on its own opaque canvas-colored
+          wrapper — see the dark backdrop's comment above for why that
+          matters (it's what makes an imprecise backdrop height safe). */}
+      <div className="relative z-10 bg-canvas">
         {/* At-a-glance summary — sits directly on the canvas between two
             hairlines rather than inside another bordered white card, so the
             page doesn't read as "card, card, card" stacked top to bottom. */}
@@ -434,3 +448,4 @@ export default async function HomePage() {
     </div>
   );
 }
+
