@@ -59,25 +59,28 @@ function ProductShot({
   width = 1440,
   height = 900,
   className = "",
+  // Tells Next.js/the browser how wide this image will actually render, so
+  // it fetches a source image with enough real pixels — get this wrong (too
+  // small) and a browser stretching a low-res source over a wider box
+  // produces exactly the soft/hazy look a copy-pasted stale value caused
+  // here once the hero's image column got wider than the ~640px this was
+  // originally sized for. Defaults to the ~640px-wide columns the feature
+  // sections further down the page still use; the hero passes its own,
+  // wider value.
+  sizes = "(min-width: 1024px) 640px, 100vw",
 }: {
   src: string;
   alt: string;
   width?: number;
   height?: number;
   className?: string;
+  sizes?: string;
 }) {
   return (
     <div
       className={`overflow-hidden rounded-xl shadow-card ring-1 ring-beige-300 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl ${className}`}
     >
-      <Image
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className="h-auto w-full"
-        sizes="(min-width: 1024px) 640px, 100vw"
-      />
+      <Image src={src} alt={alt} width={width} height={height} className="h-auto w-full" sizes={sizes} />
     </div>
   );
 }
@@ -103,6 +106,12 @@ function Eyebrow({ index, label }: { index: string; label: string }) {
  * component's hover-lift is for the real, single screenshots used further
  * down the page, and would look wrong applied to a decorative backing
  * layer. */
+// The hero's image column runs roughly 500-830px wide depending on
+// viewport (see the hero section's grid/max-width below) — noticeably
+// wider than the ~640px the feature sections further down the page use,
+// so this needs its own `sizes` hint rather than ProductShot's default.
+const HERO_SHOT_SIZES = "(min-width: 1024px) 55vw, 100vw";
+
 function LayeredProductShot() {
   return (
     <div className="relative">
@@ -110,12 +119,20 @@ function LayeredProductShot() {
         aria-hidden
         className="absolute -right-3 top-8 w-[92%] rotate-[0.9deg] overflow-hidden rounded-xl opacity-80 brightness-[0.82] saturate-[0.85] sm:-right-6 sm:top-10"
       >
-        <Image src="/screenshots/dashboard-today.png" alt="" width={1440} height={900} className="h-auto w-full" />
+        <Image
+          src="/screenshots/dashboard-today.png"
+          alt=""
+          width={1440}
+          height={900}
+          className="h-auto w-full"
+          sizes={HERO_SHOT_SIZES}
+        />
       </div>
       <ProductShot
         src="/screenshots/dashboard-today.png"
         alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard"
         className="relative shadow-2xl ring-white/10 -rotate-[0.6deg]"
+        sizes={HERO_SHOT_SIZES}
       />
     </div>
   );
