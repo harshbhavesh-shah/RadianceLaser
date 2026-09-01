@@ -133,6 +133,10 @@ export interface Patient extends TenantScoped {
   // paper file — see scripts/importAdvanceSMS.mjs. Absent on every patient
   // created in the app itself.
   legacyPatientNo?: number;
+  // Epoch ms the patient consented to their data being processed (DPDP Act
+  // 2023 §5-7) — distinct from ConsentForm, which records consent to a
+  // clinical procedure. Absent on patients created before this existed.
+  dataConsentAt?: number;
   createdAt: number;
 }
 

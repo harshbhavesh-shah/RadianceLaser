@@ -50,6 +50,14 @@ model Patient {
   // (AdvanceSMS.mdb `patientno`) — set only for patients re-imported from
   // that file, never for ones created in the app itself.
   legacyPatientNo   Int?
+  // DPDP Act 2023 §5-7 — the timestamp the patient (or their guardian) gave
+  // informed consent to have their data processed, captured at intake.
+  // Separate from ConsentForm/ConsentFormTemplate, which record consent to
+  // a clinical *procedure* (e.g. "I agree to this laser session"), not to
+  // data processing — the two are legally distinct consents. Null only for
+  // patients created before this field existed; every new patient must set
+  // it (see app/dashboard/patients/new/actions.ts).
+  dataConsentAt     BigInt?
   // Epoch milliseconds, matching every other timestamp field across the
   // app (Date.now()) — kept as a plain integer rather than a native
   // timestamp type so all the app's existing date-math (subtraction,
@@ -467,6 +475,32 @@ model TwoFactorChallenge {
   attempts  Int
 
   @@map("twoFactorChallenges")
+}
+
+// Compliance record — CERT-In's 2022 Directions require ICT system logs
+// retained 180 days; this also gives DPDP breach-notification a way to
+// scope "which patients were affected" after an incident, and backs the
+// new per-patient erasure action's own record of what it did. Deliberately
+// covers mutations to sensitive data (create/update/delete/sign/export),
+// not every read — see the compliance write-up for why that's the line
+// drawn here. `metadata` is free-form JSONB (e.g. which fields changed, or
+// an erasure's retention-floor check result) since each action type needs
+// a different shape and this is a log, not a queryable business table.
+model AuditLog {
+  id         String  @id @default(cuid())
+  clinicId   String
+  actorUid   String
+  actorName  String
+  actorRole  String
+  action     String // e.g. "patient.create", "patient.erase", "consentForm.sign"
+  targetType String // e.g. "Patient", "ConsentForm", "StaffMember"
+  targetId   String
+  metadata   Json?
+  createdAt  BigInt
+
+  @@index([clinicId, createdAt])
+  @@index([clinicId, targetType, targetId])
+  @@map("auditLogs")
 }
 
 // Mirrors types/index.ts WhatsAppConnection — chunk 14 of the post-launch

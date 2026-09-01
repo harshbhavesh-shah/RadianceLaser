@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { UserPlus, CalendarPlus, Search, ClipboardList } from "lucide-react";
-import EmptyState from "@/components/ui/EmptyState";
+import { UserPlus, CalendarPlus, Search } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { getClinic } from "@/lib/db/clinics";
 import { getPatientsByIds, clinicHasAnyPatient, getClinicPatientCount, getPatientsCreatedSince } from "@/lib/db/patients";
 import {
   getRecentClinicVisits,
   getClinicVisitsSince,
-  getVisitsWithDueFollowUps,
   getVisitsByPackageId,
   getVisitsByAppointmentIds,
 } from "@/lib/db/visits";
@@ -16,17 +14,14 @@ import { getClinicPackages } from "@/lib/db/packages";
 import { getAppointmentsForDate, clinicHasAnyAppointment } from "@/lib/db/appointments";
 import { getReceiptsByAppointmentIds } from "@/lib/db/receipts";
 import { getClinicStaff } from "@/lib/db/staff";
-import { computeWindowStats, computeRecentActivity, computeMonthlyRevenue, windowStartStr } from "@/lib/analytics";
+import { computeWindowStats, computeMonthlyRevenue, windowStartStr } from "@/lib/analytics";
 import {
   computeTodayAppointments,
   computePackageAlerts,
   computeContraindicationAlerts,
-  computeFollowUpAlerts,
   computeAppointmentPipelineMaps,
 } from "@/lib/overview";
 import { todayLocalStr } from "@/lib/calendar";
-import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
-import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import StatsStrip from "@/components/StatsStrip";
 import RevenueChart from "@/components/RevenueChart";
 import TodayAgenda from "@/components/overview/TodayAgenda";
@@ -58,23 +53,21 @@ export default async function DashboardPage() {
   // + receipts collections on every single load (confirmed 9,000+ reads
   // once real history built up). Everything below is scoped to exactly
   // what this page renders: today's appointments, a handful of recent
-  // visits, visits actually due for follow-up, and each active package's
-  // own redeemed sessions — never the whole history. See
-  // lib/db/visits.ts for the reasoning behind each targeted query.
-  const [clinic, sessionTypeDefs, staff, todayAppointmentsRaw, recentVisits, dueFollowUpVisits, packages, hasPatients, hasAppointments] =
+  // visits (only to know whether onboarding's "log a treatment session"
+  // step is done — Recent Activity itself isn't shown here anymore), and
+  // each active package's own redeemed sessions — never the whole history.
+  // See lib/db/visits.ts for the reasoning behind each targeted query.
+  const [clinic, staff, todayAppointmentsRaw, recentVisits, packages, hasPatients, hasAppointments] =
     await Promise.all([
       getClinic(session.clinicId),
-      getClinicSessionTypeDefs(session.clinicId),
       getClinicStaff(session.clinicId),
       getAppointmentsForDate(session.clinicId, today),
       getRecentClinicVisits(session.clinicId, 8),
-      getVisitsWithDueFollowUps(session.clinicId, today),
       getClinicPackages(session.clinicId),
       clinicHasAnyPatient(session.clinicId),
       clinicHasAnyAppointment(session.clinicId),
     ]);
 
-  const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
   const currentStaff = staff.find((s) => s.uid === session.uid);
   const todayAppointments = computeTodayAppointments(todayAppointmentsRaw, today);
   const todayAppointmentIds = todayAppointments.map((a) => a.id);
@@ -97,13 +90,13 @@ export default async function DashboardPage() {
 
   // The one small, targeted patient lookup this page actually needs —
   // every id below comes from a document already scoped to this clinic
-  // (today's appointments, a package, a due follow-up, recent activity),
-  // never the clinic's whole roster just to label a handful of names.
+  // (today's appointments, a package), never the clinic's whole roster
+  // just to label a handful of names. recentVisits isn't included here —
+  // it's only used for its length (onboarding's "log a treatment session"
+  // step), not rendered, so its patients don't need resolving.
   const patientIds = new Set<string>();
   for (const a of todayAppointments) if (a.patientId) patientIds.add(a.patientId);
-  for (const v of dueFollowUpVisits) patientIds.add(v.patientId);
   for (const pkg of packages) patientIds.add(pkg.patientId);
-  for (const v of recentVisits) patientIds.add(v.patientId);
   const referencedPatients = await getPatientsByIds([...patientIds]);
   const patientsById = new Map(referencedPatients.map((p) => [p.id, p]));
 
@@ -123,9 +116,17 @@ export default async function DashboardPage() {
 
   // The three sections every role sees, in the same order — this is the
   // "morning command center" the rest of the layout branches around.
+  //
+  // Deliberately not fed by patient follow-ups anymore — this section is
+  // meant for things the CLINIC needs attention on (a machine due for
+  // scheduled maintenance, a water filter change, etc.), not patient
+  // care reminders. That machine-side alerting doesn't exist yet; when it
+  // does, it plugs in here. Visit.followUpDate/followUpNote (set from
+  // VisitFormModal) are untouched — the data's still recorded, it's just
+  // not surfaced here anymore. See lib/overview.ts computeFollowUpAlerts
+  // and lib/db/visits.ts getVisitsWithDueFollowUps, both now unused.
   const alerts = [
     ...computeContraindicationAlerts(todayAppointments, patientsById),
-    ...computeFollowUpAlerts(dueFollowUpVisits, patientsById, today),
     ...computePackageAlerts(packages, packageVisits, patientsById, today),
   ].slice(0, 8);
   const { visitIdByAppointmentId, receiptedAppointmentIds } = computeAppointmentPipelineMaps(
@@ -222,12 +223,6 @@ export default async function DashboardPage() {
     );
   }
 
-  // recentVisits' patients are already in patientsById (added above), so
-  // this is just the same recent-activity computation as before, over a
-  // query that was already scoped to "the last 8" rather than filtered
-  // down from the clinic's entire visit history afterward.
-  const recentActivity = computeRecentActivity(recentVisits, patientsById);
-
   // Doctor: clinical day-planner — the schedule and anything needing
   // attention come first, business numbers don't show up here at all
   // (Analytics is still one click away for anyone who wants it).
@@ -237,12 +232,6 @@ export default async function DashboardPage() {
         {header}
         {onboarding}
         {todaySection}
-
-        <div>
-          <h2 className="font-display text-lg font-medium text-brown-900">Recent Activity</h2>
-          <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
-          <RecentActivityList activity={recentActivity} config={SESSION_TYPE_CONFIG} />
-        </div>
       </div>
     );
   }
@@ -290,72 +279,13 @@ export default async function DashboardPage() {
           ]}
         />
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <h3 className="text-sm font-medium uppercase tracking-wide text-brown-500">Recent Activity</h3>
-            <div className="mt-3">
-              <RecentActivityList activity={recentActivity} config={SESSION_TYPE_CONFIG} />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-medium uppercase tracking-wide text-brown-500">Revenue</h3>
-            <div className="mt-3">
-              <RevenueChart data={monthlyRevenue} />
-            </div>
+        <div className="mt-6">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-brown-500">Revenue</h3>
+          <div className="mt-3">
+            <RevenueChart data={monthlyRevenue} />
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function RecentActivityList({
-  activity,
-  config,
-}: {
-  activity: ReturnType<typeof computeRecentActivity>;
-  config: ReturnType<typeof buildSessionTypeConfig>;
-}) {
-  if (activity.length === 0) {
-    return (
-      <EmptyState
-        compact
-        icon={ClipboardList}
-        title="No visits logged yet."
-        action={{ label: "Go to Patients", href: "/dashboard/patients" }}
-      />
-    );
-  }
-
-  return (
-    <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
-      {activity.map((item, i) => {
-        const cfg = config[item.sessionType];
-        return (
-          <Link
-            key={item.visitId}
-            href={`/dashboard/patients/${item.patientId}`}
-            className={[
-              "flex items-center justify-between px-5 py-3 text-sm transition-colors hover:bg-gold-100/40",
-              i !== activity.length - 1 ? "border-b border-beige-300" : "",
-            ].join(" ")}
-          >
-            <span className="flex items-center gap-3">
-              {cfg && (
-                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}>
-                  {cfg.badgeText}
-                </span>
-              )}
-              <span className="font-medium text-brown-900">{item.patientName}</span>
-            </span>
-            <span className="flex items-center gap-4 text-brown-600">
-              <span>{item.date || "No date"}</span>
-              {item.fee > 0 && <span className="font-medium text-brown-900">{formatCurrency(item.fee)}</span>}
-            </span>
-          </Link>
-        );
-      })}
     </div>
   );
 }

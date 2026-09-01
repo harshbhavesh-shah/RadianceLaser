@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { createPatient, findPatientByPhone } from "@/lib/db/patients";
+import { recordAuditEvent } from "@/lib/db/auditLog";
 import { isValidPhone } from "@/lib/phone";
 import type { SkinType } from "@/types";
 
@@ -26,6 +27,10 @@ export async function createPatientAction(
   if (!phone) return { error: "Contact number is required." };
   if (!isValidPhone(phone)) {
     return { error: "That doesn't look like a valid contact number — check the digits and try again." };
+  }
+  const dataConsent = formData.get("dataConsent") === "1";
+  if (!dataConsent) {
+    return { error: "You must confirm the patient has been informed and consents to their data being processed." };
   }
 
   if (!confirmDuplicate) {
@@ -54,11 +59,14 @@ export async function createPatientAction(
       ...(address ? { address } : {}),
       ...(skinType ? { skinType: skinType as SkinType } : {}),
       ...(contraindications ? { contraindications } : {}),
+      dataConsentAt: Date.now(),
     });
   } catch (err) {
     console.error("Failed to create patient:", err);
     return { error: "Something went wrong saving this patient. Please try again." };
   }
+
+  await recordAuditEvent(session, { action: "patient.create", targetType: "Patient", targetId: patientId });
 
   redirect(`/dashboard/patients/${patientId}`);
 }

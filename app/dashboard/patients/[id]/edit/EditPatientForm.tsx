@@ -1,13 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
-import { updatePatientAction, type UpdatePatientState } from "./actions";
+import { updatePatientAction, erasePatientAction, type UpdatePatientState, type EraseState } from "./actions";
 import type { Patient } from "@/types";
+import type { PatientRetentionCheck } from "@/lib/db/patients";
 
 const initialState: UpdatePatientState = {};
+const initialEraseState: EraseState = {};
 
-export default function EditPatientForm({ patient }: { patient: Patient }) {
+export default function EditPatientForm({
+  patient,
+  canErase,
+  retention,
+}: {
+  patient: Patient;
+  canErase: boolean;
+  retention: PatientRetentionCheck | null;
+}) {
   const boundAction = updatePatientAction.bind(null, patient.id);
   const [state, formAction] = useFormState(boundAction, initialState);
 
@@ -90,7 +101,86 @@ export default function EditPatientForm({ patient }: { patient: Patient }) {
           <SubmitButton />
         </div>
       </form>
+
+      {canErase && retention && <ErasePatientSection patient={patient} retention={retention} />}
     </div>
+  );
+}
+
+function ErasePatientSection({ patient, retention }: { patient: Patient; retention: PatientRetentionCheck }) {
+  const boundAction = erasePatientAction.bind(null, patient.id);
+  const [state, formAction] = useFormState(boundAction, initialEraseState);
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
+      <h2 className="font-display text-lg font-medium text-red-900">Erase Patient Data</h2>
+      <p className="mt-1.5 text-sm text-red-800">
+        Permanently deletes {patient.name}&apos;s record and everything tied to it — visits, packages,
+        appointments, receipts, consent forms, and photos. This cannot be undone.
+      </p>
+
+      {retention.eligible ? (
+        <p className="mt-2 text-xs text-red-700">
+          Eligible for erasure — the 3-year retention period required by Indian Medical Council Regulation 1.3.1
+          has passed.
+        </p>
+      ) : (
+        <p className="mt-2 text-xs text-red-700">
+          Not yet eligible — Indian Medical Council Regulation 1.3.1 requires patient records to be retained for
+          3 years from the last visit. This record can be erased starting{" "}
+          {new Date(retention.retentionFloorEndsAt).toLocaleDateString("en-IN")}.
+        </p>
+      )}
+
+      {!confirming ? (
+        <button
+          type="button"
+          disabled={!retention.eligible}
+          onClick={() => setConfirming(true)}
+          className="mt-4 rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-800 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Erase this patient&apos;s data…
+        </button>
+      ) : (
+        <form action={formAction} className="mt-4 space-y-3">
+          <label htmlFor="confirmName" className="block text-sm font-medium text-red-900">
+            Type <span className="font-semibold">{patient.name}</span> to confirm
+          </label>
+          <input
+            id="confirmName"
+            name="confirmName"
+            type="text"
+            autoComplete="off"
+            className="w-full max-w-sm rounded-md border border-red-300 bg-white px-3 py-2 text-sm text-brown-900 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+          />
+          {state.error && <p className="text-sm text-red-700">{state.error}</p>}
+          <div className="flex gap-3">
+            <EraseSubmitButton />
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="rounded-md px-4 py-2 text-sm font-medium text-brown-600 hover:bg-beige-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function EraseSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-60"
+    >
+      {pending ? "Erasing…" : "Permanently Erase"}
+    </button>
   );
 }
 

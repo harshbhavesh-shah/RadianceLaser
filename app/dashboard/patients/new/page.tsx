@@ -54,6 +54,22 @@ export default function NewPatientPage() {
           />
         </div>
 
+        <div className="mt-5 rounded-md border border-beige-300 bg-beige-100/60 p-4">
+          <label className="flex items-start gap-2.5 text-sm text-brown-800">
+            <input
+              type="checkbox"
+              name="dataConsent"
+              value="1"
+              required
+              className="mt-0.5 h-4 w-4 rounded border-beige-400 text-gold-600 focus:ring-gold-500"
+            />
+            <span>
+              I have informed the patient (or their guardian) what personal data we collect, why, and that they
+              can request access, correction, or erasure of it at any time, and they consent to this.
+            </span>
+          </label>
+        </div>
+
         {state.error && <p className="mt-4 text-sm text-red-700">{state.error}</p>}
 
         {state.duplicate && (

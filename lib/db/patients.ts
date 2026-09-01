@@ -45,6 +45,7 @@ function toPatient(row: PrismaPatientRow): Patient {
     ...(row.skinType ? { skinType: row.skinType as SkinType } : {}),
     ...(row.contraindications ? { contraindications: row.contraindications } : {}),
     ...(row.legacyPatientNo !== null ? { legacyPatientNo: row.legacyPatientNo } : {}),
+    ...(row.dataConsentAt !== null ? { dataConsentAt: Number(row.dataConsentAt) } : {}),
   };
 }
 
@@ -194,6 +195,11 @@ export interface CreatePatientInput {
   address?: string;
   skinType?: SkinType;
   contraindications?: string;
+  /** Epoch ms the patient consented to data processing — required for
+   * every patient created through the app's own intake form (see
+   * app/dashboard/patients/new/actions.ts); left unset only by imports of
+   * pre-existing records that predate this consent capture. */
+  dataConsentAt?: number;
 }
 
 export async function createPatient(input: CreatePatientInput): Promise<string> {
@@ -212,6 +218,7 @@ export async function createPatient(input: CreatePatientInput): Promise<string> 
       address: input.address ?? null,
       skinType: input.skinType ?? null,
       contraindications: input.contraindications ?? null,
+      dataConsentAt: input.dataConsentAt != null ? BigInt(input.dataConsentAt) : null,
     },
   });
   return row.id;
@@ -255,4 +262,63 @@ export async function updatePatient(clinicId: string, patientId: string, input: 
       contraindications: input.contraindications ?? null,
     },
   });
+}
+
+// IMC (Professional Conduct, Etiquette and Ethics) Regulations, 2002,
+// Regulation 1.3.1 — indoor patient records must be preserved at least 3
+// years from the date of last treatment. This is a floor, not a target: a
+// clinic accredited by NABH is bound to 5 years instead, but accreditation
+// status isn't tracked anywhere in this app yet, so the check below always
+// applies the stricter-than-nothing 3-year baseline. DPDP's own right to
+// erasure (§12) is explicitly subject to any other law's retention
+// requirement, so this check is what makes erasePatient() below lawful to
+// call, not an obstacle to it.
+const RETENTION_FLOOR_MS = 3 * 365 * 24 * 60 * 60 * 1000;
+
+export interface PatientRetentionCheck {
+  eligible: boolean;
+  /** Epoch ms of the patient's most recent recorded activity (their last
+   * visit, or their creation date if they were never seen). */
+  lastActivityAt: number;
+  /** Epoch ms of the earliest moment erasure becomes legally permitted. */
+  retentionFloorEndsAt: number;
+}
+
+/** Whether a patient's record has cleared the IMC's 3-year retention
+ * floor and can lawfully be erased. Always check this before calling
+ * erasePatient() — it does not check for itself. */
+export async function checkPatientRetentionFloor(
+  clinicId: string,
+  patientId: string
+): Promise<PatientRetentionCheck> {
+  const patient = await prisma.patient.findUnique({
+    where: { id: patientId },
+    select: { clinicId: true, createdAt: true },
+  });
+  if (!patient || patient.clinicId !== clinicId) throw new Error("Patient not found.");
+
+  const lastVisit = await prisma.visit.findFirst({
+    where: { patientId },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+
+  const lastActivityAt = Number(lastVisit?.createdAt ?? patient.createdAt);
+  const retentionFloorEndsAt = lastActivityAt + RETENTION_FLOOR_MS;
+
+  return { eligible: Date.now() >= retentionFloorEndsAt, lastActivityAt, retentionFloorEndsAt };
+}
+
+/** Permanently erases a patient and everything tied to them (visits,
+ * packages, appointments, receipts, consent forms, photos — all FK'd to
+ * Patient with onDelete: Cascade, same as deleteClinicAction's clinic-wide
+ * wipe). Irreversible. Callers MUST check checkPatientRetentionFloor()
+ * first and MUST record an AuditLog entry — this function does neither
+ * itself, since both need the caller's session context. */
+export async function erasePatient(clinicId: string, patientId: string): Promise<void> {
+  const existing = await prisma.patient.findUnique({ where: { id: patientId }, select: { clinicId: true } });
+  if (!existing || existing.clinicId !== clinicId) {
+    throw new Error("Patient not found.");
+  }
+  await prisma.patient.delete({ where: { id: patientId } });
 }
