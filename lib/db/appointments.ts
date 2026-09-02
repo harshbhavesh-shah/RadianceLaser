@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db/client";
+import { todayLocalStr, addDays, toDateStr } from "@/lib/calendar";
 import type { Appointment as PrismaAppointmentRow } from "@prisma/client";
 import type { Appointment, AppointmentStatus, SessionType } from "@/types";
 
@@ -24,6 +25,7 @@ function toAppointment(row: PrismaAppointmentRow): Appointment {
     createdAt: Number(row.createdAt),
     ...(row.patientId ? { patientId: row.patientId } : {}),
     ...(row.notes ? { notes: row.notes } : {}),
+    ...(row.reminderSentAt !== null ? { reminderSentAt: Number(row.reminderSentAt) } : {}),
   };
 }
 
@@ -135,4 +137,23 @@ export async function linkAppointmentToPatient(
  * check. */
 export async function updateAppointmentStatus(appointmentId: string, status: AppointmentStatus): Promise<void> {
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
+}
+
+/** Candidate appointments for the reminder cron (see
+ * app/api/cron/send-scheduled-messages) — booked, not yet reminded, within
+ * the next 2 days. A loose bound at the DB level: date and time are
+ * separate text columns here, so the caller does the exact "is this
+ * actually due right now, given the clinic's configured
+ * reminderHoursBefore" math in JS against the full date+time. */
+export async function getUpcomingUnremindedAppointments(clinicId: string): Promise<Appointment[]> {
+  const today = todayLocalStr();
+  const horizon = toDateStr(addDays(new Date(), 2));
+  const rows = await prisma.appointment.findMany({
+    where: { clinicId, status: "booked", reminderSentAt: null, date: { gte: today, lte: horizon } },
+  });
+  return rows.map(toAppointment);
+}
+
+export async function markReminderSent(appointmentId: string): Promise<void> {
+  await prisma.appointment.update({ where: { id: appointmentId }, data: { reminderSentAt: BigInt(Date.now()) } });
 }

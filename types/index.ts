@@ -45,6 +45,14 @@ export interface Clinic {
   // subscriptionStatus is "active" — set/extended by each confirmed annual
   // payment (see lib/razorpay.ts). Absent until a clinic's first payment.
   subscriptionRenewsAt?: number;
+  // Automated WhatsApp messaging preferences — see Settings > Communication
+  // and app/api/cron/send-scheduled-messages. Both independently toggled;
+  // each is a no-op at send time unless WhatsApp is actually connected and
+  // the matching template ("appointment_reminder" / "visit_feedback") exists.
+  reminderEnabled: boolean;
+  reminderHoursBefore: number;
+  feedbackSurveyEnabled: boolean;
+  feedbackSurveyDelayHours: number;
 }
 
 // One Razorpay payment attempt for a clinic's annual subscription — created
@@ -223,6 +231,23 @@ export interface Visit extends TenantScoped {
   createdAt: number;
 }
 
+// A post-visit satisfaction survey — see app/api/cron/send-scheduled-
+// messages (creates + sends these) and the public app/feedback/[token]
+// page a patient lands on from the WhatsApp link. `token` is the only
+// thing that URL carries; deliberately opaque so a shared/guessed link
+// can't be walked to find other patients' responses.
+export interface VisitFeedback extends TenantScoped {
+  id: string;
+  visitId: string;
+  patientName: string;
+  token: string;
+  rating?: number; // 1-5; absent until the patient responds
+  comment?: string;
+  sentAt?: number;
+  respondedAt?: number;
+  createdAt: number;
+}
+
 export type SessionFieldType = "text" | "number" | "select";
 
 export interface SessionColumnDef {
@@ -286,6 +311,9 @@ export interface Appointment extends TenantScoped {
   status: AppointmentStatus;
   notes?: string;
   createdAt: number;
+  // Set once the automated reminder cron has sent a message for this
+  // appointment — see app/api/cron/send-scheduled-messages.
+  reminderSentAt?: number;
 }
 
 // A Firestore *mirror* of a Firebase Auth user, kept in sync by the settings
@@ -344,6 +372,20 @@ export interface SessionTypeDef extends TenantScoped {
   badgeClassName: string; // Tailwind classes for the badge chip
   chartColor: string; // hex color used in revenue-by-type charts
   columns: SessionColumnDef[]; // session data-entry fields for this type
+  createdAt: number;
+}
+
+// A clinic-editable entry in the "Area" dropdown on the Q-Switch/LHR visit
+// form (see components/VisitFormModal.tsx and lib/sessionTypes.ts) —
+// Settings → Treatment Areas lets a clinic add its own or edit these three
+// fields. `name` is what actually gets stored on a Visit's area fields
+// (plain text, not a reference to this row — see AreaDef's schema comment).
+export interface AreaDef extends TenantScoped {
+  id: string;
+  sessionType: SessionType; // "qs" or "lhr" — which visit form's Area dropdown this belongs to
+  name: string;
+  defaultDurationMinutes?: number; // suggests the visit's total Duration (min) when picked, not enforced
+  gstApplicable: boolean; // clinic's own call — genuinely varies by treatment area
   createdAt: number;
 }
 
@@ -488,19 +530,27 @@ export interface WhatsAppConnection extends TenantScoped {
   updatedAt: number;
 }
 
-export type MessageTemplateCategory = "appointment_reminder" | "appointment_confirmation" | "receipt_sent" | "custom";
+export type MessageTemplateCategory =
+  | "appointment_reminder"
+  | "appointment_confirmation"
+  | "receipt_sent"
+  | "visit_feedback"
+  | "custom";
 
-// The three built-in categories are wired to specific places in the app
-// (receipt_sent → ReceiptViewModal's "Send via WhatsApp" button) that fill
-// in the template's variables automatically from real data, in this fixed
-// order — see TEMPLATE_VARIABLE_LABELS below and lib/bhashsms/send.ts.
-// Because of that, their variable count/order isn't editable when creating
-// a template: it has to match what the app actually fills in. "custom" has
-// no automatic trigger yet, so its variables are freely defined instead.
+// The built-in categories are wired to specific places in the app
+// (receipt_sent → ReceiptViewModal's "Send via WhatsApp" button,
+// appointment_reminder/visit_feedback → the scheduled-messages cron, see
+// app/api/cron/send-scheduled-messages) that fill in the template's
+// variables automatically from real data, in this fixed order — see
+// lib/bhashsms/send.ts. Because of that, their variable count/order isn't
+// editable when creating a template: it has to match what the app actually
+// fills in. "custom" has no automatic trigger yet, so its variables are
+// freely defined instead.
 export const TEMPLATE_VARIABLE_LABELS: Record<Exclude<MessageTemplateCategory, "custom">, string[]> = {
   appointment_reminder: ["Patient name", "Date", "Time"],
   appointment_confirmation: ["Patient name", "Date", "Time"],
   receipt_sent: ["Patient name", "Receipt number", "Amount"],
+  visit_feedback: ["Patient name", "Feedback link"],
 };
 
 // Firestore path: messageTemplates/{id}

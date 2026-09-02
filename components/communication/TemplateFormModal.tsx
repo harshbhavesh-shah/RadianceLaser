@@ -10,6 +10,7 @@ const CATEGORY_OPTIONS: { value: MessageTemplateCategory; label: string }[] = [
   { value: "appointment_reminder", label: "Appointment Reminder" },
   { value: "appointment_confirmation", label: "Appointment Confirmation" },
   { value: "receipt_sent", label: "Receipt Sent" },
+  { value: "visit_feedback", label: "Post-Visit Feedback" },
   { value: "custom", label: "Custom" },
 ];
 

@@ -2,19 +2,26 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates } from "@/lib/db/messageTemplates";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicVisitFeedback } from "@/lib/db/visitFeedback";
 import WhatsAppSection from "@/components/communication/WhatsAppSection";
 import MessageTemplatesSection from "@/components/communication/MessageTemplatesSection";
+import ScheduledMessagesSection from "@/components/communication/ScheduledMessagesSection";
+import FeedbackResultsSection from "@/components/communication/FeedbackResultsSection";
 
 export default async function CommunicationPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [whatsappConnection, messageTemplates] = await Promise.all([
+  const [whatsappConnection, messageTemplates, clinic, visitFeedback] = await Promise.all([
     getWhatsAppConnection(session.clinicId),
     getClinicMessageTemplates(session.clinicId),
+    getClinic(session.clinicId),
+    getClinicVisitFeedback(session.clinicId),
   ]);
 
   const isOwner = session.role === "owner";
+  const isConnected = whatsappConnection?.status === "connected";
   // Never forward bhashPass to the client — WhatsAppSection only needs to
   // know whether/how a connection exists, not the secret itself.
   const redactedConnection = whatsappConnection ? { ...whatsappConnection, bhashPass: undefined } : null;
@@ -29,9 +36,23 @@ export default async function CommunicationPage() {
 
         <MessageTemplatesSection
           initialTemplates={messageTemplates}
-          isConnected={whatsappConnection?.status === "connected"}
+          isConnected={isConnected}
           canEdit={isOwner}
         />
+
+        <ScheduledMessagesSection
+          initialClinic={{
+            reminderEnabled: clinic?.reminderEnabled ?? false,
+            reminderHoursBefore: clinic?.reminderHoursBefore ?? 24,
+            feedbackSurveyEnabled: clinic?.feedbackSurveyEnabled ?? false,
+            feedbackSurveyDelayHours: clinic?.feedbackSurveyDelayHours ?? 3,
+          }}
+          templates={messageTemplates}
+          isConnected={isConnected}
+          canEdit={isOwner}
+        />
+
+        <FeedbackResultsSection feedback={visitFeedback} />
       </div>
     </div>
   );

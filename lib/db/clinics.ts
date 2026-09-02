@@ -27,6 +27,10 @@ function toClinic(row: PrismaClinicRow): Clinic {
     ...(row.address ? { address: row.address } : {}),
     ...(row.statsWindow ? { statsWindow: row.statsWindow as StatsWindow } : {}),
     ...(row.subscriptionRenewsAt !== null ? { subscriptionRenewsAt: Number(row.subscriptionRenewsAt) } : {}),
+    reminderEnabled: row.reminderEnabled,
+    reminderHoursBefore: row.reminderHoursBefore,
+    feedbackSurveyEnabled: row.feedbackSurveyEnabled,
+    feedbackSurveyDelayHours: row.feedbackSurveyDelayHours,
   };
 }
 
@@ -112,6 +116,26 @@ export async function updateClinicSubscription(
     },
   });
   return toClinic(row);
+}
+
+export interface MessagingSettingsInput {
+  reminderEnabled: boolean;
+  reminderHoursBefore: number;
+  feedbackSurveyEnabled: boolean;
+  feedbackSurveyDelayHours: number;
+}
+
+/** Settings > Communication's reminder/feedback-survey toggles. */
+export async function updateMessagingSettings(clinicId: string, input: MessagingSettingsInput): Promise<void> {
+  await prisma.clinic.update({
+    where: { id: clinicId },
+    data: {
+      reminderEnabled: input.reminderEnabled,
+      reminderHoursBefore: input.reminderHoursBefore,
+      feedbackSurveyEnabled: input.feedbackSurveyEnabled,
+      feedbackSurveyDelayHours: input.feedbackSurveyDelayHours,
+    },
+  });
 }
 
 /** Used by app/admin/actions.ts deleteClinicAction. */

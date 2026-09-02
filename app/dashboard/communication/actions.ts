@@ -1,13 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { sendTemplateMessage } from "@/lib/bhashsms/client";
 import { sendSms } from "@/lib/smsgate/client";
 import { getWhatsAppConnection, upsertWhatsAppConnection, deleteWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates, createMessageTemplate, deleteMessageTemplate } from "@/lib/db/messageTemplates";
 import { getReceipt } from "@/lib/db/receipts";
-import { getClinic } from "@/lib/db/clinics";
+import { getClinic, updateMessagingSettings, clinicCacheTag, type MessagingSettingsInput } from "@/lib/db/clinics";
 import { normalizePhone } from "@/lib/phone";
 import { TEMPLATE_VARIABLE_LABELS } from "@/types";
 import type { MessageTemplate, MessageTemplateCategory } from "@/types";
@@ -200,5 +200,29 @@ export async function sendReceiptMessageAction(
   } catch (err) {
     console.error("Failed to send receipt message:", err);
     return { error: err instanceof Error ? err.message : "Couldn't send this receipt. Please try again." };
+  }
+}
+
+/** Settings > Communication's reminder/feedback-survey toggles — see
+ * app/api/cron/send-scheduled-messages, which is what actually acts on
+ * these once saved. */
+export async function updateMessagingSettingsAction(input: MessagingSettingsInput): Promise<{ error?: string }> {
+  try {
+    const session = await requireOwner();
+
+    if (input.reminderHoursBefore < 1 || input.reminderHoursBefore > 168) {
+      return { error: "Reminder timing must be between 1 hour and 7 days." };
+    }
+    if (input.feedbackSurveyDelayHours < 1 || input.feedbackSurveyDelayHours > 72) {
+      return { error: "Feedback survey timing must be between 1 and 72 hours." };
+    }
+
+    await updateMessagingSettings(session.clinicId, input);
+    revalidateTag(clinicCacheTag(session.clinicId));
+    revalidatePath("/dashboard/communication");
+    return {};
+  } catch (err) {
+    console.error("Failed to update messaging settings:", err);
+    return { error: "Couldn't save these settings. Please try again." };
   }
 }

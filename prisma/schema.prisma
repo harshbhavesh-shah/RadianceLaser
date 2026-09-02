@@ -113,6 +113,7 @@ model Visit {
   // Patient.legacyPatientNo above for the same reasoning.
   legacyVisitNo   Int?
   createdAt       BigInt
+  feedback        VisitFeedback?
 
   @@index([clinicId])
   @@index([clinicId, createdAt])
@@ -182,6 +183,12 @@ model Appointment {
   durationMinutes Int
   status          String
   notes           String?
+  // Set once the automated reminder cron has actually sent a message for
+  // this appointment (see app/api/cron/send-scheduled-messages) — guards
+  // against sending the same reminder twice on the next poll. Null forever
+  // for appointments made while reminders are off, or already past their
+  // reminder window when the feature was turned on.
+  reminderSentAt  BigInt?
   createdAt       BigInt
 
   @@index([clinicId])
@@ -421,6 +428,15 @@ model Clinic {
   subscriptionStatus   String
   trialEndsAt          BigInt
   subscriptionRenewsAt BigInt?
+  // Automated WhatsApp messaging (see app/api/cron/send-scheduled-messages,
+  // lib/db/clinics.ts updateMessagingSettings) — both independently
+  // toggleable, and both no-ops unless the clinic also has a connected
+  // WhatsAppConnection and a matching MessageTemplate ("appointment_reminder"
+  // / "visit_feedback") configured, checked at send time rather than here.
+  reminderEnabled          Boolean @default(false)
+  reminderHoursBefore      Int     @default(24)
+  feedbackSurveyEnabled    Boolean @default(false)
+  feedbackSurveyDelayHours Int     @default(3)
   createdAt            BigInt
 
   @@map("clinics")
@@ -475,6 +491,67 @@ model TwoFactorChallenge {
   attempts  Int
 
   @@map("twoFactorChallenges")
+}
+
+// One row per visit a post-visit satisfaction survey was (or is about to
+// be) sent for — see app/api/cron/send-scheduled-messages and the public
+// app/feedback/[token] page a patient lands on from the WhatsApp message.
+// `token` is the only thing that page's URL carries, deliberately opaque
+// (cuid, not the visit id) so a guessed/shared link can't be walked to
+// enumerate other patients' feedback. Cascades from Visit, not Patient
+// directly, since a feedback request only ever exists because a specific
+// visit happened — deleting the visit (or the patient, which cascades to
+// visits already) should take its feedback request with it.
+model VisitFeedback {
+  id          String  @id @default(cuid())
+  clinicId    String
+  visitId     String  @unique
+  visit       Visit   @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  // Denormalized from Patient at send time — same reasoning as
+  // Appointment.patientName: rendering the results list never needs a
+  // join, and a later name edit shouldn't rewrite what was actually sent.
+  patientName String
+  token       String  @unique
+  rating      Int? // 1-5; null until the patient actually responds
+  comment     String?
+  sentAt      BigInt?
+  respondedAt BigInt?
+  createdAt   BigInt
+
+  @@index([clinicId])
+  @@index([clinicId, createdAt])
+  @@map("visitFeedback")
+}
+
+// Clinic-configurable treatment areas for the "Area" dropdown on the Q-Switch
+// and Laser Hair Removal visit-logging forms (see lib/sessionTypes.ts and
+// components/VisitFormModal.tsx) — previously a hardcoded string array per
+// session type. `sessionType` is the built-in session type key ("qs" or
+// "lhr") this area belongs to, not a FK (built-in types have no table row of
+// their own — see SessionTypeDef's own comment on why custom types work
+// differently). `name` is stored as plain text on each Visit.areas entry at
+// selection time (see VisitAreaEntry in types/index.ts), so deleting or
+// renaming an AreaDef never touches historical visits — they keep whatever
+// string was picked at the time.
+model AreaDef {
+  id                     String  @id @default(cuid())
+  clinicId               String
+  sessionType            String
+  name                   String
+  // Typical treatment time for this area, in minutes — used to suggest a
+  // total Duration (min) on the visit form when areas are picked, not
+  // enforced. Null means "no suggestion."
+  defaultDurationMinutes Int?
+  // Whether GST applies to this treatment area — genuinely varies by area
+  // and is the clinic's own call to make (not a legal default this app
+  // should assume), which is why it's a per-area, clinic-editable flag
+  // rather than a global setting.
+  gstApplicable          Boolean @default(true)
+  createdAt              BigInt
+
+  @@index([clinicId])
+  @@index([clinicId, sessionType])
+  @@map("areaDefs")
 }
 
 // Compliance record — CERT-In's 2022 Directions require ICT system logs

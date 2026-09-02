@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getClinic } from "@/lib/db/clinics";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
+import { getClinicAreaDefs } from "@/lib/db/areaDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import { getClinicAccess } from "@/lib/subscription";
 import { SessionTypeConfigProvider } from "@/lib/sessionTypeConfigContext";
+import { AreaDefsProvider } from "@/lib/areaDefsContext";
 import Sidebar from "@/components/Sidebar";
 import TrialBanner from "@/components/TrialBanner";
 import { SidebarProvider } from "@/components/SidebarContext";
@@ -18,9 +20,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
-  const [clinic, sessionTypeDefs] = await Promise.all([
+  const [clinic, sessionTypeDefs, areaDefs] = await Promise.all([
     getClinic(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
+    getClinicAreaDefs(session.clinicId),
   ]);
   const clinicName = clinic?.name || "Your Clinic";
   const sessionTypeConfig = buildSessionTypeConfig(sessionTypeDefs);
@@ -32,13 +35,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <SidebarProvider>
       <SessionTypeConfigProvider initialConfig={sessionTypeConfig}>
-        <div className="flex h-screen flex-col overflow-hidden bg-canvas">
-          <TrialBanner access={access} role={session.role} />
-          <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-            <Sidebar clinicName={clinicName} session={session} />
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
+        <AreaDefsProvider initialAreaDefs={areaDefs}>
+          <div className="flex h-screen flex-col overflow-hidden bg-canvas">
+            <TrialBanner access={access} role={session.role} />
+            <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
+              <Sidebar clinicName={clinicName} session={session} />
+              <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
+            </div>
           </div>
-        </div>
+        </AreaDefsProvider>
       </SessionTypeConfigProvider>
     </SidebarProvider>
   );

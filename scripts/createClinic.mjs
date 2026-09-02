@@ -47,6 +47,39 @@ function createPrismaClient() {
 // TypeScript/path-alias setup).
 const TRIAL_LENGTH_DAYS = 30;
 
+// Keep in sync with DEFAULT_AREA_DEFS in scripts/seedAreaDefs.mjs (that
+// script's version is the one to edit — this is just re-declared here to
+// avoid a cross-script import for what's still a plain Node script).
+// See prisma/schema.prisma's AreaDef model for why every new clinic starts
+// with its own real rows here instead of falling back to a hardcoded list.
+const DEFAULT_AREA_DEFS = {
+  qs: [
+    { name: "Full Face", defaultDurationMinutes: 30, gstApplicable: true },
+    { name: "Cheeks", defaultDurationMinutes: 15, gstApplicable: true },
+    { name: "Underarms", defaultDurationMinutes: 15, gstApplicable: true },
+    { name: "Neck", defaultDurationMinutes: 15, gstApplicable: true },
+    { name: "Hands", defaultDurationMinutes: 15, gstApplicable: true },
+    { name: "Back", defaultDurationMinutes: 30, gstApplicable: true },
+    { name: "Chest", defaultDurationMinutes: 20, gstApplicable: true },
+    { name: "Tattoo Removal", defaultDurationMinutes: 20, gstApplicable: true },
+    { name: "Full Body", defaultDurationMinutes: 60, gstApplicable: true },
+  ],
+  lhr: [
+    { name: "Upper Lip", defaultDurationMinutes: 10, gstApplicable: true },
+    { name: "Chin", defaultDurationMinutes: 10, gstApplicable: true },
+    { name: "Full Face", defaultDurationMinutes: 20, gstApplicable: true },
+    { name: "Underarms", defaultDurationMinutes: 15, gstApplicable: true },
+    { name: "Half Arms", defaultDurationMinutes: 20, gstApplicable: true },
+    { name: "Full Arms", defaultDurationMinutes: 30, gstApplicable: true },
+    { name: "Half Legs", defaultDurationMinutes: 30, gstApplicable: true },
+    { name: "Full Legs", defaultDurationMinutes: 45, gstApplicable: true },
+    { name: "Bikini Line", defaultDurationMinutes: 15, gstApplicable: true },
+    { name: "Back", defaultDurationMinutes: 30, gstApplicable: true },
+    { name: "Chest", defaultDurationMinutes: 20, gstApplicable: true },
+    { name: "Full Body", defaultDurationMinutes: 90, gstApplicable: true },
+  ],
+};
+
 function parseArgs() {
   const args = {};
   const argv = process.argv.slice(2);
@@ -115,6 +148,21 @@ async function main() {
     { merge: true }
   );
   console.log(`✓ Created clinic "${clinicName}" (id: ${clinicId}), trial ends ${new Date(trialEndsAt).toDateString()}`);
+
+  // 1b. Seed starter treatment areas for the Q-Switch/LHR visit forms —
+  //     see prisma/schema.prisma's AreaDef model.
+  const areaSeedTime = Date.now();
+  for (const sessionType of Object.keys(DEFAULT_AREA_DEFS)) {
+    await prisma.areaDef.createMany({
+      data: DEFAULT_AREA_DEFS[sessionType].map((area) => ({
+        clinicId,
+        sessionType,
+        ...area,
+        createdAt: areaSeedTime,
+      })),
+    });
+  }
+  console.log(`✓ Seeded starter treatment areas (Q-Switch + LHR)`);
 
   // 2. Create the Firebase Auth user for the first staff account.
   const userRecord = await auth.createUser({ email, password, displayName: staffName });
