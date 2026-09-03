@@ -61,47 +61,51 @@ export default async function HomePage() {
       {/* Hero + first showcase, combined: headline and the dashboard proof
           share one row instead of a screenshot repeated lower down. Left
           alignment throughout the page starts here, so nothing later reads
-          as a different layout system. */}
-      <section className={`${CONTAINER} grid grid-cols-1 items-center gap-12 pt-14 pb-20 sm:pt-20 lg:grid-cols-2 lg:gap-14`}>
-        <div>
-          <h1 className="font-brand text-4xl font-extrabold leading-[1.1] tracking-tight text-brown-900 sm:text-5xl">
-            Run your clinic. Not a spreadsheet.
-          </h1>
-          <p className="mt-5 text-lg leading-relaxed text-brown-600">
-            Open the dashboard and you&apos;re looking at today: who&apos;s booked, who&apos;s
-            already been seen, and who needs a callback. Revenue, new patients, and recent activity
-            update as the day happens, pulled from the same data automatically rather than copied
-            over from a spreadsheet.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-100 transition-colors hover:bg-gold-600"
-            >
-              Start your free trial
-              <ArrowRight size={16} />
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-md border border-brown-900/15 px-6 py-3 text-sm font-semibold text-brown-800 transition-colors hover:border-brown-900/30 hover:bg-brown-900/5"
-            >
-              Log in
-            </Link>
+          as a different layout system. Filling the full first screen (minus
+          the header) is deliberate — this is the one section that should
+          read as an arrival, not just another row in the scroll. */}
+      <section className="flex min-h-[calc(100vh-4rem)] items-center">
+        <div className={`${CONTAINER} grid w-full grid-cols-1 items-center gap-12 py-14 lg:grid-cols-2 lg:gap-14`}>
+          <div>
+            <h1 className="font-brand text-5xl font-extrabold leading-[1.1] tracking-tight text-brown-900 sm:text-6xl">
+              Run your clinic. Not a spreadsheet.
+            </h1>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-brown-600">
+              Open the dashboard and you&apos;re looking at today: who&apos;s booked, who&apos;s
+              already been seen, and who needs a callback. Revenue, new patients, and recent
+              activity update as the day happens, pulled from the same data automatically rather
+              than copied over from a spreadsheet.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2 rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-100 transition-colors hover:bg-gold-600"
+              >
+                Start your free trial
+                <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-md border border-brown-900/15 px-6 py-3 text-sm font-semibold text-brown-800 transition-colors hover:border-brown-900/30 hover:bg-brown-900/5"
+              >
+                Log in
+              </Link>
+            </div>
+            <p className="mt-4 text-sm text-brown-400">
+              Free for {trialLengthLabel} · No credit card required ·{" "}
+              <Link href="/compliance" className="underline decoration-beige-300 underline-offset-4 hover:text-gold-600">
+                data hosted in India
+              </Link>
+            </p>
           </div>
-          <p className="mt-4 text-sm text-brown-400">
-            Free for {trialLengthLabel} · No credit card required ·{" "}
-            <Link href="/compliance" className="underline decoration-beige-300 underline-offset-4 hover:text-gold-600">
-              data hosted in India
-            </Link>
-          </p>
-        </div>
 
-        <ShowcaseShot
-          src="/screenshots/dashboard-today.png"
-          alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard"
-          width={2880}
-          height={1800}
-        />
+          <ShowcaseShot
+            src="/screenshots/dashboard-today.png"
+            alt="Today's schedule, business snapshot, and revenue chart on the Radiance Laser dashboard"
+            width={2880}
+            height={1800}
+          />
+        </div>
       </section>
 
       {/* Automation. */}
@@ -119,7 +123,7 @@ export default async function HomePage() {
           </div>
           <ShowcaseShot
             src="/screenshots/communication-automation.png"
-            alt="Automated appointment reminders and post-visit feedback survey results on the RadianceLaser Communication page"
+            alt="Automated appointment reminders and post-visit feedback survey results on the Radiance Laser Communication page"
             width={1440}
             height={900}
           />
@@ -142,7 +146,7 @@ export default async function HomePage() {
         <ShowcaseShot
           className="lg:order-1"
           src="/screenshots/no-shows.png"
-          alt="No-show stats, weekly trend, and configurable follow-up rules on the RadianceLaser No Shows page"
+          alt="No-show stats, weekly trend, and configurable follow-up rules on the Radiance Laser No Shows page"
           width={2880}
           height={1800}
         />
@@ -164,7 +168,7 @@ export default async function HomePage() {
           </div>
           <ShowcaseShot
             src="/screenshots/inbox-conversation.png"
-            alt="A two-way WhatsApp conversation with a patient in the RadianceLaser Inbox"
+            alt="A two-way WhatsApp conversation with a patient in the Radiance Laser Inbox"
             width={2880}
             height={1800}
           />
@@ -195,7 +199,7 @@ export default async function HomePage() {
         </div>
         <ShowcaseShot
           src="/screenshots/settings-import.png"
-          alt="Import Patients and Import Session History sections in RadianceLaser Settings"
+          alt="Import Patients and Import Session History sections in Radiance Laser Settings"
           width={2880}
           height={1800}
         />
@@ -218,7 +222,7 @@ export default async function HomePage() {
           <ShowcaseShot
             className="lg:order-1"
             src="/screenshots/inventory.png"
-            alt="Perishable and consumable stock, with expiry and reorder alerts, on the RadianceLaser Inventory page"
+            alt="Perishable and consumable stock, with expiry and reorder alerts, on the Radiance Laser Inventory page"
             width={2880}
             height={1800}
           />
@@ -289,7 +293,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className={`${CONTAINER} border-t border-beige-300 py-8 text-sm text-brown-400`}>
         <p>
-          © {new Date().getFullYear()} RadianceLaser ·{" "}
+          © {new Date().getFullYear()} Radiance Laser ·{" "}
           <Link href="/compliance" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
             Data hosted in India, DPDP Act 2023 compliant
           </Link>{" "}
@@ -298,7 +302,9 @@ export default async function HomePage() {
             Contact us
           </Link>
         </p>
-        <p className="mt-1">Udyam Registered: UDYAM-GJ-20-0310289 · Medical Advisor: Dr. Bhavesh Shah</p>
+        <p className="mt-1">
+          Udyam Registered: UDYAM-GJ-20-0310289 · Medical Advisor: Dr. Bhavesh Shah (MD Dermatology, DVD)
+        </p>
       </footer>
     </div>
   );

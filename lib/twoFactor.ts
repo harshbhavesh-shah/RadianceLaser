@@ -41,7 +41,7 @@ export async function issueTwoFactorChallenge(uid: string, email: string): Promi
 
   await sendEmail({
     to: email,
-    subject: `${code} is your RadianceLaser sign-in code`,
+    subject: `${code} is your Radiance Laser sign-in code`,
     html: twoFactorEmailHtml(code),
   });
 }
@@ -57,7 +57,7 @@ function twoFactorEmailHtml(code: string): string {
   return `
     <div style="background:#FBF8F3;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
       <div style="max-width:420px;margin:0 auto;background:#FFFFFF;border:1px solid #E8DDC9;border-radius:12px;padding:32px;">
-        <div style="font-size:22px;font-weight:bold;color:#2C1D14;">RadianceLaser</div>
+        <div style="font-size:22px;font-weight:bold;color:#2C1D14;">Radiance Laser</div>
         <div style="height:2px;width:32px;background:#A9812F;margin:12px 0 24px;"></div>
         <p style="font-family:Arial,sans-serif;font-size:14px;color:#4A342A;margin:0 0 20px;">
           Here's your sign-in code:

@@ -4,8 +4,8 @@ import SiteHeader from "@/components/marketing/SiteHeader";
 import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact us · RadianceLaser",
-  description: "Reach the RadianceLaser team, or report a problem with your account.",
+  title: "Contact us · Radiance Laser",
+  description: "Reach the Radiance Laser team, or report a problem with your account.",
 };
 
 export default function ContactPage() {

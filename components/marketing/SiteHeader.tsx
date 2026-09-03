@@ -38,8 +38,8 @@ export default function SiteHeader({ forceSolid: _forceSolid = false }: { forceS
       }`}
     >
       <div className="mx-auto grid h-16 max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">
-        <Link href="/" className="font-brand text-lg font-extrabold tracking-tight text-brown-900 sm:text-xl">
-          Radiance<span className="text-gold-600">Laser</span>
+        <Link href="/" className="font-logo text-lg tracking-tight text-brown-900 sm:text-xl">
+          Radiance <span className="text-gold-600">Laser</span>
         </Link>
 
         <nav className="hidden items-center justify-center gap-7 text-sm font-medium text-brown-600 md:flex">

@@ -30,7 +30,7 @@ function getClient(): Resend {
  * dashboard and RESEND_FROM_EMAIL set to an address on it.
  */
 export async function sendEmail(input: { to: string; subject: string; html: string; replyTo?: string }): Promise<void> {
-  const from = process.env.RESEND_FROM_EMAIL || "RadianceLaser <onboarding@resend.dev>";
+  const from = process.env.RESEND_FROM_EMAIL || "Radiance Laser <onboarding@resend.dev>";
 
   const { error } = await getClient().emails.send({
     from,

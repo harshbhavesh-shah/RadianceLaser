@@ -18,8 +18,8 @@ export default function AuthShell({ children }: { children: ReactNode }) {
         <div className="relative hidden overflow-hidden bg-brown-900 lg:flex lg:flex-col lg:justify-center lg:px-16 lg:py-16">
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo.png" alt="" width={32} height={32} />
-            <span className="font-brand text-lg font-extrabold text-white">
-              Radiance<span className="text-gold-400">Laser</span>
+            <span className="font-logo text-lg text-white">
+              Radiance <span className="text-gold-400">Laser</span>
             </span>
           </Link>
           <h2 className="mt-10 max-w-sm font-brand text-3xl font-extrabold leading-tight text-white">
@@ -31,7 +31,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
           <div className="relative mt-10 overflow-hidden rounded-xl border border-white/10 shadow-2xl">
             <Image
               src="/screenshots/dashboard-today.png"
-              alt="RadianceLaser dashboard"
+              alt="Radiance Laser dashboard"
               width={1440}
               height={900}
               className="h-auto w-full"

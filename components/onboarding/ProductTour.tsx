@@ -19,7 +19,7 @@ function buildSteps(role: UserRole): TourStep[] {
   const steps: TourStep[] = [
     {
       target: null,
-      title: "Welcome to RadianceLaser",
+      title: "Welcome to Radiance Laser",
       body: "A 60-second look at where everything lives — you can skip this anytime and pick it up later from Settings.",
     },
     {

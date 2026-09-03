@@ -35,10 +35,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "serif"],
+        // Both point at the same Michroma variable (see app/layout.tsx) —
+        // one site-wide headline face, kept as two Tailwind tokens only so
+        // every existing font-display/font-brand className stays valid.
+        display: ["var(--font-michroma)", "sans-serif"],
         sans: ["var(--font-inter)", "sans-serif"],
-        // Public marketing site only — see app/page.tsx and SiteHeader.
-        brand: ["var(--font-manrope)", "sans-serif"],
+        brand: ["var(--font-michroma)", "sans-serif"],
+        // The "Radiance Laser" wordmark only — see app/layout.tsx.
+        logo: ["var(--font-asimovian)", "sans-serif"],
       },
       boxShadow: {
         soft: "0 2px 12px -2px rgba(44, 29, 20, 0.08)",

@@ -80,7 +80,7 @@ export default function BillingSection({
         order_id: orderId,
         amount,
         currency,
-        name: "RadianceLaser",
+        name: "Radiance Laser",
         description: `${clinicName} — annual subscription`,
         prefill: { email: ownerEmail },
         theme: { color: "#b45309" },

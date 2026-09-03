@@ -150,8 +150,8 @@ function LoginForm() {
     <AuthShell>
       <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-card ring-1 ring-beige-300">
         <Image src="/logo.png" alt="" width={44} height={44} className="mx-auto lg:hidden" />
-        <h1 className="mt-3 text-center font-brand text-2xl font-extrabold text-brown-900 lg:hidden">
-          Radiance<span className="text-gold-600">Laser</span>
+        <h1 className="mt-3 text-center font-logo text-2xl text-brown-900 lg:hidden">
+          Radiance <span className="text-gold-600">Laser</span>
         </h1>
         <div className="mx-auto mt-3 mb-5 h-[2px] w-10 bg-gold-500 lg:hidden" />
 

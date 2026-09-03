@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-col bg-canvas">
       <header className="flex items-center justify-between border-b border-beige-300 bg-brown-900 px-6 py-4 text-beige-200">
         <div>
-          <div className="font-display text-lg font-medium text-white">RadianceLaser — Admin</div>
+          <div className="font-display text-lg font-medium text-white">Radiance Laser — Admin</div>
           <div className="mt-1 h-[2px] w-6 bg-gold-500" />
         </div>
         <div className="flex items-center gap-4 text-sm">
