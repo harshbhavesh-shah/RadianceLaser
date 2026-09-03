@@ -4,9 +4,7 @@ import { prisma } from "@/lib/db/client";
 import type { VisitFeedback as PrismaVisitFeedbackRow } from "@prisma/client";
 import type { VisitFeedback } from "@/types";
 
-// Backs the post-visit satisfaction survey — see
-// app/api/cron/send-scheduled-messages (creates + sends these) and the
-// public app/feedback/[token] page a patient responds from.
+// Backs the post-visit satisfaction survey at app/feedback/[token].
 
 function toVisitFeedback(row: PrismaVisitFeedbackRow): VisitFeedback {
   return {
@@ -24,10 +22,6 @@ function toVisitFeedback(row: PrismaVisitFeedbackRow): VisitFeedback {
 }
 
 function generateToken(): string {
-  // 24 random bytes, base64url — unguessable, URL-safe, no padding to
-  // fuss with. This is the only thing the public feedback link carries
-  // (see prisma/schema.prisma's VisitFeedback comment for why it's opaque
-  // rather than the visit id itself).
   return randomBytes(24).toString("base64url");
 }
 
@@ -37,11 +31,8 @@ export interface VisitPendingFeedback {
   patientPhone: string | null;
 }
 
-/** Visits old enough (per the clinic's configured delayHours) to prompt for
- * feedback, that haven't had a request created for them yet, in the last
- * 3 days — a clinic that's had feedback surveys off for longer than that
- * doesn't get a backlog of stale requests dumped on patients the moment
- * it's turned on. */
+/** Visits old enough to prompt for feedback, without a request yet, in
+ * the last 3 days. */
 export async function getVisitsPendingFeedback(clinicId: string, delayHours: number): Promise<VisitPendingFeedback[]> {
   const now = Date.now();
   const cutoff = now - delayHours * 60 * 60 * 1000;
@@ -66,12 +57,8 @@ export async function getVisitsPendingFeedback(clinicId: string, delayHours: num
   }));
 }
 
-/** Creates the feedback request row (with a fresh token) right before
- * sending its WhatsApp message. If the send then fails, the caller should
- * call deleteUnsentVisitFeedback to roll this back — otherwise the visit
- * would never be retried, since getVisitsPendingFeedback excludes any
- * visit with an existing feedback row regardless of whether it was ever
- * actually sent. */
+/** Creates the feedback row with a fresh token before sending. If the send
+ * fails, call deleteUnsentVisitFeedback to roll it back so it retries. */
 export async function createVisitFeedback(
   clinicId: string,
   visitId: string,
@@ -87,23 +74,19 @@ export async function markFeedbackSent(id: string): Promise<void> {
   await prisma.visitFeedback.update({ where: { id }, data: { sentAt: BigInt(Date.now()) } });
 }
 
-/** Rolls back a just-created row whose send failed — see
- * createVisitFeedback's comment for why this matters. */
+/** Rolls back a just-created row whose send failed. */
 export async function deleteUnsentVisitFeedback(id: string): Promise<void> {
   await prisma.visitFeedback.delete({ where: { id } });
 }
 
-/** For the public app/feedback/[token] page — deliberately doesn't take a
- * clinicId, since the token itself (not a session) is what authorizes
- * access here. */
+/** For the public app/feedback/[token] page. The token itself, not a
+ * session, is what authorizes access. */
 export async function getVisitFeedbackByToken(token: string): Promise<VisitFeedback | null> {
   const row = await prisma.visitFeedback.findUnique({ where: { token } });
   return row ? toVisitFeedback(row) : null;
 }
 
-/** Records the patient's response. Safe to call even if already responded
- * — a resubmit just overwrites, rather than erroring, since there's no
- * harm in a patient changing their mind before closing the page. */
+/** Records the patient's response. A resubmit just overwrites. */
 export async function submitVisitFeedback(token: string, rating: number, comment?: string): Promise<void> {
   await prisma.visitFeedback.update({
     where: { token },
@@ -111,7 +94,7 @@ export async function submitVisitFeedback(token: string, rating: number, comment
   });
 }
 
-/** Recent responses for Settings > Communication's results list — newest
+/** Recent responses for Settings > Communication's results list. Newest
  * first, only ones the patient has actually answered. */
 export async function getClinicVisitFeedback(clinicId: string, limit = 50): Promise<VisitFeedback[]> {
   const rows = await prisma.visitFeedback.findMany({

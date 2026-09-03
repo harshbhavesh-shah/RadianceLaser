@@ -18,6 +18,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   ShieldCheck,
+  UserX,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
@@ -38,6 +39,7 @@ const NAV_ITEMS: {
   { label: "Patients", href: "/dashboard/patients", icon: Users },
   { label: "Packages", href: "/dashboard/packages", icon: Package },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
+  { label: "No Shows", href: "/dashboard/no-shows", icon: UserX },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Communication", href: "/dashboard/communication", icon: MessageCircle },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },

@@ -13,7 +13,7 @@ const STATUS_OPTIONS: { value: AppointmentStatus; label: string }[] = [
   { value: "booked", label: "Booked" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
-  { value: "no-show", label: "No-Show" },
+  { value: "no-show", label: "No Show" },
 ];
 
 export default function AppointmentFormModal({

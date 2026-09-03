@@ -28,13 +28,10 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: () => void;
   );
 }
 
-/** Settings > Communication's reminder/feedback-survey toggles — the
- * automation itself runs entirely server-side (see
- * app/api/cron/send-scheduled-messages), this just edits the two flags +
- * two timing values it reads from Clinic. Both toggles stay disabled
- * (with an explanation) until WhatsApp is connected and the matching
- * template exists — turning the toggle on without either would just be a
- * setting that silently does nothing. */
+/** Settings > Communication's reminder/feedback-survey toggles. The
+ * automation itself runs server-side; this just edits the flags and
+ * timing values on Clinic. Both toggles stay disabled until WhatsApp is
+ * connected and the matching template exists. */
 export default function ScheduledMessagesSection({
   initialClinic,
   templates,

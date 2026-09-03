@@ -11,5 +11,5 @@ export const STATUS_LABELS: Record<AppointmentStatus, string> = {
   booked: "Booked",
   completed: "Completed",
   cancelled: "Cancelled",
-  "no-show": "No-Show",
+  "no-show": "No Show",
 };

@@ -258,6 +258,81 @@ export function computeAppointmentReliability(appointments: Appointment[]): Appo
   };
 }
 
+export interface NoShowStats {
+  thisWeek: number;
+  thisMonth: number;
+  // Rate over the same "resolved appointments" denominator as
+  // computeAppointmentReliability, just scoped to this month instead of
+  // this year — a clinic wants to know "is this month worse than usual,"
+  // not just a running year-to-date number.
+  monthRate: number;
+}
+
+/** This week/month no-show counts plus this month's rate, for the No
+ * Shows page's stat strip. See computeAppointmentReliability's comment for
+ * why a still-"booked" past appointment is excluded from the denominator. */
+export function computeNoShowStats(appointments: Appointment[]): NoShowStats {
+  const today = todayLocalStr();
+  const weekStart = startDateForWindow("week");
+  const monthStart = startDateForWindow("month");
+
+  const thisWeek = appointments.filter(
+    (a) => a.status === "no-show" && a.date >= weekStart && a.date <= today
+  ).length;
+
+  const monthNoShows = appointments.filter(
+    (a) => a.status === "no-show" && a.date >= monthStart && a.date <= today
+  );
+  const monthResolved = appointments.filter(
+    (a) => a.date >= monthStart && a.date <= today && a.status !== "booked"
+  );
+
+  return {
+    thisWeek,
+    thisMonth: monthNoShows.length,
+    monthRate: monthResolved.length > 0 ? (monthNoShows.length / monthResolved.length) * 100 : 0,
+  };
+}
+
+export interface NoShowWeekPoint {
+  weekLabel: string; // e.g. "Aug 4"
+  count: number;
+}
+
+/** No-show count per week for the last `weeks` weeks (default ~3 months),
+ * for the No Shows page's trend chart. Same fixed-length-array-of-buckets
+ * shape as computeYearlyRevenueTrend, just keyed by week-start date instead
+ * of month index, since "week" has no small fixed index like a month does. */
+export function computeNoShowTrend(appointments: Appointment[], weeks = 12): NoShowWeekPoint[] {
+  const now = new Date();
+  const currentWeekStart = new Date(now);
+  currentWeekStart.setHours(0, 0, 0, 0);
+  currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay()); // Sunday, matches lib/calendar.ts
+
+  const buckets: { start: Date; count: number }[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const start = new Date(currentWeekStart);
+    start.setDate(start.getDate() - i * 7);
+    buckets.push({ start, count: 0 });
+  }
+
+  for (const a of appointments) {
+    if (a.status !== "no-show" || !a.date) continue;
+    const apptDate = new Date(`${a.date}T00:00:00`);
+    for (let i = buckets.length - 1; i >= 0; i--) {
+      if (apptDate >= buckets[i].start) {
+        buckets[i].count++;
+        break;
+      }
+    }
+  }
+
+  return buckets.map((b) => ({
+    weekLabel: b.start.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    count: b.count,
+  }));
+}
+
 export interface PackageUtilizationSummary {
   packagesSold: number;
   sessionsSold: number;

@@ -183,16 +183,15 @@ model Appointment {
   durationMinutes Int
   status          String
   notes           String?
-  // Set once the automated reminder cron has actually sent a message for
-  // this appointment (see app/api/cron/send-scheduled-messages) — guards
-  // against sending the same reminder twice on the next poll. Null forever
-  // for appointments made while reminders are off, or already past their
-  // reminder window when the feature was turned on.
+  // Set once the reminder cron has sent for this appointment, so it
+  // doesn't send twice.
   reminderSentAt  BigInt?
   createdAt       BigInt
 
   @@index([clinicId])
   @@index([clinicId, date])
+  // Backs the reminder cron's and no-show section's status scans.
+  @@index([clinicId, status, date])
   @@map("appointments")
 }
 
@@ -398,9 +397,67 @@ model MessageTemplate {
   bodyPreview    String?
   createdAt      BigInt
   updatedAt      BigInt
+  noShowFollowUps NoShowFollowUp[]
 
   @@index([clinicId])
   @@map("messageTemplates")
+}
+
+// A clinic's configurable automated follow-up for a missed appointment.
+// See app/api/cron/send-scheduled-messages and
+// components/no-shows/FollowUpsSection.tsx. `kind` is a UI label only —
+// every kind sends through the same "no_show_followup" template category,
+// with `kind` just deciding what fills the second variable (survey link,
+// offerText, or blank).
+model NoShowFollowUp {
+  id         String          @id @default(cuid())
+  clinicId   String
+  name       String
+  kind       String
+  templateId String
+  template   MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  offerText  String?
+  enabled    Boolean         @default(false)
+  // Hours after the appointment's own scheduled time, not after it was
+  // marked "no-show".
+  delayHours Int             @default(4)
+  createdAt  BigInt
+
+  @@index([clinicId])
+  @@map("noShowFollowUps")
+}
+
+// Tracks which follow-ups have been sent for which appointment, since one
+// appointment can trigger several independently.
+model NoShowMessageLog {
+  id            String @id @default(cuid())
+  clinicId      String
+  appointmentId String
+  followUpId    String
+  sentAt        BigInt
+
+  @@unique([appointmentId, followUpId])
+  @@index([clinicId])
+  @@map("noShowMessageLogs")
+}
+
+// A "why didn't you come in" survey response, created only when a
+// kind:"survey" NoShowFollowUp fires for an appointment. Same token-based
+// public-page pattern as VisitFeedback.
+model NoShowSurveyResponse {
+  id            String  @id @default(cuid())
+  clinicId      String
+  appointmentId String  @unique
+  patientName   String
+  token         String  @unique
+  reason        String?
+  comment       String?
+  sentAt        BigInt?
+  respondedAt   BigInt?
+  createdAt     BigInt
+
+  @@index([clinicId])
+  @@map("noShowSurveyResponses")
 }
 
 // Mirrors types/index.ts Clinic — chunk 11, the last one, and the only
@@ -428,11 +485,9 @@ model Clinic {
   subscriptionStatus   String
   trialEndsAt          BigInt
   subscriptionRenewsAt BigInt?
-  // Automated WhatsApp messaging (see app/api/cron/send-scheduled-messages,
-  // lib/db/clinics.ts updateMessagingSettings) — both independently
-  // toggleable, and both no-ops unless the clinic also has a connected
-  // WhatsAppConnection and a matching MessageTemplate ("appointment_reminder"
-  // / "visit_feedback") configured, checked at send time rather than here.
+  // Automated WhatsApp messaging toggles (see
+  // app/api/cron/send-scheduled-messages). No-op unless WhatsApp is
+  // connected and the matching template exists.
   reminderEnabled          Boolean @default(false)
   reminderHoursBefore      Int     @default(24)
   feedbackSurveyEnabled    Boolean @default(false)

@@ -33,7 +33,7 @@ export default function FeedbackForm({
         <p className="mt-1.5 text-sm text-brown-600">
           {justSubmitted
             ? "Your feedback has been recorded."
-            : "You've already shared your feedback for this visit — thank you."}
+            : "You've already shared your feedback for this visit. Thank you."}
         </p>
       </div>
     );

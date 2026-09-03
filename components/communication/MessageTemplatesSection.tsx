@@ -11,6 +11,7 @@ const CATEGORY_LABELS: Record<MessageTemplateCategory, string> = {
   appointment_confirmation: "Appointment Confirmation",
   receipt_sent: "Receipt Sent",
   visit_feedback: "Post-Visit Feedback",
+  no_show_followup: "No Show Follow-Up",
   custom: "Custom",
 };
 

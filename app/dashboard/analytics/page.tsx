@@ -187,7 +187,7 @@ export default async function AnalyticsPage() {
 
           {reliability.totalPast === 0 ? (
             <p className="text-sm text-brown-400">
-              No completed, cancelled, or no-show appointments yet this year.
+              No completed, cancelled, or no show appointments yet this year.
             </p>
           ) : (
             <>
@@ -196,7 +196,7 @@ export default async function AnalyticsPage() {
                   <div className="font-display text-3xl font-medium text-brown-900">
                     {reliability.noShowRate.toFixed(0)}%
                   </div>
-                  <div className="text-xs text-brown-400">No-show rate</div>
+                  <div className="text-xs text-brown-400">No show rate</div>
                 </div>
                 <div>
                   <div className="font-display text-3xl font-medium text-brown-900">
@@ -206,7 +206,7 @@ export default async function AnalyticsPage() {
                 </div>
               </div>
               <p className="mt-4 text-xs text-brown-400">
-                {reliability.completed} completed · {reliability.noShow} no-show ·{" "}
+                {reliability.completed} completed · {reliability.noShow} no show ·{" "}
                 {reliability.cancelled} cancelled ({reliability.totalPast} total)
               </p>
             </>

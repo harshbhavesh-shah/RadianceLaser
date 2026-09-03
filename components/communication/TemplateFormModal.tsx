@@ -11,6 +11,7 @@ const CATEGORY_OPTIONS: { value: MessageTemplateCategory; label: string }[] = [
   { value: "appointment_confirmation", label: "Appointment Confirmation" },
   { value: "receipt_sent", label: "Receipt Sent" },
   { value: "visit_feedback", label: "Post-Visit Feedback" },
+  { value: "no_show_followup", label: "No Show Follow-Up" },
   { value: "custom", label: "Custom" },
 ];
 

@@ -3,10 +3,9 @@ import { getVisitFeedbackByToken } from "@/lib/db/visitFeedback";
 import { getClinic } from "@/lib/db/clinics";
 import FeedbackForm from "./FeedbackForm";
 
-// Public page — no auth, reached straight from the WhatsApp message a
-// patient gets after a visit (see app/api/cron/send-scheduled-messages).
-// The token in the URL is what authorizes this, not a session; see
-// prisma/schema.prisma's VisitFeedback comment for why it's opaque.
+// Public page, no auth, reached from the WhatsApp message a patient gets
+// after a visit. The token in the URL is what authorizes this, not a
+// session.
 export default async function FeedbackPage({ params }: { params: { token: string } }) {
   const feedback = await getVisitFeedbackByToken(params.token);
   if (!feedback) notFound();

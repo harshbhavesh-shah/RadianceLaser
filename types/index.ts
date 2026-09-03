@@ -248,6 +248,42 @@ export interface VisitFeedback extends TenantScoped {
   createdAt: number;
 }
 
+// One of a clinic's configurable automated follow-ups for a missed
+// appointment — see prisma/schema.prisma's NoShowFollowUp comment for the
+// full reasoning (why `kind` doesn't change the send mechanics, why
+// `delayHours` is measured from the appointment's own time). Settings UI:
+// components/no-shows/FollowUpsSection.tsx.
+export type NoShowFollowUpKind = "survey" | "incentive" | "reminder" | "custom";
+
+export interface NoShowFollowUp extends TenantScoped {
+  id: string;
+  name: string;
+  kind: NoShowFollowUpKind;
+  templateId: string;
+  offerText?: string;
+  enabled: boolean;
+  delayHours: number;
+  createdAt: number;
+}
+
+// A "why didn't you come in" response — only exists for an appointment
+// once a kind:"survey" NoShowFollowUp has actually fired for it. See
+// prisma/schema.prisma's schema comment for the token-based public-page
+// pattern this mirrors from VisitFeedback.
+export type NoShowReason = "forgot" | "schedule_conflict" | "found_elsewhere" | "cost" | "other";
+
+export interface NoShowSurveyResponse extends TenantScoped {
+  id: string;
+  appointmentId: string;
+  patientName: string;
+  token: string;
+  reason?: NoShowReason;
+  comment?: string;
+  sentAt?: number;
+  respondedAt?: number;
+  createdAt: number;
+}
+
 export type SessionFieldType = "text" | "number" | "select";
 
 export interface SessionColumnDef {
@@ -535,22 +571,30 @@ export type MessageTemplateCategory =
   | "appointment_confirmation"
   | "receipt_sent"
   | "visit_feedback"
+  | "no_show_followup"
   | "custom";
 
 // The built-in categories are wired to specific places in the app
 // (receipt_sent → ReceiptViewModal's "Send via WhatsApp" button,
-// appointment_reminder/visit_feedback → the scheduled-messages cron, see
-// app/api/cron/send-scheduled-messages) that fill in the template's
-// variables automatically from real data, in this fixed order — see
-// lib/bhashsms/send.ts. Because of that, their variable count/order isn't
-// editable when creating a template: it has to match what the app actually
-// fills in. "custom" has no automatic trigger yet, so its variables are
-// freely defined instead.
+// appointment_reminder/visit_feedback/no_show_followup → the
+// scheduled-messages cron, see app/api/cron/send-scheduled-messages) that
+// fill in the template's variables automatically from real data, in this
+// fixed order — see lib/bhashsms/send.ts. Because of that, their variable
+// count/order isn't editable when creating a template: it has to match
+// what the app actually fills in. "custom" has no automatic trigger yet,
+// so its variables are freely defined instead.
+//
+// no_show_followup's second variable's meaning depends on which
+// NoShowFollowUp is sending it (see that model's schema comment) — a
+// survey link, an offer/discount line, or blank — but it's always exactly
+// one template covering all of a clinic's no-show follow-ups, not one
+// template per follow-up kind.
 export const TEMPLATE_VARIABLE_LABELS: Record<Exclude<MessageTemplateCategory, "custom">, string[]> = {
   appointment_reminder: ["Patient name", "Date", "Time"],
   appointment_confirmation: ["Patient name", "Date", "Time"],
   receipt_sent: ["Patient name", "Receipt number", "Amount"],
   visit_feedback: ["Patient name", "Feedback link"],
+  no_show_followup: ["Patient name", "Offer, link, or blank"],
 };
 
 // Firestore path: messageTemplates/{id}

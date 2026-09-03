@@ -3,6 +3,9 @@ import { getAllClinics } from "@/lib/db/clinics";
 import {
   getUpcomingUnremindedAppointments,
   markReminderSent,
+  getStaleBookedAppointments,
+  getRecentNoShowAppointments,
+  updateAppointmentStatus,
 } from "@/lib/db/appointments";
 import {
   getVisitsPendingFeedback,
@@ -10,44 +13,45 @@ import {
   markFeedbackSent,
   deleteUnsentVisitFeedback,
 } from "@/lib/db/visitFeedback";
+import { getClinicNoShowFollowUps } from "@/lib/db/noShowFollowUps";
+import { hasNoShowMessageBeenSent, logNoShowMessageSent } from "@/lib/db/noShowMessageLog";
+import {
+  createNoShowSurveyResponse,
+  markNoShowSurveySent,
+  deleteUnsentNoShowSurveyResponse,
+} from "@/lib/db/noShowSurvey";
 import { getWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates } from "@/lib/db/messageTemplates";
 import { sendTemplateMessage } from "@/lib/bhashsms/client";
 import { normalizePhone } from "@/lib/phone";
 import { formatTime12h } from "@/lib/calendar";
-import type { Clinic, MessageTemplate } from "@/types";
+import type { Clinic, MessageTemplate, NoShowFollowUp } from "@/types";
 
-// Polled by an external scheduler (cron-job.org — see the README/setup
-// notes for the exact job config: GET this URL every 15 minutes with an
-// "Authorization: Bearer <CRON_SECRET>" custom header) rather than Vercel
-// Cron, since Vercel's own cron only runs once/day on the Hobby plan —
-// far too coarse for "remind N hours before" to land anywhere close to
-// on time. Nothing here is Vercel-specific: requireCronAuth below just
-// checks the one header, so any scheduler that can set a custom header
-// and hit a URL on an interval works identically. This is the automation
-// behind Settings > Communication's reminder/feedback-survey toggles —
-// two independent jobs, one pass per clinic per poll:
+// Polled every 15 min by an external scheduler (cron-job.org, with an
+// Authorization: Bearer <CRON_SECRET> header) instead of Vercel Cron,
+// since Vercel's Hobby plan only runs cron once a day. Four jobs, one pass
+// per clinic per poll:
 //
-//   1. Appointment reminders — an appointment becomes "due" once it's
-//      within `reminderHoursBefore` of its start time; sent once
-//      (Appointment.reminderSentAt guards against a repeat on the next
-//      poll) via the clinic's "appointment_reminder" template.
+//   1. Appointment reminders: send once inside reminderHoursBefore of
+//      the appointment's start time. Appointment.reminderSentAt stops a
+//      repeat.
+//   2. Post-visit feedback: send once delayHours has passed since the
+//      visit. Creates a VisitFeedback row with a token for the public
+//      /feedback/[token] page; deleted again if the send fails, so it
+//      retries next poll.
+//   3. No show auto-detect: always runs, no toggle. A "booked"
+//      appointment more than 2 hours past its end time with no Visit
+//      logged gets flipped to "no-show". Manual marking still works too.
+//   4. No show follow-ups: a clinic's own configurable list
+//      (components/no-shows/FollowUpsSection.tsx). Each fires delayHours
+//      after the appointment's scheduled time via its linked
+//      "no_show_followup" template. Survey-kind follow-ups create a
+//      NoShowSurveyResponse first for the link; NoShowMessageLog guards
+//      against duplicate sends per (appointment, follow-up).
 //
-//   2. Post-visit feedback — a visit becomes "due" once `delayHours` has
-//      passed since it was logged; a VisitFeedback row (with a fresh
-//      token for the public /feedback/[token] page) is created right
-//      before sending, and rolled back if the send itself fails, so it's
-//      retried on the next poll instead of silently never sent.
-//
-// Both are no-ops for a clinic unless WhatsApp is actually connected and
-// the matching template exists — checked here, not assumed, since either
-// can lapse (disconnected account, deleted template) independently of the
-// clinic's own reminderEnabled/feedbackSurveyEnabled toggle.
-//
-// Every send is wrapped so one clinic's bad WhatsApp credentials, one
-// malformed phone number, etc. can never take down the rest of the run —
-// each appointment/visit either succeeds or is quietly left for the next
-// poll to retry, and the whole route always returns 200 with a summary.
+// 1/2/4 need WhatsApp connected and the matching template to exist.
+// Everything's wrapped in try/catch so one bad send never blocks the rest
+// of the run. A failure just gets retried on the next poll.
 
 function requireCronAuth(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -72,10 +76,7 @@ async function processReminders(clinic: Clinic, templates: MessageTemplate[], co
   for (const appt of candidates) {
     const startsAt = new Date(`${appt.date}T${appt.time}:00`).getTime();
     const dueIn = startsAt - now;
-    // Due once inside the reminder window, but not for something that's
-    // already started — a same-poll edge case (very short windows, or a
-    // gap between scheduled cron runs) shouldn't send a "reminder" for an
-    // appointment that's already underway or passed.
+    // Skip if outside the window, or already started.
     if (dueIn > windowMs || dueIn <= 0) continue;
 
     const phone = normalizePhone(appt.patientPhone);
@@ -103,7 +104,7 @@ async function processFeedbackSurveys(clinic: Clinic, templates: MessageTemplate
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) {
-    console.error("NEXT_PUBLIC_APP_URL is not set — skipping feedback surveys for", clinic.id);
+    console.error("NEXT_PUBLIC_APP_URL is not set, skipping feedback surveys for", clinic.id);
     return 0;
   }
 
@@ -129,16 +130,99 @@ async function processFeedbackSurveys(clinic: Clinic, templates: MessageTemplate
   return sent;
 }
 
+/** Pass 3. Runs for every clinic, no toggle. Returns how many appointments it flipped. */
+async function autoDetectNoShows(clinicId: string): Promise<number> {
+  const stale = await getStaleBookedAppointments(clinicId);
+  for (const appt of stale) {
+    await updateAppointmentStatus(appt.id, "no-show");
+  }
+  return stale.length;
+}
+
+async function processNoShowFollowUps(
+  clinic: Clinic,
+  followUps: NoShowFollowUp[],
+  templates: MessageTemplate[],
+  connection: NonNullable<Awaited<ReturnType<typeof getWhatsAppConnection>>>
+): Promise<number> {
+  const enabled = followUps.filter((f) => f.enabled);
+  if (enabled.length === 0) return 0;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const noShows = await getRecentNoShowAppointments(clinic.id);
+  const now = Date.now();
+
+  let sent = 0;
+  for (const followUp of enabled) {
+    const template = templates.find((t) => t.id === followUp.templateId);
+    if (!template) continue;
+
+    for (const appt of noShows) {
+      const endedAt =
+        new Date(`${appt.date}T${appt.time}:00`).getTime() + appt.durationMinutes * 60 * 1000;
+      if (now - endedAt < followUp.delayHours * 60 * 60 * 1000) continue;
+
+      if (await hasNoShowMessageBeenSent(appt.id, followUp.id)) continue;
+
+      const phone = normalizePhone(appt.patientPhone);
+      if (!phone) continue;
+
+      let secondVar = followUp.offerText || "";
+      let surveyId: string | null = null;
+
+      if (followUp.kind === "survey") {
+        if (!appUrl) {
+          console.error("NEXT_PUBLIC_APP_URL is not set, skipping no show survey for", clinic.id);
+          continue;
+        }
+        const survey = await createNoShowSurveyResponse(clinic.id, appt.id, appt.patientName);
+        surveyId = survey.id;
+        secondVar = `${appUrl.replace(/\/$/, "")}/no-show-survey/${survey.token}`;
+      }
+
+      try {
+        await sendTemplateMessage(connection, phone, template.name, [appt.patientName, secondVar]);
+        if (surveyId) await markNoShowSurveySent(surveyId);
+        await logNoShowMessageSent(clinic.id, appt.id, followUp.id);
+        sent++;
+      } catch (err) {
+        console.error(`No show follow-up "${followUp.name}" failed for appointment ${appt.id} (clinic ${clinic.id}):`, err);
+        if (surveyId) await deleteUnsentNoShowSurveyResponse(surveyId).catch(() => {});
+      }
+    }
+  }
+  return sent;
+}
+
 export async function GET(req: NextRequest) {
   if (!requireCronAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const clinics = await getAllClinics();
-  const activeClinics = clinics.filter((c) => c.reminderEnabled || c.feedbackSurveyEnabled);
 
   let remindersSent = 0;
   let surveysSent = 0;
+  let noShowsDetected = 0;
+  let noShowMessagesSent = 0;
+
+  for (const clinic of clinics) {
+    try {
+      noShowsDetected += await autoDetectNoShows(clinic.id);
+    } catch (err) {
+      console.error(`No show auto-detect failed for clinic ${clinic.id}:`, err);
+    }
+  }
+
+  const followUpsByClinic = new Map<string, NoShowFollowUp[]>();
+  for (const clinic of clinics) {
+    const followUps = await getClinicNoShowFollowUps(clinic.id);
+    if (followUps.some((f) => f.enabled)) followUpsByClinic.set(clinic.id, followUps);
+  }
+
+  const activeClinics = clinics.filter(
+    (c) => c.reminderEnabled || c.feedbackSurveyEnabled || followUpsByClinic.has(c.id)
+  );
 
   for (const clinic of activeClinics) {
     try {
@@ -148,6 +232,11 @@ export async function GET(req: NextRequest) {
       const templates = await getClinicMessageTemplates(clinic.id);
       remindersSent += await processReminders(clinic, templates, connection);
       surveysSent += await processFeedbackSurveys(clinic, templates, connection);
+
+      const followUps = followUpsByClinic.get(clinic.id);
+      if (followUps) {
+        noShowMessagesSent += await processNoShowFollowUps(clinic, followUps, templates, connection);
+      }
     } catch (err) {
       console.error(`Scheduled messages failed for clinic ${clinic.id}:`, err);
     }
@@ -158,5 +247,7 @@ export async function GET(req: NextRequest) {
     clinicsChecked: activeClinics.length,
     remindersSent,
     surveysSent,
+    noShowsDetected,
+    noShowMessagesSent,
   });
 }

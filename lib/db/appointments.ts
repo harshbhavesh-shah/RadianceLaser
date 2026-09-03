@@ -139,12 +139,9 @@ export async function updateAppointmentStatus(appointmentId: string, status: App
   await prisma.appointment.update({ where: { id: appointmentId }, data: { status } });
 }
 
-/** Candidate appointments for the reminder cron (see
- * app/api/cron/send-scheduled-messages) — booked, not yet reminded, within
- * the next 2 days. A loose bound at the DB level: date and time are
- * separate text columns here, so the caller does the exact "is this
- * actually due right now, given the clinic's configured
- * reminderHoursBefore" math in JS against the full date+time. */
+/** Candidate appointments for the reminder cron: booked, not yet
+ * reminded, within the next 2 days. The caller does the exact due-now
+ * math against reminderHoursBefore. */
 export async function getUpcomingUnremindedAppointments(clinicId: string): Promise<Appointment[]> {
   const today = todayLocalStr();
   const horizon = toDateStr(addDays(new Date(), 2));
@@ -156,4 +153,47 @@ export async function getUpcomingUnremindedAppointments(clinicId: string): Promi
 
 export async function markReminderSent(appointmentId: string): Promise<void> {
   await prisma.appointment.update({ where: { id: appointmentId }, data: { reminderSentAt: BigInt(Date.now()) } });
+}
+
+// How long past its end time an appointment can sit with no Visit logged
+// before the cron flips it to "no-show". Generous, so same-day bookkeeping
+// lag doesn't get flagged as a miss.
+const NO_SHOW_GRACE_MS = 2 * 60 * 60 * 1000;
+
+/** Still-"booked" appointments past their time plus grace, with no Visit
+ * logged. Bounded to the last 14 days. */
+export async function getStaleBookedAppointments(clinicId: string): Promise<Appointment[]> {
+  const today = todayLocalStr();
+  const floor = toDateStr(addDays(new Date(), -14));
+  const candidates = await prisma.appointment.findMany({
+    where: { clinicId, status: "booked", date: { gte: floor, lte: today } },
+  });
+  if (candidates.length === 0) return [];
+
+  const now = Date.now();
+  const overdue = candidates.filter((row) => {
+    const endsAt = new Date(`${row.date}T${row.time}:00`).getTime() + row.durationMinutes * 60 * 1000;
+    return now - endsAt >= NO_SHOW_GRACE_MS;
+  });
+  if (overdue.length === 0) return [];
+
+  const visited = await prisma.visit.findMany({
+    where: { appointmentId: { in: overdue.map((a) => a.id) } },
+    select: { appointmentId: true },
+  });
+  const visitedIds = new Set(visited.map((v) => v.appointmentId));
+
+  return overdue.filter((row) => !visitedIds.has(row.id)).map(toAppointment);
+}
+
+/** "no-show" appointments from the last `sinceDays`. Used by the
+ * follow-up cron pass and the no-show list/analytics page. */
+export async function getRecentNoShowAppointments(clinicId: string, sinceDays = 30): Promise<Appointment[]> {
+  const today = todayLocalStr();
+  const floor = toDateStr(addDays(new Date(), -sinceDays));
+  const rows = await prisma.appointment.findMany({
+    where: { clinicId, status: "no-show", date: { gte: floor, lte: today } },
+    orderBy: [{ date: "desc" }, { time: "desc" }],
+  });
+  return rows.map(toAppointment);
 }
