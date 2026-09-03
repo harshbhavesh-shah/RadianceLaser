@@ -561,6 +561,10 @@ export interface WhatsAppConnection extends TenantScoped {
   // and the server-only read path.
   bhashPass?: string;
   senderId: string; // BhashSMS "sender" param, e.g. "BUZWAP"
+  // The clinic's own WhatsApp Business number (E.164) — needed to route an
+  // inbound webhook event to the right clinic. Optional: absent for a
+  // connection saved before inbound messaging existed.
+  phoneNumber?: string;
   lastError?: string;
   connectedAt?: number;
   updatedAt: number;
@@ -620,7 +624,6 @@ export type MessageDeliveryStatus = "queued" | "sent" | "delivered" | "read" | "
 // One thread per distinct phone number per clinic — a patient's WhatsApp
 // conversation, whether or not that number currently matches a patient
 // record (patientId/patientName are best-effort links, not required).
-// Firestore path: whatsappConversations/{id}
 export interface WhatsAppConversation extends TenantScoped {
   id: string;
   patientId?: string;
@@ -632,7 +635,6 @@ export interface WhatsAppConversation extends TenantScoped {
   updatedAt: number;
 }
 
-// Firestore path: whatsappMessages/{id}
 export interface WhatsAppMessage extends TenantScoped {
   id: string;
   conversationId: string;
@@ -640,7 +642,7 @@ export interface WhatsAppMessage extends TenantScoped {
   body: string;
   status: MessageDeliveryStatus;
   templateId?: string; // set for outbound template-based sends
-  providerMessageId?: string; // BhashSMS's response id/reference for this send, if any
+  providerMessageId?: string; // whichever BSP is active, its own reference for this send, if any
   createdAt: number;
 }
 

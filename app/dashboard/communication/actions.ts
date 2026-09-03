@@ -31,7 +31,8 @@ async function requireOwner() {
 export async function connectWhatsAppAction(
   bhashUser: string,
   bhashPass: string,
-  senderId: string
+  senderId: string,
+  phoneNumber: string
 ): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();
@@ -50,6 +51,7 @@ export async function connectWhatsAppAction(
       bhashUser: bhashUser.trim(),
       bhashPass: finalPass,
       senderId: senderId.trim(),
+      phoneNumber: phoneNumber.trim() || undefined,
     });
     revalidatePath("/dashboard/communication");
     return {};

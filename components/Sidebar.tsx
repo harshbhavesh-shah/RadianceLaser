@@ -21,6 +21,7 @@ import {
   UserX,
   Boxes,
   PhoneCall,
+  Inbox,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
@@ -46,6 +47,7 @@ const NAV_ITEMS: {
   { label: "Inventory", href: "/dashboard/inventory", icon: Boxes },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Communication", href: "/dashboard/communication", icon: MessageCircle },
+  { label: "Inbox", href: "/dashboard/inbox", icon: Inbox },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

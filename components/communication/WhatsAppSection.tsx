@@ -25,12 +25,13 @@ export default function WhatsAppSection({
   const [bhashUser, setBhashUser] = useState(connection?.bhashUser || "");
   const [bhashPass, setBhashPass] = useState("");
   const [senderId, setSenderId] = useState(connection?.senderId || "");
+  const [phoneNumber, setPhoneNumber] = useState(connection?.phoneNumber || "");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await connectWhatsAppAction(bhashUser.trim(), bhashPass.trim(), senderId.trim());
+    const result = await connectWhatsAppAction(bhashUser.trim(), bhashPass.trim(), senderId.trim(), phoneNumber.trim());
     setBusy(false);
     if (result.error) {
       setError(result.error);
@@ -42,6 +43,7 @@ export default function WhatsAppSection({
       status: "connected",
       bhashUser: bhashUser.trim(),
       senderId: senderId.trim(),
+      ...(phoneNumber.trim() ? { phoneNumber: phoneNumber.trim() } : {}),
       updatedAt: Date.now(),
     });
     setBhashPass("");
@@ -135,6 +137,20 @@ export default function WhatsAppSection({
               required
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-brown-700">
+              WhatsApp Number <span className="text-brown-400">(optional)</span>
+            </label>
+            <input
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="e.g. +919876543210"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+            />
+            <p className="mt-1 text-xs text-brown-400">
+              The clinic's own WhatsApp Business number — needed so patient replies land in your Inbox.
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button

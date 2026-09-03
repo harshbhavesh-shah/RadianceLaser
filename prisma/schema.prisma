@@ -647,11 +647,57 @@ model WhatsAppConnection {
   bhashUser   String
   bhashPass   String?
   senderId    String
+  // The clinic's own WhatsApp Business number (E.164, e.g.
+  // "+919876543210") — needed to route an inbound webhook event to the
+  // right clinic, since one shared webhook endpoint receives traffic for
+  // every clinic's number. Optional because it wasn't captured before
+  // inbound messaging existed; a clinic connected before this field
+  // existed just can't receive inbound messages until they re-save it.
+  phoneNumber String?
   lastError   String?
   connectedAt BigInt?
   updatedAt   BigInt
 
   @@map("whatsappConnections")
+}
+
+// A patient's WhatsApp conversation — one thread per distinct phone number
+// per clinic, whether or not it currently matches a Patient record
+// (patientId/patientName are best-effort links, not required). See
+// lib/whatsapp/types.ts for the provider-agnostic contract that feeds
+// this: no model here assumes a specific BSP's payload shape.
+model WhatsAppConversation {
+  id                 String  @id @default(cuid())
+  clinicId           String
+  patientId          String?
+  patientName        String?
+  phoneNumber        String
+  lastMessagePreview String
+  lastMessageAt      BigInt
+  unreadCount        Int     @default(0)
+  updatedAt          BigInt
+  messages           WhatsAppMessage[]
+
+  @@unique([clinicId, phoneNumber])
+  @@index([clinicId, lastMessageAt])
+  @@map("whatsappConversations")
+}
+
+model WhatsAppMessage {
+  id                String               @id @default(cuid())
+  clinicId          String
+  conversationId     String
+  conversation      WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction         String // "inbound" | "outbound"
+  body              String
+  status            String // "queued" | "sent" | "delivered" | "read" | "failed"
+  templateId        String?
+  providerMessageId String? // whichever BSP sent/received it, their own reference for the message
+  createdAt         BigInt
+
+  @@index([clinicId])
+  @@index([conversationId, createdAt])
+  @@map("whatsappMessages")
 }
 
 // A perishable/consumable stock item — vials, numbing cream, needles,
