@@ -1,11 +1,10 @@
 import "server-only";
-import { computePackageLedger, todayLocalStr } from "@/lib/packages";
+import { todayLocalStr } from "@/lib/packages";
 import { timeToMinutes } from "@/lib/calendar";
-import { feeOf } from "@/lib/analytics";
-import type { Appointment, Package, Patient, Receipt, Visit } from "@/types";
+import type { Appointment, Patient, Receipt, Visit } from "@/types";
 
-/** Today's appointments, earliest first — the spine of the Overview
- * "command center": everyone (doctor, owner, reception) starts their day by
+/** Today's appointments, earliest first — the spine of the Dashboard's
+ * Today section: everyone (doctor, owner, reception) starts their day by
  * looking at this same list, just with different actions available around it. */
 export function computeTodayAppointments(appointments: Appointment[], todayStr: string = todayLocalStr()): Appointment[] {
   return [...appointments]
@@ -23,59 +22,13 @@ export interface OverviewAlert {
   href: string;
 }
 
-const EXPIRY_WARNING_DAYS = 14;
-const LOW_SESSIONS_THRESHOLD = 2;
-
-/** Active packages worth flagging on Overview: running low on sessions, or
- * expiring soon — both are "someone needs to follow up with this patient"
- * situations, which is exactly what a morning glance should surface. */
-export function computePackageAlerts(
-  packages: Package[],
-  visits: Visit[],
-  patientsById: Map<string, Patient>,
-  todayStr: string = todayLocalStr()
-): OverviewAlert[] {
-  const warningCutoff = new Date(`${todayStr}T00:00:00`);
-  warningCutoff.setDate(warningCutoff.getDate() + EXPIRY_WARNING_DAYS);
-  const warningCutoffStr = `${warningCutoff.getFullYear()}-${String(warningCutoff.getMonth() + 1).padStart(2, "0")}-${String(warningCutoff.getDate()).padStart(2, "0")}`;
-
-  const alerts: OverviewAlert[] = [];
-
-  for (const pkg of packages) {
-    const patientVisits = visits.filter((v) => v.patientId === pkg.patientId);
-    const ledger = computePackageLedger(pkg, patientVisits);
-    if (ledger.status !== "active") continue;
-
-    const patientName = patientsById.get(pkg.patientId)?.name || "Unknown patient";
-    const href = `/dashboard/patients/${pkg.patientId}`;
-
-    if (pkg.expiryDate && pkg.expiryDate <= warningCutoffStr) {
-      alerts.push({
-        kind: "package-expiring",
-        patientId: pkg.patientId,
-        patientName,
-        detail: `${pkg.label} expires ${pkg.expiryDate}`,
-        href,
-      });
-    } else if (ledger.sessionsRemaining <= LOW_SESSIONS_THRESHOLD) {
-      alerts.push({
-        kind: "package-low",
-        patientId: pkg.patientId,
-        patientName,
-        detail: `${pkg.label} — ${ledger.sessionsRemaining} session${ledger.sessionsRemaining === 1 ? "" : "s"} left`,
-        href,
-      });
-    }
-  }
-
-  return alerts;
-}
-
 /** Visits with a follow-up date that's due (today or earlier) — the
  * "someone needs to check back with this patient" reminder set from
  * VisitFormModal. One alert per patient (their soonest-due follow-up, in
  * case more than one is somehow overdue at once), so this list doesn't
- * grow unbounded for a patient who's overdue on several old visits. */
+ * grow unbounded for a patient who's overdue on several old visits.
+ * Currently unused by any page — kept as a ready-made building block for
+ * whenever clinic-side (not patient-care) alerting gets a home again. */
 export function computeFollowUpAlerts(
   visits: Visit[],
   patientsById: Map<string, Patient>,
@@ -128,89 +81,4 @@ export function computeAppointmentPipelineMaps(visits: Visit[], receipts: Receip
     if (r.appointmentId) receiptedAppointmentIds[r.appointmentId] = true;
   }
   return { visitIdByAppointmentId, receiptedAppointmentIds };
-}
-
-export interface TodayGlance {
-  total: number;
-  completed: number;
-  remaining: number;
-  cancelled: number;
-}
-
-/** Today's appointments broken down by where they stand: done, still to
- * come, or cancelled/no-show. Backs the "Today at a Glance" stat strip. */
-export function computeTodayGlance(todayAppointments: Appointment[]): TodayGlance {
-  let completed = 0;
-  let cancelled = 0;
-  for (const a of todayAppointments) {
-    if (a.status === "completed") completed++;
-    else if (a.status === "cancelled" || a.status === "no-show") cancelled++;
-  }
-  return {
-    total: todayAppointments.length,
-    completed,
-    cancelled,
-    remaining: todayAppointments.length - completed - cancelled,
-  };
-}
-
-export interface CashPosition {
-  cash: number;
-  online: number;
-  unspecified: number;
-  total: number;
-}
-
-/** Money collected on one date, visit fees plus package purchases, split
- * by payment method. Backs the owner-only "Cash Position" stat strip. */
-export function computeCashPosition(visits: Visit[], packages: Package[], dateStr: string): CashPosition {
-  let cash = 0;
-  let online = 0;
-  let unspecified = 0;
-
-  for (const v of visits) {
-    if (v.date !== dateStr) continue;
-    const fee = feeOf(v);
-    if (fee === 0) continue;
-    if (v.paymentMethod === "cash") cash += fee;
-    else if (v.paymentMethod === "online") online += fee;
-    else unspecified += fee;
-  }
-  for (const p of packages) {
-    if (p.purchaseDate !== dateStr) continue;
-    if (p.paymentMethod === "cash") cash += p.totalAmount;
-    else if (p.paymentMethod === "online") online += p.totalAmount;
-    else unspecified += p.totalAmount;
-  }
-
-  return { cash, online, unspecified, total: cash + online + unspecified };
-}
-
-/** Patients with a contraindication note who are coming in today — a
- * clinically relevant heads-up that's easy to miss buried on the patient
- * record, but matters most exactly on the day they're being treated. */
-export function computeContraindicationAlerts(
-  todayAppointments: Appointment[],
-  patientsById: Map<string, Patient>
-): OverviewAlert[] {
-  const alerts: OverviewAlert[] = [];
-  const seen = new Set<string>();
-
-  for (const appt of todayAppointments) {
-    // No patientId means this is still an unlinked public booking (see
-    // types/index.ts Appointment.patientId) — nothing to look up yet.
-    if (!appt.patientId || seen.has(appt.patientId)) continue;
-    const patient = patientsById.get(appt.patientId);
-    if (!patient?.contraindications) continue;
-    seen.add(appt.patientId);
-    alerts.push({
-      kind: "contraindication",
-      patientId: appt.patientId,
-      patientName: patient.name,
-      detail: patient.contraindications,
-      href: `/dashboard/patients/${appt.patientId}`,
-    });
-  }
-
-  return alerts;
 }

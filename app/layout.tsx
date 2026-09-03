@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Fraunces, Inter, Manrope } from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -14,6 +14,15 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+// Marketing-only headline face (public site: app/page.tsx and the shared
+// SiteHeader). Kept separate from --font-fraunces, which the dashboard's
+// font-display class still uses everywhere else in the app.
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  weight: ["500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
   title: "RadianceLaser",
   description: "Multi-tenant clinic management platform",
@@ -21,7 +30,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${inter.variable} ${manrope.variable}`}>
       <body className="bg-canvas font-sans text-brown-900 antialiased">{children}</body>
     </html>
   );

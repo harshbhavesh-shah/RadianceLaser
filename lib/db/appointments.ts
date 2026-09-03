@@ -35,9 +35,18 @@ export async function getClinicAppointments(clinicId: string): Promise<Appointme
   return rows.map(toAppointment);
 }
 
-/** Just one day's appointments — backs Dashboard's "Today's Schedule". */
+/** Just one day's appointments — backs Dashboard's "Today's Appointments". */
 export async function getAppointmentsForDate(clinicId: string, dateStr: string): Promise<Appointment[]> {
   const rows = await prisma.appointment.findMany({ where: { clinicId, date: dateStr } });
+  return rows.map(toAppointment);
+}
+
+/** Appointments within an inclusive date range — backs Dashboard's "This
+ * Week" section. */
+export async function getAppointmentsInRange(clinicId: string, startDateStr: string, endDateStr: string): Promise<Appointment[]> {
+  const rows = await prisma.appointment.findMany({
+    where: { clinicId, date: { gte: startDateStr, lte: endDateStr } },
+  });
   return rows.map(toAppointment);
 }
 

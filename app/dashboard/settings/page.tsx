@@ -13,7 +13,6 @@ import MachineTypesSection from "@/components/settings/MachineTypesSection";
 import AreaDefsSection from "@/components/settings/AreaDefsSection";
 import PatientImportSection from "@/components/settings/PatientImportSection";
 import VisitImportSection from "@/components/settings/VisitImportSection";
-import PreferencesSection from "@/components/settings/PreferencesSection";
 import BillingSection from "@/components/settings/BillingSection";
 import TwoFactorSection from "@/components/settings/TwoFactorSection";
 import ReplayTourSection from "@/components/settings/ReplayTourSection";
@@ -76,8 +75,6 @@ export default async function SettingsPage() {
         <PatientImportSection canEdit={isOwner} />
 
         <VisitImportSection canEdit={isOwner} />
-
-        <PreferencesSection initialWindow={clinic?.statsWindow || "today"} isOwner={isOwner} />
       </div>
     </div>
   );

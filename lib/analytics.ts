@@ -1,29 +1,9 @@
 import "server-only";
-import type { Package, Patient, SessionType, StatsWindow, Visit } from "@/types";
+import type { Package, SessionType, Visit } from "@/types";
 
 export function todayLocalStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function isOnOrAfterLocalDate(epochMs: number, dateStr: string): boolean {
-  return epochMs >= new Date(`${dateStr}T00:00:00`).getTime();
-}
-
-/** Start date (inclusive, YYYY-MM-DD) of the given window, ending today.
- * Exported so callers can scope a Firestore query to exactly this range
- * (see getClinicVisitsSince in lib/db/visits.ts) instead of fetching
- * a clinic's entire visit history and filtering down in memory. */
-export function windowStartStr(window: StatsWindow): string {
-  const now = new Date();
-  if (window === "today") return todayLocalStr();
-  if (window === "week") {
-    const start = new Date(now);
-    start.setDate(start.getDate() - start.getDay()); // Sunday start, matches lib/calendar.ts
-    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
-  }
-  // month
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 export function feeOf(visit: Visit): number {
@@ -33,72 +13,6 @@ export function feeOf(visit: Visit): number {
   // double-counting; it just naturally contributes nothing.
   const fee = visit.fields?.fee;
   return typeof fee === "number" ? fee : Number(fee) || 0;
-}
-
-export interface WindowStats {
-  window: StatsWindow;
-  visitsInWindow: number;
-  newPatientsInWindow: number;
-  revenueInWindow: number;
-  totalPatients: number;
-}
-
-/**
- * The stats every role sees, regardless of permissions — a snapshot over
- * the clinic's configured window (Settings → Dashboard Preferences),
- * defaulting to "today" if never set.
- */
-export function computeWindowStats(
-  patients: Patient[],
-  visits: Visit[],
-  packages: Package[] = [],
-  window: StatsWindow = "today"
-): WindowStats {
-  const startStr = windowStartStr(window);
-  const visitsInWindow = visits.filter((v) => v.date >= startStr);
-  const newPatientsInWindow = patients.filter((p) => isOnOrAfterLocalDate(p.createdAt, startStr));
-  const packagesInWindow = packages.filter((p) => p.purchaseDate >= startStr);
-
-  return {
-    window,
-    visitsInWindow: visitsInWindow.length,
-    newPatientsInWindow: newPatientsInWindow.length,
-    revenueInWindow:
-      visitsInWindow.reduce((sum, v) => sum + feeOf(v), 0) +
-      packagesInWindow.reduce((sum, p) => sum + p.totalAmount, 0),
-    totalPatients: patients.length,
-  };
-}
-
-export interface RecentActivityItem {
-  visitId: string;
-  patientId: string;
-  patientName: string;
-  sessionType: SessionType;
-  date: string;
-  fee: number;
-  createdAt: number;
-}
-
-/** Most recently *entered* visits (not most recent visit date) — reflects
- * actual system activity, so a backdated entry doesn't jump the queue. */
-export function computeRecentActivity(
-  visits: Visit[],
-  patientsById: Map<string, Patient>,
-  limit = 8
-): RecentActivityItem[] {
-  return [...visits]
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, limit)
-    .map((v) => ({
-      visitId: v.id,
-      patientId: v.patientId,
-      patientName: patientsById.get(v.patientId)?.name || "Unknown patient",
-      sessionType: v.sessionType,
-      date: v.date,
-      fee: feeOf(v),
-      createdAt: v.createdAt,
-    }));
 }
 
 export interface MonthlyRevenue {

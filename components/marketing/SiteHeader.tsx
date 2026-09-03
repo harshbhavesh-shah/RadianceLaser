@@ -6,89 +6,45 @@ import { useEffect, useState } from "react";
 
 // Always "/#..." rather than a bare "#..." so these still work from a page
 // other than home (e.g. /compliance) — clicking one navigates home and lets
-// the browser's native hash-scroll take it from there, instead of doing
-// nothing because there's no matching id on the current page.
+// the browser's native hash-scroll take it from there.
 const NAV_LINKS = [
-  { href: "/#security", label: "Data & Security" },
-  { href: "/#features", label: "Features" },
-  { href: "/#import", label: "Switch to Radiance" },
+  { href: "/#product", label: "Product" },
+  { href: "/#security", label: "Security" },
   { href: "/#pricing", label: "Pricing" },
 ];
 
-/** Sticky site header. Sits flush against the hero at rest (no background
- * of its own, so it reads as part of the page) — but the home page's hero
- * is a dark warm-brown panel (see app/page.tsx), so "at rest" there also
- * means light-colored text/button, not the dark-on-canvas styling used
- * everywhere else on the site. Past a small scroll threshold (i.e. once
- * the canvas-colored content below the hero is what's actually behind the
- * bar) it flips to a frosted-glass canvas background with the normal dark
- * text, same as before. Pages with no dark hero of their own (e.g.
- * /compliance) pass `forceSolid` to skip the light state entirely — there's
- * no dark backdrop for light-on-dark text to sit on at the top of those.
- *
- * Layout is a 3-column grid (title / nav / actions) rather than
- * space-between flex, specifically so the nav links land dead-center in
- * the bar instead of merely centered in the leftover space next to the
- * title — the two only coincide when the title and actions happen to be
- * the same width. Below md, the center column becomes a hamburger toggle
- * for the same links instead of disappearing outright. */
-export default function SiteHeader({ forceSolid = false }: { forceSolid?: boolean }) {
-  const [scrolled, setScrolled] = useState(forceSolid);
+/** Sticky site header, one visual state throughout. The old version
+ * flipped between a light-on-dark style at rest and a dark-on-light style
+ * once scrolled, tied to the home page's dark hero. The hero is gone, so
+ * the header just stays dark-on-light everywhere, on every page — a plain
+ * border and a solid canvas background instead of a mode switch. `forceSolid`
+ * stays as a prop for callers, but it's now a no-op kept for compatibility. */
+export default function SiteHeader({ forceSolid: _forceSolid = false }: { forceSolid?: boolean }) {
+  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (forceSolid) return;
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [forceSolid]);
-
-  // Only "light" (white-on-dark) at the very top of a page with a dark
-  // hero behind it, with the menu closed — any time the frosted canvas
-  // background is showing instead (or there's no dark hero to begin with),
-  // text goes back to the normal dark-on-light styling used everywhere
-  // else.
-  const light = !forceSolid && !scrolled && !menuOpen;
+  }, []);
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled || menuOpen
-          ? "border-b border-brown-900/10 bg-canvas/75 shadow-sm backdrop-blur-md"
-          : "border-b border-transparent bg-transparent"
+      className={`sticky top-0 z-50 border-b bg-canvas/90 backdrop-blur-md transition-shadow duration-200 ${
+        scrolled || menuOpen ? "border-beige-300 shadow-soft" : "border-transparent"
       }`}
     >
       <div className="mx-auto grid h-16 max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">
-        {/* Fraunces (the display serif) and Inter (everything else) don't
-            share a baseline position at the same line-box center — measured
-            in the browser, Fraunces sits ~2px low relative to Inter at
-            these sizes, which reads as "off" once you look closely even
-            though the boxes are centered correctly. Nudging it up those
-            2px lines the two typefaces up on a shared baseline instead of
-            just a shared box-center. */}
-        <Link
-          href="/"
-          className={`-translate-y-[2px] font-display text-lg font-medium leading-none transition-colors duration-300 sm:text-xl ${
-            light ? "text-white" : "text-brown-900"
-          }`}
-        >
-          RadianceLaser
+        <Link href="/" className="font-brand text-lg font-extrabold tracking-tight text-brown-900 sm:text-xl">
+          Radiance<span className="text-gold-600">Laser</span>
         </Link>
 
-        <nav
-          className={`hidden items-center justify-center gap-6 text-sm font-medium leading-none transition-colors duration-300 md:flex ${
-            light ? "text-beige-300" : "text-brown-600"
-          }`}
-        >
+        <nav className="hidden items-center justify-center gap-7 text-sm font-medium text-brown-600 md:flex">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={`group relative py-1 transition-colors ${light ? "hover:text-gold-400" : "hover:text-gold-600"}`}
-            >
+            <a key={link.href} href={link.href} className="transition-colors hover:text-brown-900">
               {link.label}
-              <span className="absolute inset-x-0 -bottom-0.5 h-px scale-x-0 bg-gold-500 transition-transform duration-300 ease-out group-hover:scale-x-100" />
             </a>
           ))}
         </nav>
@@ -99,44 +55,41 @@ export default function SiteHeader({ forceSolid = false }: { forceSolid?: boolea
             onClick={() => setMenuOpen((open) => !open)}
             aria-expanded={menuOpen}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
-            className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors duration-300 md:hidden ${
-              light ? "text-white hover:bg-white/10" : "text-brown-700 hover:bg-brown-900/5"
-            }`}
+            className="flex h-9 w-9 items-center justify-center rounded-md text-brown-700 transition-colors hover:bg-brown-900/5 md:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
           <Link
             href="/login"
-            className={`whitespace-nowrap text-sm font-medium leading-none transition-colors duration-300 ${
-              light ? "text-beige-200 hover:text-gold-400" : "text-brown-700 hover:text-gold-600"
-            }`}
+            className="hidden whitespace-nowrap text-sm font-medium text-brown-700 transition-colors hover:text-brown-900 sm:block"
           >
-            Log In
+            Log in
           </Link>
           <Link
             href="/signup"
-            className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-semibold leading-none transition-all duration-150 active:scale-95 sm:px-4 sm:text-sm ${
-              light ? "bg-gold-500 text-brown-900 hover:bg-gold-400" : "bg-brown-900 text-beige-200 hover:bg-gold-600"
-            }`}
+            className="whitespace-nowrap rounded-md bg-brown-900 px-3 py-2 text-xs font-semibold text-beige-100 transition-colors hover:bg-gold-600 sm:px-4 sm:text-sm"
           >
-            <span className="sm:hidden">Start Trial</span>
-            <span className="hidden sm:inline">Start Free Trial</span>
+            <span className="sm:hidden">Start trial</span>
+            <span className="hidden sm:inline">Start free trial</span>
           </Link>
         </div>
       </div>
 
       {menuOpen && (
-        <nav className="flex flex-col gap-1 border-t border-brown-900/10 px-4 py-3 text-sm font-medium text-brown-700 md:hidden">
+        <nav className="flex flex-col gap-1 border-t border-beige-300 px-4 py-3 text-sm font-medium text-brown-700 md:hidden">
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="rounded-md px-2 py-2 transition-colors hover:bg-brown-900/5 hover:text-gold-600"
+              className="rounded-md px-2 py-2 transition-colors hover:bg-brown-900/5 hover:text-brown-900"
             >
               {link.label}
             </a>
           ))}
+          <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-md px-2 py-2 hover:bg-brown-900/5">
+            Log in
+          </Link>
         </nav>
       )}
     </header>

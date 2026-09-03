@@ -37,6 +37,8 @@ const config: Config = {
       fontFamily: {
         display: ["var(--font-fraunces)", "serif"],
         sans: ["var(--font-inter)", "sans-serif"],
+        // Public marketing site only — see app/page.tsx and SiteHeader.
+        brand: ["var(--font-manrope)", "sans-serif"],
       },
       boxShadow: {
         soft: "0 2px 12px -2px rgba(44, 29, 20, 0.08)",

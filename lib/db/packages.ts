@@ -38,6 +38,14 @@ export async function getClinicPackages(clinicId: string): Promise<Package[]> {
   return rows.map(toPackage);
 }
 
+/** Packages purchased on or after a date — backs Dashboard's revenue
+ * figure, which only needs this month's purchases, not the clinic's whole
+ * package history. */
+export async function getPackagesPurchasedSince(clinicId: string, sinceDateStr: string): Promise<Package[]> {
+  const rows = await prisma.package.findMany({ where: { clinicId, purchaseDate: { gte: sinceDateStr } } });
+  return rows.map(toPackage);
+}
+
 export interface CreatePackageInput {
   clinicId: string;
   patientId: string;

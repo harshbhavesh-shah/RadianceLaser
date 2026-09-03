@@ -7,10 +7,9 @@ import {
   clinicCacheTag,
   updateClinicName as updateClinicNameInDb,
   updateClinicAddress as updateClinicAddressInDb,
-  updateStatsWindow as updateStatsWindowInDb,
 } from "@/lib/db/clinics";
 import { createStaffMember, updateStaffRole as updateStaffRoleInDb, removeStaffMember as removeStaffMemberInDb, updateStaffFlags } from "@/lib/db/staff";
-import type { StaffMember, StatsWindow, UserRole } from "@/types";
+import type { StaffMember, UserRole } from "@/types";
 
 async function requireOwner() {
   const session = await getSession();
@@ -143,19 +142,6 @@ export async function updateClinicAddress(address: string): Promise<{ error?: st
   } catch (err) {
     console.error("Failed to update clinic address:", err);
     return { error: "Couldn't update the clinic address." };
-  }
-}
-
-export async function updateStatsWindow(window: StatsWindow): Promise<{ error?: string }> {
-  try {
-    const session = await requireOwner();
-    await updateStatsWindowInDb(session.clinicId, window);
-    revalidateTag(clinicCacheTag(session.clinicId));
-    revalidatePath("/dashboard");
-    return {};
-  } catch (err) {
-    console.error("Failed to update stats window:", err);
-    return { error: "Couldn't update this preference." };
   }
 }
 

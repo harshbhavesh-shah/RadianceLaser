@@ -89,10 +89,6 @@ export async function updateClinicAddress(clinicId: string, address: string): Pr
   await prisma.clinic.update({ where: { id: clinicId }, data: { address } });
 }
 
-export async function updateStatsWindow(clinicId: string, statsWindow: StatsWindow): Promise<void> {
-  await prisma.clinic.update({ where: { id: clinicId }, data: { statsWindow } });
-}
-
 export interface UpdateSubscriptionInput {
   subscriptionStatus: SubscriptionStatus;
   trialEndsAt?: number;
