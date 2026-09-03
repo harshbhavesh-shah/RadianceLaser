@@ -653,3 +653,48 @@ model WhatsAppConnection {
 
   @@map("whatsappConnections")
 }
+
+// A perishable/consumable stock item — vials, numbing cream, needles,
+// gauze. `quantity` is a running total updated atomically alongside every
+// InventoryLog write, not recomputed from the log on read — cheap to
+// display, same "balance + transaction history" shape as a bank account.
+model InventoryItem {
+  id               String   @id @default(cuid())
+  clinicId         String
+  name             String
+  category         String?
+  unit             String
+  quantity         Int      @default(0)
+  reorderThreshold Int?
+  expiryDate       String? // YYYY-MM-DD
+  batchNumber      String?
+  supplier         String?
+  costPerUnit      Float?
+  notes            String?
+  createdAt        BigInt
+  updatedAt        BigInt
+  logs             InventoryLog[]
+
+  @@index([clinicId])
+  @@map("inventoryItems")
+}
+
+// One stock adjustment against an InventoryItem: a restock ("in") or a
+// use/waste/correction ("out"). Append-only — never edited or deleted —
+// so it stays a real audit trail, not just a running count.
+model InventoryLog {
+  id        String        @id @default(cuid())
+  clinicId  String
+  itemId    String
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type      String // "in" | "out"
+  delta     Int // always positive; sign is implied by `type`
+  note      String?
+  actorUid  String
+  actorName String
+  createdAt BigInt
+
+  @@index([clinicId])
+  @@index([itemId, createdAt])
+  @@map("inventoryLogs")
+}

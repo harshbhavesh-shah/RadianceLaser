@@ -34,47 +34,56 @@ export default async function SettingsPage() {
   const currentStaff = staff.find((s) => s.uid === session.uid);
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-6xl">
       <h1 className="font-display text-2xl font-medium text-brown-900">Settings</h1>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
-      <div className="space-y-6">
-        <ClinicProfileSection
-          initialName={clinic?.name || ""}
-          initialAddress={clinic?.address || ""}
-          isOwner={isOwner}
-        />
+      {/* Two columns grouped by theme rather than one long stack of ten
+          identical-width cards — account/identity on the left, clinic
+          configuration on the right. Each column sizes to its own content
+          (items-start), so a short card in one column doesn't force
+          matching whitespace in the other. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="space-y-6">
+          <ClinicProfileSection
+            initialName={clinic?.name || ""}
+            initialAddress={clinic?.address || ""}
+            isOwner={isOwner}
+          />
 
-        <BillingSection
-          access={access}
-          isOwner={isOwner}
-          clinicName={clinic?.name || "Your Clinic"}
-          ownerEmail={session.email || ""}
-          payments={payments}
-        />
+          <BillingSection
+            access={access}
+            isOwner={isOwner}
+            clinicName={clinic?.name || "Your Clinic"}
+            ownerEmail={session.email || ""}
+            payments={payments}
+          />
 
-        <StaffSection initialStaff={staff} currentUid={session.uid} isOwner={isOwner} />
+          <StaffSection initialStaff={staff} currentUid={session.uid} isOwner={isOwner} />
 
-        <TwoFactorSection
-          initialEnabled={currentStaff?.twoFactorEnabled === true}
-          email={session.email || ""}
-        />
+          <TwoFactorSection
+            initialEnabled={currentStaff?.twoFactorEnabled === true}
+            email={session.email || ""}
+          />
 
-        <ReplayTourSection role={session.role} />
+          <ReplayTourSection role={session.role} />
+        </div>
 
-        <MachineTypesSection
-          clinicId={session.clinicId}
-          initialSessionTypeDefs={sessionTypeDefs}
-          canEdit={isOwner}
-        />
+        <div className="space-y-6">
+          <MachineTypesSection
+            clinicId={session.clinicId}
+            initialSessionTypeDefs={sessionTypeDefs}
+            canEdit={isOwner}
+          />
 
-        <AreaDefsSection canEdit={isOwner} />
+          <AreaDefsSection canEdit={isOwner} />
 
-        <MachinesSection clinicId={session.clinicId} initialMachines={machines} canEdit={isOwner} />
+          <MachinesSection clinicId={session.clinicId} initialMachines={machines} canEdit={isOwner} />
 
-        <PatientImportSection canEdit={isOwner} />
+          <PatientImportSection canEdit={isOwner} />
 
-        <VisitImportSection canEdit={isOwner} />
+          <VisitImportSection canEdit={isOwner} />
+        </div>
       </div>
     </div>
   );

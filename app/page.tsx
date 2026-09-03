@@ -232,6 +232,10 @@ export default async function HomePage() {
           © {new Date().getFullYear()} RadianceLaser ·{" "}
           <Link href="/compliance" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
             Data hosted in India, DPDP Act 2023 compliant
+          </Link>{" "}
+          ·{" "}
+          <Link href="/contact" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+            Contact us
           </Link>
         </p>
         <p className="mt-1">Udyam Registered: UDYAM-GJ-20-0310289 · Medical Advisor: Dr. Bhavesh Shah</p>

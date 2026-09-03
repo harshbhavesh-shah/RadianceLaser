@@ -35,7 +35,7 @@ export default async function DocumentsPage({
   const currentName = currentStaff?.name || session.email || "Staff";
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-6xl">
       <h1 className="font-display text-2xl font-medium text-brown-900">Documents</h1>
       <p className="mt-2 text-sm text-brown-400">Consent forms and patient receipts, in one place.</p>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />

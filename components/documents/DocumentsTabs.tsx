@@ -56,7 +56,7 @@ export default function DocumentsTabs({
 
   return (
     <div>
-      <div className="mb-6 flex gap-1 rounded-lg bg-beige-200/60 p-1">
+      <div className="mb-6 flex max-w-xs gap-1 rounded-lg bg-beige-200/60 p-1">
         {TABS.map((t) => (
           <button
             key={t.key}

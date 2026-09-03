@@ -643,3 +643,42 @@ export interface WhatsAppMessage extends TenantScoped {
   providerMessageId?: string; // BhashSMS's response id/reference for this send, if any
   createdAt: number;
 }
+
+// A perishable/consumable stock item a clinic tracks — vials, numbing
+// cream, needles, gauze, anything with a shelf life or a reorder point.
+// `quantity` is a stored running total kept in sync with InventoryLog
+// entries as they're recorded, not recomputed from them on every read
+// (see lib/db/inventory.ts) — same "snapshot + append-only log" shape as
+// a bank balance and its transaction history.
+export interface InventoryItem extends TenantScoped {
+  id: string;
+  name: string;
+  category?: string;
+  unit: string; // e.g. "vials", "boxes", "ml" — free text, clinic's own call
+  quantity: number;
+  reorderThreshold?: number; // alert once quantity falls at or below this
+  expiryDate?: string; // YYYY-MM-DD; absent for a non-perishable consumable kept on the same list
+  batchNumber?: string;
+  supplier?: string;
+  costPerUnit?: number;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type InventoryLogType = "in" | "out";
+
+// One stock adjustment against an InventoryItem: a restock ("in") or a
+// use/waste/correction ("out"). Append-only, never edited or deleted, so
+// it stays a real audit trail for perishables — useful if a supplier
+// issues a batch recall, not just a stock count.
+export interface InventoryLog extends TenantScoped {
+  id: string;
+  itemId: string;
+  type: InventoryLogType;
+  delta: number; // always positive; sign is implied by `type`
+  note?: string;
+  actorUid: string;
+  actorName: string;
+  createdAt: number;
+}

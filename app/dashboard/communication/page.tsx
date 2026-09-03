@@ -27,32 +27,40 @@ export default async function CommunicationPage() {
   const redactedConnection = whatsappConnection ? { ...whatsappConnection, bhashPass: undefined } : null;
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-6xl">
       <h1 className="font-display text-2xl font-medium text-brown-900">Communication</h1>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
-      <div className="space-y-6">
-        <WhatsAppSection initialConnection={redactedConnection} canEdit={isOwner} />
+      {/* Main column carries the two things worth reading at length —
+          templates and patient feedback. The connection form and the
+          automation toggles are both short, settings-shaped controls, so
+          they sit in a narrower sidebar instead of stretching to match the
+          main column's width for no reason. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
+        <div className="space-y-6">
+          <MessageTemplatesSection
+            initialTemplates={messageTemplates}
+            isConnected={isConnected}
+            canEdit={isOwner}
+          />
+          <FeedbackResultsSection feedback={visitFeedback} />
+        </div>
 
-        <MessageTemplatesSection
-          initialTemplates={messageTemplates}
-          isConnected={isConnected}
-          canEdit={isOwner}
-        />
+        <div className="space-y-6">
+          <WhatsAppSection initialConnection={redactedConnection} canEdit={isOwner} />
 
-        <ScheduledMessagesSection
-          initialClinic={{
-            reminderEnabled: clinic?.reminderEnabled ?? false,
-            reminderHoursBefore: clinic?.reminderHoursBefore ?? 24,
-            feedbackSurveyEnabled: clinic?.feedbackSurveyEnabled ?? false,
-            feedbackSurveyDelayHours: clinic?.feedbackSurveyDelayHours ?? 3,
-          }}
-          templates={messageTemplates}
-          isConnected={isConnected}
-          canEdit={isOwner}
-        />
-
-        <FeedbackResultsSection feedback={visitFeedback} />
+          <ScheduledMessagesSection
+            initialClinic={{
+              reminderEnabled: clinic?.reminderEnabled ?? false,
+              reminderHoursBefore: clinic?.reminderHoursBefore ?? 24,
+              feedbackSurveyEnabled: clinic?.feedbackSurveyEnabled ?? false,
+              feedbackSurveyDelayHours: clinic?.feedbackSurveyDelayHours ?? 3,
+            }}
+            templates={messageTemplates}
+            isConnected={isConnected}
+            canEdit={isOwner}
+          />
+        </div>
       </div>
     </div>
   );

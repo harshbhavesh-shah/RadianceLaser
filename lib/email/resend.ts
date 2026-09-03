@@ -29,7 +29,7 @@ function getClient(): Resend {
  * to clinic staff needs a verified domain configured in the Resend
  * dashboard and RESEND_FROM_EMAIL set to an address on it.
  */
-export async function sendEmail(input: { to: string; subject: string; html: string }): Promise<void> {
+export async function sendEmail(input: { to: string; subject: string; html: string; replyTo?: string }): Promise<void> {
   const from = process.env.RESEND_FROM_EMAIL || "RadianceLaser <onboarding@resend.dev>";
 
   const { error } = await getClient().emails.send({
@@ -37,6 +37,7 @@ export async function sendEmail(input: { to: string; subject: string; html: stri
     to: input.to,
     subject: input.subject,
     html: input.html,
+    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
   });
 
   if (error) {

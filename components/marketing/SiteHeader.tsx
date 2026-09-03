@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/#product", label: "Product" },
   { href: "/#security", label: "Security" },
   { href: "/#pricing", label: "Pricing" },
+  { href: "/contact", label: "Contact" },
 ];
 
 /** Sticky site header, one visual state throughout. The old version

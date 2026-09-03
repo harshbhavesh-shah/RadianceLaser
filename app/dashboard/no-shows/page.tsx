@@ -32,26 +32,32 @@ export default async function NoShowsPage() {
   const isConnected = connection?.status === "connected";
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-6xl">
       <h1 className="font-display text-2xl font-medium text-brown-900">No Shows</h1>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
       <div className="space-y-6">
         <NoShowStatsStrip stats={stats} trend={trend} />
 
-        <FollowUpsSection
-          initialFollowUps={followUps}
-          templates={templates}
-          isConnected={isConnected}
-          canEdit={isOwner}
-        />
+        {/* Main column is the actual list of who no-showed — the thing
+            worth scanning day to day. Configuring the follow-up rules is a
+            settings-shaped task by comparison, so it sits in a narrower
+            sidebar instead of stretching to match. */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
+          <NoShowList
+            appointments={recentNoShows}
+            followUps={followUps}
+            messageLog={messageLog}
+            surveyResponses={surveyResponses}
+          />
 
-        <NoShowList
-          appointments={recentNoShows}
-          followUps={followUps}
-          messageLog={messageLog}
-          surveyResponses={surveyResponses}
-        />
+          <FollowUpsSection
+            initialFollowUps={followUps}
+            templates={templates}
+            isConnected={isConnected}
+            canEdit={isOwner}
+          />
+        </div>
       </div>
     </div>
   );

@@ -83,6 +83,18 @@ export async function getVisitsWithDueFollowUps(clinicId: string, todayStr: stri
   return rows.map(toVisit);
 }
 
+/** Visits whose follow-up date falls within an inclusive range — backs
+ * the Follow-Ups page's Today/Tomorrow lists. Unlike
+ * getVisitsWithDueFollowUps above, this is a strict window, not
+ * "due or overdue" — a follow-up whose date has already passed without
+ * this range catching it simply won't appear here. */
+export async function getVisitsWithFollowUpBetween(clinicId: string, startDateStr: string, endDateStr: string): Promise<Visit[]> {
+  const rows = await prisma.visit.findMany({
+    where: { clinicId, followUpDate: { gte: startDateStr, lte: endDateStr } },
+  });
+  return rows.map(toVisit);
+}
+
 /** Every visit redeemed against one package — exactly what
  * computePackageLedger (lib/packages.ts) actually needs. */
 export async function getVisitsByPackageId(clinicId: string, packageId: string): Promise<Visit[]> {

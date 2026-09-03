@@ -65,7 +65,7 @@ export default function ConsentTemplatesSection({
       {templates.length === 0 ? (
         <p className="text-sm text-brown-400">No consent form templates yet.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
           {templates.map((template) => (
             <button
               key={template.id}
