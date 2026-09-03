@@ -9,9 +9,9 @@ let _client: Resend | undefined;
 function getClient(): Resend {
   if (_client) return _client;
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.RESEND_KEY_ID;
   if (!apiKey) {
-    throw new Error("Missing RESEND_API_KEY in .env.local. See .env.local.example.");
+    throw new Error("Missing RESEND_KEY_ID in .env.local. See .env.local.example.");
   }
 
   _client = new Resend(apiKey);

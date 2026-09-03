@@ -274,7 +274,7 @@ email/password you just created.
   logic via `lib/authFlow.ts`, deliberately, so a 2FA-enabled account can't
   be signed into by skipping the check on one entry point but not the
   other.
-- Sending the actual code needs `RESEND_API_KEY` in `.env.local` (see
+- Sending the actual code needs `RESEND_KEY_ID` in `.env.local` (see
   `.env.local.example`) — works immediately with no domain setup, but
   Resend's sandbox sender can then only deliver to the email address that
   owns the Resend account itself. Real delivery to arbitrary staff emails
