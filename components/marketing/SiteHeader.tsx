@@ -4,21 +4,27 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+// Always "/#..." rather than a bare "#..." so these still work from a page
+// other than home (e.g. /compliance) — clicking one navigates home and lets
+// the browser's native hash-scroll take it from there, instead of doing
+// nothing because there's no matching id on the current page.
 const NAV_LINKS = [
-  { href: "#security", label: "Data & Security" },
-  { href: "#features", label: "Features" },
-  { href: "#import", label: "Switch to Radiance" },
-  { href: "#pricing", label: "Pricing" },
+  { href: "/#security", label: "Data & Security" },
+  { href: "/#features", label: "Features" },
+  { href: "/#import", label: "Switch to Radiance" },
+  { href: "/#pricing", label: "Pricing" },
 ];
 
-/** Sticky landing-page header. Sits flush against the hero at rest (no
- * background of its own, so it reads as part of the page) — but the hero
- * itself is now a dark warm-brown panel (see app/page.tsx), so "at rest"
- * also means light-colored text/button here, not the dark-on-canvas
- * styling used everywhere else on the site. Past a small scroll threshold
- * (i.e. once the canvas-colored content below the hero is what's actually
- * behind the bar) it flips to a frosted-glass canvas background with the
- * normal dark text, same as before.
+/** Sticky site header. Sits flush against the hero at rest (no background
+ * of its own, so it reads as part of the page) — but the home page's hero
+ * is a dark warm-brown panel (see app/page.tsx), so "at rest" there also
+ * means light-colored text/button, not the dark-on-canvas styling used
+ * everywhere else on the site. Past a small scroll threshold (i.e. once
+ * the canvas-colored content below the hero is what's actually behind the
+ * bar) it flips to a frosted-glass canvas background with the normal dark
+ * text, same as before. Pages with no dark hero of their own (e.g.
+ * /compliance) pass `forceSolid` to skip the light state entirely — there's
+ * no dark backdrop for light-on-dark text to sit on at the top of those.
  *
  * Layout is a 3-column grid (title / nav / actions) rather than
  * space-between flex, specifically so the nav links land dead-center in
@@ -26,21 +32,24 @@ const NAV_LINKS = [
  * title — the two only coincide when the title and actions happen to be
  * the same width. Below md, the center column becomes a hamburger toggle
  * for the same links instead of disappearing outright. */
-export default function SiteHeader() {
-  const [scrolled, setScrolled] = useState(false);
+export default function SiteHeader({ forceSolid = false }: { forceSolid?: boolean }) {
+  const [scrolled, setScrolled] = useState(forceSolid);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (forceSolid) return;
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [forceSolid]);
 
-  // Only "light" (white-on-dark) at the very top, with the menu closed —
-  // any time the frosted canvas background is showing instead, text goes
-  // back to the normal dark-on-light styling used everywhere else.
-  const light = !scrolled && !menuOpen;
+  // Only "light" (white-on-dark) at the very top of a page with a dark
+  // hero behind it, with the menu closed — any time the frosted canvas
+  // background is showing instead (or there's no dark hero to begin with),
+  // text goes back to the normal dark-on-light styling used everywhere
+  // else.
+  const light = !forceSolid && !scrolled && !menuOpen;
 
   return (
     <header

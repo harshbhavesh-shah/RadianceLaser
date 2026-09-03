@@ -6,7 +6,28 @@ import { getSession } from "@/lib/session";
 import { ANNUAL_PRICE_INR, TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import SiteHeader from "@/components/marketing/SiteHeader";
 
-const SECONDARY_FEATURES: { title: string; description: string }[] = [
+// Everything that doesn't earn its own showcase block below — each one
+// still real, just not the differentiator the automation section is.
+const ALL_FEATURES: { title: string; description: string }[] = [
+  {
+    title: "Scheduling",
+    description:
+      "Day, week, and month views. Click a booking to see that patient's packages and recent visits instantly.",
+  },
+  {
+    title: "Revenue & Analytics",
+    description:
+      "Revenue by day, month, or year, and which treatments and staff bring in the most — updates automatically.",
+  },
+  {
+    title: "Consent Forms & Receipts",
+    description:
+      "Patients sign on screen. Receipts get clean, sequential numbers automatically, even with two staff issuing at once.",
+  },
+  {
+    title: "Patient Records",
+    description: "Skin type, contraindications, and every past visit on one page, for any machine your clinic uses.",
+  },
   {
     title: "Prepaid Packages",
     description: "Sell session bundles and always see exactly how many sessions are left.",
@@ -53,20 +74,21 @@ const SECURITY_POINTS: { title: string; description: string }[] = [
   },
 ];
 
+const PLAN_FEATURES = [
+  "Unlimited staff accounts, every role included",
+  "Patients, scheduling, packages, consent forms & receipts",
+  "Automated WhatsApp reminders, feedback & no-show recovery",
+  "Import your existing patient list and session history",
+  "Revenue, staff, and machine-usage analytics",
+  "Per-clinic data isolation, enforced at the database",
+];
+
 function ProductShot({
   src,
   alt,
   width = 1440,
   height = 900,
   className = "",
-  // Tells Next.js/the browser how wide this image will actually render, so
-  // it fetches a source image with enough real pixels — get this wrong (too
-  // small) and a browser stretching a low-res source over a wider box
-  // produces exactly the soft/hazy look a copy-pasted stale value caused
-  // here once the hero's image column got wider than the ~640px this was
-  // originally sized for. Defaults to the ~640px-wide columns the feature
-  // sections further down the page still use; the hero passes its own,
-  // wider value.
   sizes = "(min-width: 1024px) 640px, 100vw",
 }: {
   src: string;
@@ -87,56 +109,21 @@ function ProductShot({
 
 /** A numbered eyebrow label instead of the icon-in-a-rounded-square badge
  * motif — gives each section its own position in a sequence instead of an
- * interchangeable card in a grid. */
-function Eyebrow({ index, label }: { index: string; label: string }) {
+ * interchangeable card in a grid. `dark` swaps to the light-on-dark
+ * palette for use on the hero/pricing backdrops. */
+function Eyebrow({ index, label, dark = false }: { index: string; label: string; dark?: boolean }) {
   return (
-    <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold-600">
-      <span className="text-brown-400/50">{index}</span>
+    <div
+      className={`flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] ${dark ? "text-gold-400" : "text-gold-600"}`}
+    >
+      <span className={dark ? "text-white/30" : "text-brown-400/50"}>{index}</span>
       <span className="h-px w-6 bg-gold-500" />
       <span>{label}</span>
     </div>
   );
 }
 
-/** The hero's dual-panel product shot — a dimmed, slightly-rotated copy of
- * the screenshot sitting behind the real (interactive-looking) one, so the
- * hero reads as a stack of screens rather than one flat rectangle. The back
- * copy is purely decorative (aria-hidden, no alt text, no hover response)
- * and deliberately doesn't reuse the ProductShot component below — that
- * component's hover-lift is for the real, single screenshots used further
- * down the page, and would look wrong applied to a decorative backing
- * layer. */
-// The hero's image column runs roughly 500-830px wide depending on
-// viewport (see the hero section's grid/max-width below) — noticeably
-// wider than the ~640px the feature sections further down the page use,
-// so this needs its own `sizes` hint rather than ProductShot's default.
-const HERO_SHOT_SIZES = "(min-width: 1024px) 55vw, 100vw";
-
-function LayeredProductShot() {
-  return (
-    <div className="relative">
-      <div
-        aria-hidden
-        className="absolute -right-3 top-8 w-[92%] rotate-[0.9deg] overflow-hidden rounded-xl opacity-80 brightness-[0.82] saturate-[0.85] sm:-right-6 sm:top-10"
-      >
-        <Image
-          src="/screenshots/dashboard-today.png"
-          alt=""
-          width={1440}
-          height={900}
-          className="h-auto w-full"
-          sizes={HERO_SHOT_SIZES}
-        />
-      </div>
-      <ProductShot
-        src="/screenshots/dashboard-today.png"
-        alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard"
-        className="relative shadow-2xl ring-white/10 -rotate-[0.6deg]"
-        sizes={HERO_SHOT_SIZES}
-      />
-    </div>
-  );
-}
+const HERO_SHOT_SIZES = "(min-width: 1024px) 58vw, 100vw";
 
 export default async function HomePage() {
   const session = await getSession();
@@ -150,14 +137,14 @@ export default async function HomePage() {
       {/* The hero's dark ground — sized generously (rather than precisely)
           to outlast the hero's actual rendered height at every breakpoint,
           since a plain CSS height guess can't track variable text/image
-          height exactly. Erring tall is free: the canvas-backed wrapper
-          right after the hero is opaque and painted in normal flow, so any
+          height exactly, and white hero text landing outside it would be
+          unreadable. Erring tall is free: the canvas-backed wrapper right
+          after the hero is opaque and painted in normal flow, so any
           backdrop that runs past the hero's real bottom edge just gets
-          covered, never the other way around (which would leave a visible
-          canvas-colored gap at the bottom of the hero). */}
+          covered, never the other way around. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[1500px] bg-gradient-to-b from-brown-800 to-brown-900 sm:h-[1300px] md:h-[1000px] lg:h-[780px]"
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[1500px] bg-gradient-to-b from-brown-800 to-brown-900 sm:h-[1300px] md:h-[1050px] lg:h-[820px]"
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_1000px_600px_at_78%_18%,rgba(169,129,47,0.22),transparent_65%)]" />
       </div>
@@ -165,16 +152,15 @@ export default async function HomePage() {
       <div className="relative z-10">
         <SiteHeader />
 
-        {/* Hero — asymmetric split rather than centered-text-then-full-width-
-            screenshot-below: the headline gets to be the widest thing on its
-            own line instead of competing for center-stage width with a
-            paragraph under it. Sits on the dark backdrop above (no background
-            of its own), with a layered dual-panel product shot instead of one
-            flat rectangle. The fade-up here plays once, on mount — not
-            re-triggered per section on scroll. Container is wider than the
-            rest of the page's sections (1600px vs the usual ~1280px) so the
-            hero actually uses the available width on a wide monitor instead
-            of leaving dead margins either side. */}
+        {/* Hero — asymmetric split, headline gets to be the widest thing on
+            its own line instead of competing for center-stage width with a
+            paragraph under it. One flat, unrotated screenshot rather than a
+            tilted stack of two — a straight-on shot reads as the real
+            product; a tilted, layered pair reads as hero-graphic decoration.
+            Container is wider than the rest of the page's sections (1600px
+            vs the usual ~1280px) so the hero actually uses the available
+            width on a wide monitor instead of leaving dead margins either
+            side. */}
         <section className="relative mx-auto max-w-[1600px] px-6 pt-14 pb-20 sm:pt-20 lg:px-12">
           <div className="relative grid grid-cols-1 items-center gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
             <div className="animate-fade-up" style={{ animationDelay: "0ms" }}>
@@ -203,38 +189,52 @@ export default async function HomePage() {
                 Free for {trialLengthLabel}. No credit card required to start.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-medium text-beige-300">
-                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
+                <Link
+                  href="/compliance"
+                  className="rounded-full border border-white/15 bg-white/5 px-3 py-1 transition-colors hover:border-gold-400 hover:text-gold-400"
+                >
                   Data hosted in India
-                </span>
-                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
+                </Link>
+                <Link
+                  href="/compliance"
+                  className="rounded-full border border-white/15 bg-white/5 px-3 py-1 transition-colors hover:border-gold-400 hover:text-gold-400"
+                >
                   DPDP Act 2023 compliant
+                </Link>
+                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
+                  Udyam Registered
                 </span>
               </div>
             </div>
 
             <div className="animate-fade-up" style={{ animationDelay: "120ms" }}>
-              <LayeredProductShot />
+              <ProductShot
+                src="/screenshots/dashboard-today.png"
+                alt="Today's schedule, business snapshot, and revenue chart on the RadianceLaser dashboard"
+                className="shadow-2xl ring-white/10"
+                sizes={HERO_SHOT_SIZES}
+              />
             </div>
           </div>
         </section>
       </div>
 
-      {/* Everything below the hero sits on its own opaque canvas-colored
-          wrapper — see the dark backdrop's comment above for why that
-          matters (it's what makes an imprecise backdrop height safe). */}
+      {/* Everything below the hero sits on its own bg-canvas wrapper — it's
+          what covers the dark backdrop's tail end below where the hero's
+          own content runs shorter than the backdrop's generous heights. */}
       <div className="relative z-10 bg-canvas">
         {/* At-a-glance summary — sits directly on the canvas between two
             hairlines rather than inside another bordered white card, so the
             page doesn't read as "card, card, card" stacked top to bottom. */}
-        <section className="mx-auto max-w-5xl px-6 pb-24">
+        <section className="mx-auto max-w-5xl px-6 pb-24 pt-16">
           <div className="border-y border-beige-300 py-10">
             <div className="grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
               {[
                 "Patients, appointments, packages, forms & receipts in one place",
+                "WhatsApp reminders, feedback surveys, and no-show recovery, automatic",
                 "Import your existing patient list from Excel or CSV",
                 "Your data is private to your clinic, always",
                 "Separate views for owners, doctors, and reception",
-                "Revenue and staff numbers that update live, automatically",
                 "One flat yearly price — unlimited staff, no hidden fees",
               ].map((line) => (
                 <div key={line} className="flex items-start gap-2.5 text-sm text-brown-700">
@@ -281,71 +281,83 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Feature deep-dives, each with a real screenshot, alternating
-            sides. Order: scheduling, analytics, forms (documents), patient
-            view. */}
-        <section id="features" className="mx-auto max-w-6xl px-6 py-20">
-          <Eyebrow index="02" label="What it does" />
+        {/* Automated Messaging — the one flagship showcase, given real
+            visual weight instead of being one more alternating 50/50 block
+            among six identical ones. Two real screenshots collaged rather
+            than one, so it reads as "here are two things this does," not
+            hero-graphic decoration. This is the newest, most competitive
+            piece of the product (see the reminders/no-show work), so it
+            gets to be the biggest thing on the page after the hero. */}
+        <section id="features" className="bg-beige-100">
+          <div className="mx-auto max-w-6xl px-6 py-24">
+            <Eyebrow index="02" label="Automated Messaging" />
+            <div className="mt-12 grid grid-cols-1 items-center gap-14 lg:grid-cols-[0.85fr_1.15fr]">
+              <div>
+                <h2 className="font-display text-3xl font-medium leading-tight text-brown-900 sm:text-4xl">
+                  Reminders, feedback, and no-show recovery — all automatic
+                </h2>
+                <p className="mt-4 text-brown-600">
+                  A WhatsApp reminder goes out before every appointment, and a short satisfaction
+                  survey after every visit. When someone misses one, your own follow-up — a reason
+                  survey, a win-back offer, a reschedule nudge — sends itself. All over your own
+                  WhatsApp number, all without anyone at the front desk remembering to hit send.
+                </p>
+                <ul className="mt-6 space-y-3 text-sm text-brown-700">
+                  <li className="flex items-start gap-2.5">
+                    <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                    <span>Reminders and surveys sent automatically, no staff time spent</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                    <span>No-show trends by week and month, so you know if it's getting worse</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-600" />
+                    <span>Configurable follow-ups — survey, incentive, or reminder — on or off per clinic</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="relative">
+                <ProductShot
+                  src="/screenshots/communication-automation.png"
+                  alt="Automated appointment reminders and post-visit feedback survey results on the RadianceLaser Communication page"
+                  sizes="(min-width: 1024px) 46vw, 100vw"
+                />
+                <div className="absolute -bottom-10 -left-10 hidden w-[58%] overflow-hidden rounded-xl shadow-2xl ring-4 ring-beige-100 lg:block">
+                  <Image
+                    src="/screenshots/no-shows-followups.png"
+                    alt="Configurable no-show follow-ups and recent no-shows list on the RadianceLaser No Shows page"
+                    width={1440}
+                    height={500}
+                    className="h-auto w-full"
+                    sizes="27vw"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Everything else clinic work needs — a dense, text-only grid
+            rather than more full-width alternating screenshot blocks.
+            Deliberately plain: the automation section above is the one
+            thing on this page that gets the oversized-screenshot
+            treatment, so this staying compact and scannable is the point,
+            not a shortcut. */}
+        <section className="mx-auto max-w-6xl px-6 py-20">
+          <Eyebrow index="03" label="Everything else" />
           <h2 className="mt-4 max-w-lg font-display text-3xl font-medium leading-tight text-brown-900">
-            Everything day-to-day clinic work needs
+            Plus everything else day-to-day clinic work needs
           </h2>
 
-          <div className="mt-16 space-y-24">
-            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-              <div>
-                <h3 className="font-display text-xl font-medium text-brown-900">
-                  Scheduling that already knows the patient
-                </h3>
-                <p className="mt-2 text-brown-600">
-                  Day, week, and month views. Click a booking to see that patient&apos;s packages
-                  and recent visits instantly — no need to look up their file separately.
-                </p>
+          <div className="mt-12 grid grid-cols-1 gap-x-10 gap-y-10 border-t border-beige-300 pt-10 sm:grid-cols-2 lg:grid-cols-3">
+            {ALL_FEATURES.map(({ title, description }) => (
+              <div key={title}>
+                <h3 className="font-display text-lg font-medium text-brown-900">{title}</h3>
+                <p className="mt-2 text-sm text-brown-600">{description}</p>
               </div>
-              <ProductShot src="/screenshots/appointments-mini-panel.png" alt="Weekly appointment calendar with a patient's package and visit history open alongside it" />
-            </div>
-
-            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-              <div className="order-2 lg:order-1">
-                <ProductShot src="/screenshots/analytics.png" alt="Revenue trend, treatment-type split, and most-treated areas on the RadianceLaser Analytics page" />
-              </div>
-              <div className="order-1 lg:order-2">
-                <h3 className="font-display text-xl font-medium text-brown-900">
-                  Know how the clinic is actually doing
-                </h3>
-                <p className="mt-2 text-brown-600">
-                  See revenue by day, month, or year, and which treatments and staff bring in the
-                  most. It updates automatically — there&apos;s no report to remember to run.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-              <div>
-                <h3 className="font-display text-xl font-medium text-brown-900">
-                  Consent forms and receipts, done right
-                </h3>
-                <p className="mt-2 text-brown-600">
-                  Patients sign consent forms right on screen. Receipts get clean, sequential
-                  numbers automatically, even when two staff issue them at once.
-                </p>
-              </div>
-              <ProductShot src="/screenshots/documents-receipts.png" alt="Patient receipts list in RadianceLaser Documents" />
-            </div>
-
-            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
-              <div className="order-2 lg:order-1">
-                <ProductShot src="/screenshots/patient-detail.png" alt="A patient's full record and visit history in RadianceLaser" />
-              </div>
-              <div className="order-1 lg:order-2">
-                <h3 className="font-display text-xl font-medium text-brown-900">
-                  A full record for every patient
-                </h3>
-                <p className="mt-2 text-brown-600">
-                  Skin type, contraindications, and every past visit on one page — for Q-Switch,
-                  laser hair removal, or any machine your clinic uses.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
@@ -355,7 +367,7 @@ export default async function HomePage() {
         <section id="import" className="mx-auto max-w-6xl px-6 py-20">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
             <div className="flex flex-col justify-center">
-              <Eyebrow index="03" label="Switching over" />
+              <Eyebrow index="04" label="Switching over" />
               <h2 className="mt-4 font-display text-3xl font-medium leading-tight text-brown-900">
                 Switch to Radiance in an afternoon
               </h2>
@@ -385,84 +397,70 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Smaller, still-real features — a plain three-column list with
-            hairline top rules instead of three more icon-badge cards. */}
-        <section className="mx-auto max-w-6xl px-6 pb-20">
-          <div className="grid grid-cols-1 gap-10 border-t border-beige-300 pt-10 sm:grid-cols-3 sm:gap-8">
-            {SECONDARY_FEATURES.map(({ title, description }) => (
-              <div key={title}>
-                <h4 className="font-display text-lg font-medium text-brown-900">{title}</h4>
-                <p className="mt-2 text-sm text-brown-600">{description}</p>
+        {/* Pricing — a wide dark band rather than a small centered card,
+            deliberately echoing the hero's backdrop so the page opens and
+            closes on the same dark-brown/gold register instead of ending
+            on one more white section. Price and feature list sit side by
+            side instead of stacked in a narrow column, since there's a
+            full-width band to use instead of a card's fixed width. */}
+        <section id="pricing" className="relative overflow-hidden bg-gradient-to-b from-brown-800 to-brown-900 py-24">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_900px_500px_at_15%_15%,rgba(169,129,47,0.18),transparent_65%)]"
+          />
+          <div className="relative mx-auto max-w-5xl px-6">
+            <Eyebrow index="05" label="Pricing" dark />
+            <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <div>
+                <div className="flex items-center gap-2 text-sm uppercase tracking-wide text-gold-400">
+                  <Receipt size={16} />
+                  <span>Annual plan</span>
+                </div>
+                <div className="mt-4 font-display text-6xl font-medium text-white">
+                  ₹{ANNUAL_PRICE_INR.toLocaleString("en-IN")}
+                  <span className="text-lg font-normal text-beige-200">/year</span>
+                </div>
+                <p className="mt-3 max-w-xs text-sm text-beige-200">
+                  One clinic, unlimited staff accounts — no per-seat charges, no add-on tiers.
+                </p>
+                <Link
+                  href="/signup"
+                  className="mt-8 inline-block rounded-md bg-gold-500 px-6 py-3 text-sm font-semibold text-brown-900 transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-gold-400 hover:shadow-card active:scale-[0.97] active:duration-75"
+                >
+                  Start Your Free Trial
+                </Link>
+                <p className="mt-3 text-xs text-beige-200/70">
+                  Free for {trialLengthLabel} first — no credit card needed to start.
+                </p>
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Pricing — a single-plan "pricing column" card rather than a bare
-            price line, since one raised, shadowed card reads as more
-            deliberate than a plain announcement, even with just one plan
-            to show. */}
-        <section id="pricing" className="mx-auto max-w-6xl px-6 py-20">
-          <div className="mx-auto mb-12 max-w-xl text-center">
-            <h2 className="font-display text-2xl font-medium text-brown-900 sm:text-3xl">
-              Simple, flat pricing
-            </h2>
-            <p className="mt-3 text-brown-600">One plan, everything included. No tiers to compare.</p>
-          </div>
-
-          <div className="relative mx-auto max-w-sm rounded-2xl bg-brown-900 p-8 text-beige-200 shadow-2xl ring-1 ring-brown-900/10 transition-transform duration-300 hover:-translate-y-1.5 sm:p-10">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gold-600 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-card">
-              Everything included
+              <div className="border-t border-white/10 pt-8 lg:border-t-0 lg:border-l lg:pl-12 lg:pt-0">
+                <ul className="space-y-3">
+                  {PLAN_FEATURES.map((line) => (
+                    <li key={line} className="flex items-start gap-2.5 text-sm text-beige-200">
+                      <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-400" />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-
-            <div className="flex items-center justify-center gap-2 text-sm uppercase tracking-wide text-gold-500">
-              <Receipt size={16} />
-              <span>Annual plan</span>
-            </div>
-            <div className="mt-4 text-center font-display text-5xl font-medium text-white">
-              ₹{ANNUAL_PRICE_INR.toLocaleString("en-IN")}
-              <span className="text-lg font-normal text-beige-200">/year</span>
-            </div>
-            <p className="mt-2 text-center text-sm text-beige-200">
-              One clinic, unlimited staff accounts — no per-seat charges, no add-on tiers.
-            </p>
-
-            <div className="my-6 h-px bg-beige-200/15" />
-
-            <ul className="space-y-3">
-              {[
-                "Unlimited staff accounts, every role included",
-                "Patients, scheduling, packages, consent forms & receipts",
-                "Import your existing patient list and session history",
-                "Revenue, staff, and machine-usage analytics",
-                "Per-clinic data isolation, enforced at the database",
-              ].map((line) => (
-                <li key={line} className="flex items-start gap-2.5 text-sm text-beige-200">
-                  <Check size={18} className="mt-0.5 flex-shrink-0 text-gold-500" />
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href="/signup"
-              className="mt-8 block rounded-md bg-gold-600 px-6 py-3 text-center text-sm font-semibold text-white transition-all duration-150 ease-out hover:-translate-y-0.5 hover:bg-gold-500 hover:shadow-card active:scale-[0.97] active:duration-75"
-            >
-              Start Your Free Trial
-            </Link>
-            <p className="mt-3 text-center text-xs text-beige-200/80">
-              Free for {trialLengthLabel} first — no credit card needed to start.
-            </p>
           </div>
         </section>
 
         {/* Footer */}
         <footer className="border-t border-beige-300 py-8 text-center text-sm text-brown-400">
           <p>© {new Date().getFullYear()} RadianceLaser</p>
-          <p className="mt-1 text-xs">Data hosted in India · Built to the DPDP Act 2023&apos;s standard</p>
+          <p className="mt-1 text-xs">
+            <Link href="/compliance" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+              Data hosted in India · DPDP Act 2023 compliant
+            </Link>
+          </p>
+          <p className="mt-1 text-xs">
+            Udyam Registered: UDYAM-GJ-20-0310289 · Medical Advisor: Dr. Bhavesh Shah
+          </p>
         </footer>
       </div>
     </div>
   );
 }
-

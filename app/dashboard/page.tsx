@@ -20,6 +20,8 @@ import {
   computePackageAlerts,
   computeContraindicationAlerts,
   computeAppointmentPipelineMaps,
+  computeTodayGlance,
+  computeCashPosition,
 } from "@/lib/overview";
 import { todayLocalStr } from "@/lib/calendar";
 import StatsStrip from "@/components/StatsStrip";
@@ -210,6 +212,21 @@ export default async function DashboardPage() {
     </div>
   );
 
+  // Shared by every role: where today's appointments actually stand,
+  // before anyone opens the full agenda below. Purely operational (no
+  // money), so reception and doctor get it too, not just the owner.
+  const todayGlance = computeTodayGlance(todayAppointments);
+  const glanceSection = (
+    <StatsStrip
+      items={[
+        { label: "Today's Appointments", value: todayGlance.total },
+        { label: "Completed", value: todayGlance.completed },
+        { label: "Remaining", value: todayGlance.remaining },
+        { label: "Cancelled / No Show", value: todayGlance.cancelled },
+      ]}
+    />
+  );
+
   // Reception: pure front-desk view — today's bookings and anything that
   // needs a word with a patient while they're in. No financials, no
   // clinical activity log — that's not what a front-desk shift needs.
@@ -218,6 +235,7 @@ export default async function DashboardPage() {
       <div className="space-y-10">
         {header}
         {onboarding}
+        {glanceSection}
         {todaySection}
       </div>
     );
@@ -231,6 +249,7 @@ export default async function DashboardPage() {
       <div className="space-y-10">
         {header}
         {onboarding}
+        {glanceSection}
         {todaySection}
       </div>
     );
@@ -259,11 +278,16 @@ export default async function DashboardPage() {
   const statsBase = computeWindowStats(newPatientsInScope, visitsInScope, packages, statsWindow);
   const stats = { ...statsBase, totalPatients };
   const monthlyRevenue = computeMonthlyRevenue(visitsInScope, packages);
+  // visitsInScope always starts at or before today (it's the earlier of
+  // this week's and this month's start), so it already covers everything
+  // needed for today's own cash position without a separate fetch.
+  const cashPosition = computeCashPosition(visitsInScope, packages, today);
 
   return (
     <div className="space-y-10">
       {header}
       {onboarding}
+      {glanceSection}
       {todaySection}
 
       <div>
@@ -278,6 +302,20 @@ export default async function DashboardPage() {
             { label: "Total Patients", value: stats.totalPatients },
           ]}
         />
+
+        <div className="mt-6">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-brown-500">Today's Cash Position</h3>
+          <div className="mt-3">
+            <StatsStrip
+              items={[
+                { label: "Cash", value: formatCurrency(cashPosition.cash) },
+                { label: "Online", value: formatCurrency(cashPosition.online) },
+                { label: "Unspecified", value: formatCurrency(cashPosition.unspecified) },
+                { label: "Total Collected", value: formatCurrency(cashPosition.total), accent: true },
+              ]}
+            />
+          </div>
+        </div>
 
         <div className="mt-6">
           <h3 className="text-sm font-medium uppercase tracking-wide text-brown-500">Revenue</h3>

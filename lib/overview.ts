@@ -1,6 +1,7 @@
 import "server-only";
 import { computePackageLedger, todayLocalStr } from "@/lib/packages";
 import { timeToMinutes } from "@/lib/calendar";
+import { feeOf } from "@/lib/analytics";
 import type { Appointment, Package, Patient, Receipt, Visit } from "@/types";
 
 /** Today's appointments, earliest first — the spine of the Overview
@@ -127,6 +128,62 @@ export function computeAppointmentPipelineMaps(visits: Visit[], receipts: Receip
     if (r.appointmentId) receiptedAppointmentIds[r.appointmentId] = true;
   }
   return { visitIdByAppointmentId, receiptedAppointmentIds };
+}
+
+export interface TodayGlance {
+  total: number;
+  completed: number;
+  remaining: number;
+  cancelled: number;
+}
+
+/** Today's appointments broken down by where they stand: done, still to
+ * come, or cancelled/no-show. Backs the "Today at a Glance" stat strip. */
+export function computeTodayGlance(todayAppointments: Appointment[]): TodayGlance {
+  let completed = 0;
+  let cancelled = 0;
+  for (const a of todayAppointments) {
+    if (a.status === "completed") completed++;
+    else if (a.status === "cancelled" || a.status === "no-show") cancelled++;
+  }
+  return {
+    total: todayAppointments.length,
+    completed,
+    cancelled,
+    remaining: todayAppointments.length - completed - cancelled,
+  };
+}
+
+export interface CashPosition {
+  cash: number;
+  online: number;
+  unspecified: number;
+  total: number;
+}
+
+/** Money collected on one date, visit fees plus package purchases, split
+ * by payment method. Backs the owner-only "Cash Position" stat strip. */
+export function computeCashPosition(visits: Visit[], packages: Package[], dateStr: string): CashPosition {
+  let cash = 0;
+  let online = 0;
+  let unspecified = 0;
+
+  for (const v of visits) {
+    if (v.date !== dateStr) continue;
+    const fee = feeOf(v);
+    if (fee === 0) continue;
+    if (v.paymentMethod === "cash") cash += fee;
+    else if (v.paymentMethod === "online") online += fee;
+    else unspecified += fee;
+  }
+  for (const p of packages) {
+    if (p.purchaseDate !== dateStr) continue;
+    if (p.paymentMethod === "cash") cash += p.totalAmount;
+    else if (p.paymentMethod === "online") online += p.totalAmount;
+    else unspecified += p.totalAmount;
+  }
+
+  return { cash, online, unspecified, total: cash + online + unspecified };
 }
 
 /** Patients with a contraindication note who are coming in today — a
