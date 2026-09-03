@@ -29,15 +29,17 @@ function ShowcaseShot({
   width,
   height,
   sizes = "(min-width: 1024px) 640px, 100vw",
+  className = "",
 }: {
   src: string;
   alt: string;
   width: number;
   height: number;
   sizes?: string;
+  className?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-beige-300 shadow-card">
+    <div className={`overflow-hidden rounded-xl border border-beige-300 shadow-card ${className}`}>
       <Image src={src} alt={alt} width={width} height={height} quality={90} className="h-auto w-full" sizes={sizes} />
     </div>
   );
@@ -63,7 +65,7 @@ export default async function HomePage() {
       <section className={`${CONTAINER} grid grid-cols-1 items-center gap-12 pt-14 pb-20 sm:pt-20 lg:grid-cols-2 lg:gap-14`}>
         <div>
           <h1 className="font-brand text-4xl font-extrabold leading-[1.1] tracking-tight text-brown-900 sm:text-5xl">
-            Clinic software that stays out of your way.
+            Run your clinic. Not a spreadsheet.
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-brown-600">
             Open the dashboard and you&apos;re looking at today: who&apos;s booked, who&apos;s
@@ -102,37 +104,70 @@ export default async function HomePage() {
         />
       </section>
 
-      {/* Automation. Image side stacks two real screens rather than
-          squeezing them side by side into quarter-width crops. */}
+      {/* Automation. */}
       <section id="product" className="border-y border-beige-300 bg-beige-100/60">
         <div className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
           <div>
             <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
-              Reminders and follow-ups that run themselves
+              Reminders and feedback that send themselves
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-brown-600">
               Every appointment gets a WhatsApp reminder before it happens, and every visit gets a
               short feedback survey after. Nobody at the front desk has to remember to send either.
-              When a patient misses their appointment, Radiance follows up on its own: a message
-              asking why, an offer to win them back, or a nudge to reschedule, depending on how
-              you&apos;ve set it up. Turn any of these on or off per clinic, and watch no-show
-              trends by week or month to see whether things are actually improving.
+              It goes out automatically, from your own WhatsApp number, on the schedule you set.
             </p>
           </div>
-          <div className="flex flex-col gap-6">
-            <ShowcaseShot
-              src="/screenshots/communication-automation.png"
-              alt="Automated appointment reminders and post-visit feedback survey results on the RadianceLaser Communication page"
-              width={1440}
-              height={900}
-            />
-            <ShowcaseShot
-              src="/screenshots/no-shows-followups.png"
-              alt="Configurable no-show follow-ups and recent no-shows list on the RadianceLaser No Shows page"
-              width={1440}
-              height={500}
-            />
+          <ShowcaseShot
+            src="/screenshots/communication-automation.png"
+            alt="Automated appointment reminders and post-visit feedback survey results on the RadianceLaser Communication page"
+            width={1440}
+            height={900}
+          />
+        </div>
+      </section>
+
+      {/* No-shows */}
+      <section className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
+        <div className="lg:order-2">
+          <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
+            See who&apos;s missing appointments, and do something about it
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-brown-600">
+            The No Shows page tracks how often it&apos;s happening, by week and by month, so you
+            know whether it&apos;s actually getting better or worse. When someone misses an
+            appointment, Radiance can follow up on its own: a message asking why, an offer to win
+            them back, or a nudge to reschedule. Turn any of these on or off, or write your own.
+          </p>
+        </div>
+        <ShowcaseShot
+          className="lg:order-1"
+          src="/screenshots/no-shows.png"
+          alt="No-show stats, weekly trend, and configurable follow-up rules on the RadianceLaser No Shows page"
+          width={2880}
+          height={1800}
+        />
+      </section>
+
+      {/* Inbox */}
+      <section className="border-y border-beige-300 bg-beige-100/60">
+        <div className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
+          <div>
+            <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
+              Every WhatsApp conversation, in one place
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-brown-600">
+              Reminders and surveys go out automatically, but patients reply to a real number, and
+              those replies land here. See the full conversation with any patient, and reply
+              straight from the inbox. Nobody needs to pick up a phone to answer a question about
+              redness after a session, or a request to reschedule.
+            </p>
           </div>
+          <ShowcaseShot
+            src="/screenshots/inbox-conversation.png"
+            alt="A two-way WhatsApp conversation with a patient in the RadianceLaser Inbox"
+            width={2880}
+            height={1800}
+          />
         </div>
       </section>
 
@@ -152,9 +187,10 @@ export default async function HomePage() {
           <p className="mt-4 text-lg leading-relaxed text-brown-600">
             Radiance also handles the smaller things that add up over a week: day, week, and month
             calendar views for scheduling, prepaid session packages that always show exactly how
-            many visits are left, consent forms patients sign on screen tied to receipts with clean
-            sequential numbers, before-and-after photos kept blurred until you choose to view them,
-            and separate views for owners, doctors, and reception.
+            many visits are left, a daily list of patients due for a follow-up call, consent forms
+            patients sign on screen tied to receipts with clean sequential numbers, before-and-after
+            photos kept blurred until you choose to view them, and separate views for owners,
+            doctors, and reception.
           </p>
         </div>
         <ShowcaseShot
@@ -165,8 +201,32 @@ export default async function HomePage() {
         />
       </section>
 
+      {/* Inventory */}
+      <section className="border-y border-beige-300 bg-beige-100/60">
+        <div className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
+          <div className="lg:order-2">
+            <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
+              Stock that tracks its own expiry date
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-brown-600">
+              Numbing cream, filler vials, needles: anything with a shelf life or a reorder point.
+              Radiance flags what&apos;s expiring soon and what&apos;s running low before you find
+              out the hard way, mid-treatment. Every restock and every use gets logged, so
+              there&apos;s a real record behind the number on the shelf, not just a guess.
+            </p>
+          </div>
+          <ShowcaseShot
+            className="lg:order-1"
+            src="/screenshots/inventory.png"
+            alt="Perishable and consumable stock, with expiry and reorder alerts, on the RadianceLaser Inventory page"
+            width={2880}
+            height={1800}
+          />
+        </div>
+      </section>
+
       {/* Data privacy & security */}
-      <section id="security" className="border-y border-beige-300 bg-beige-100/60">
+      <section id="security" className="border-t border-beige-300">
         <div className={`${CONTAINER} grid grid-cols-1 gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
           <div>
             <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">

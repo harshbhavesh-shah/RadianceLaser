@@ -117,7 +117,7 @@ function LoginForm() {
       }
       // Custom claims were just set server-side — the token already held by
       // the client is stale until force-refreshed.
-      if (!auth.currentUser) throw new Error("Session was lost — please try signing in again.");
+      if (!auth.currentUser) throw new Error("Session was lost. Please try signing in again.");
       const freshIdToken = await auth.currentUser.getIdToken(true);
       await proceedAfterPrimaryAuth(freshIdToken);
     } catch (err) {
@@ -150,8 +150,8 @@ function LoginForm() {
     <AuthShell>
       <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-card ring-1 ring-beige-300">
         <Image src="/logo.png" alt="" width={44} height={44} className="mx-auto lg:hidden" />
-        <h1 className="mt-3 text-center font-display text-2xl font-medium text-brown-900 lg:hidden">
-          RadianceLaser
+        <h1 className="mt-3 text-center font-brand text-2xl font-extrabold text-brown-900 lg:hidden">
+          Radiance<span className="text-gold-600">Laser</span>
         </h1>
         <div className="mx-auto mt-3 mb-5 h-[2px] w-10 bg-gold-500 lg:hidden" />
 
@@ -222,7 +222,7 @@ function LoginForm() {
         {stage.name === "google-clinic-name" && (
           <>
             <p className="mb-7 text-center text-sm text-brown-600">
-              Almost there — name your clinic to finish setting up your account.
+              Almost there. Name your clinic to finish setting up your account.
             </p>
             <form onSubmit={handleGoogleClinicNameSubmit} className="space-y-4">
               <div>
@@ -344,7 +344,7 @@ function describeAuthError(err: unknown): string {
     case "auth/too-many-requests":
       return "Too many failed attempts. Please wait a moment and try again.";
     case "auth/network-request-failed":
-      return "Network error — check your connection and try again.";
+      return "Network error. Check your connection and try again.";
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
       return "Sign-in was cancelled.";

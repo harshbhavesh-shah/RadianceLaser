@@ -113,7 +113,7 @@ export default function SignUpPage() {
         setLoading(false);
         return;
       }
-      if (!auth.currentUser) throw new Error("Session was lost — please try again.");
+      if (!auth.currentUser) throw new Error("Session was lost. Please try again.");
       const freshIdToken = await auth.currentUser.getIdToken(true);
       await afterPrimaryAuth(freshIdToken);
     } catch (err) {
@@ -146,7 +146,9 @@ export default function SignUpPage() {
         <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-card ring-1 ring-beige-300">
           <Link href="/" className="block text-center lg:hidden">
             <Image src="/logo.png" alt="" width={44} height={44} className="mx-auto" />
-            <h1 className="mt-3 font-display text-2xl font-medium text-brown-900">RadianceLaser</h1>
+            <h1 className="mt-3 font-brand text-2xl font-extrabold text-brown-900">
+              Radiance<span className="text-gold-600">Laser</span>
+            </h1>
           </Link>
           <div className="mx-auto mt-3 mb-2 h-[2px] w-10 bg-gold-500 lg:hidden" />
 
@@ -258,7 +260,7 @@ export default function SignUpPage() {
           {stage.name === "google-clinic-name" && (
             <>
               <p className="mb-7 text-center text-sm text-brown-600">
-                Almost there — name your clinic to finish setting up your account.
+                Almost there. Name your clinic to finish setting up your account.
               </p>
               <form onSubmit={handleGoogleClinicNameSubmit} className="space-y-4">
                 <div>
@@ -357,7 +359,7 @@ function describeAuthError(err: unknown): string {
     case "auth/cancelled-popup-request":
       return "Sign-in was cancelled.";
     case "auth/network-request-failed":
-      return "Network error — check your connection and try again.";
+      return "Network error. Check your connection and try again.";
     default:
       return code
         ? `Sign-in failed (${code}). Check the browser console for details.`

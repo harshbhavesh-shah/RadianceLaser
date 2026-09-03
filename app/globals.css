@@ -68,63 +68,13 @@
   .animate-scale-in {
     animation: scale-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-
-  /* Soft drifting glow blobs for the login page — "Radiance" in name, so a
-     gentle wash of pastel light felt like the right first impression rather
-     than a plain card on a flat background. Slow and subtle on purpose:
-     this sits behind a login form, not a marketing page. */
-  @keyframes glow-drift {
-    0%,
-    100% {
-      transform: translate(0, 0) scale(1);
-      opacity: 0.55;
-    }
-    50% {
-      transform: translate(24px, -18px) scale(1.08);
-      opacity: 0.85;
-    }
-  }
-  .animate-glow-drift {
-    animation: glow-drift 16s ease-in-out infinite;
-  }
-
-  /* Same blobs, but fading in from nothing on first paint instead of just
-     appearing at full opacity — used on /, /login, /signup. Deliberately
-     opacity-only: an earlier version also animated clip-path (either on the
-     blob itself, or on a wrapper around it) for a top-to-bottom "spotlight"
-     reveal, but clip-path forces the renderer to hard-clip the element's
-     rendered output — including the soft bleed from `blur-3xl` — to the
-     clip geometry, even when that geometry nominally covers "the whole
-     box." As the clip rectangle grew during the reveal, its leading edge
-     swept a flat-edged bar through the blur instead of a soft circle
-     growing in, both mid-animation and (on some screens) at rest. Plain
-     opacity has no such edge to hard-clip, so it's the only version of this
-     effect that's actually shipped. The one-shot fade and the looping
-     drift both animate opacity, so the drift is delayed to start exactly
-     when the fade finishes rather than fighting over that property while
-     both are active. */
-  @keyframes glow-fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  .animate-glow-in {
-    animation:
-      glow-fade-in 2.2s ease-out both,
-      glow-drift 16s ease-in-out 2.2s infinite;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-grow-y,
   .animate-grow-x,
   .animate-fade-up,
-  .animate-scale-in,
-  .animate-glow-drift,
-  .animate-glow-in {
+  .animate-scale-in {
     animation: none !important;
   }
 }
