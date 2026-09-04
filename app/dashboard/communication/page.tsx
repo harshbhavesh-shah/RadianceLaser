@@ -4,6 +4,7 @@ import { getWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates } from "@/lib/db/messageTemplates";
 import { getClinic } from "@/lib/db/clinics";
 import { getClinicVisitFeedback } from "@/lib/db/visitFeedback";
+import ClientLinksSection from "@/components/communication/ClientLinksSection";
 import WhatsAppSection from "@/components/communication/WhatsAppSection";
 import MessageTemplatesSection from "@/components/communication/MessageTemplatesSection";
 import ScheduledMessagesSection from "@/components/communication/ScheduledMessagesSection";
@@ -47,6 +48,8 @@ export default async function CommunicationPage() {
         </div>
 
         <div className="space-y-6">
+          <ClientLinksSection clinicId={session.clinicId} />
+
           <WhatsAppSection initialConnection={redactedConnection} canEdit={isOwner} />
 
           <ScheduledMessagesSection

@@ -14,7 +14,7 @@ export default function ContactForm() {
   if (state.success) {
     return (
       <div className="rounded-xl border border-beige-300 bg-surface p-8 text-center">
-        <p className="font-brand text-lg font-bold text-brown-900">Message sent.</p>
+        <p className="font-display text-lg font-bold text-brown-900">Message sent.</p>
         <p className="mt-1.5 text-sm text-brown-600">
           We&apos;ll get back to you by email as soon as we can.
         </p>

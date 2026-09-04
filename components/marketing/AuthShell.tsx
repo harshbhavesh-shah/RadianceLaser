@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 /** Shared shell for /login and /signup. Split-screen layout (dark brand
  * panel + product shot on the left, the form on the right), re-skinned to
- * match the rest of the public site: font-brand headline, plain bg-brown-900
+ * match the rest of the public site: font-display headline, plain bg-brown-900
  * panel with no gradient or glow, same treatment as the pricing section on
  * the landing page. The brand panel is desktop-only (lg:flex) — collapsing
  * it on mobile rather than stacking it above the form, since a screenshot
@@ -22,7 +22,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
               Radiance <span className="text-gold-400">Laser</span>
             </span>
           </Link>
-          <h2 className="mt-10 max-w-sm font-brand text-3xl font-extrabold leading-tight text-white">
+          <h2 className="mt-10 max-w-sm font-display text-3xl font-extrabold leading-tight text-white">
             Run your clinic. Not a spreadsheet.
           </h2>
           <p className="mt-3 max-w-sm text-beige-300">

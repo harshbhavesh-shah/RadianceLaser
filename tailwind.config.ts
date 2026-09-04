@@ -35,11 +35,12 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Both point at the same Michroma variable (see app/layout.tsx) —
-        // one site-wide headline face, kept as two Tailwind tokens only so
-        // every existing font-display/font-brand className stays valid.
-        display: ["var(--font-michroma)", "sans-serif"],
+        // Default heading face everywhere except the landing page — the
+        // dashboard, /login, /signup, /contact, /compliance.
+        display: ["var(--font-manrope)", "sans-serif"],
         sans: ["var(--font-inter)", "sans-serif"],
+        // Landing page only (app/page.tsx) — everywhere else uses
+        // font-display/Manrope above instead.
         brand: ["var(--font-michroma)", "sans-serif"],
         // The "Radiance Laser" wordmark only — see app/layout.tsx.
         logo: ["var(--font-asimovian)", "sans-serif"],

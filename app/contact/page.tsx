@@ -14,7 +14,7 @@ export default function ContactPage() {
       <SiteHeader forceSolid />
 
       <main className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
-        <h1 className="font-brand text-4xl font-extrabold leading-tight text-brown-900 sm:text-5xl">
+        <h1 className="font-display text-4xl font-extrabold leading-tight text-brown-900 sm:text-5xl">
           Contact us
         </h1>
         <p className="mt-4 max-w-xl text-lg leading-relaxed text-brown-600">
@@ -27,7 +27,7 @@ export default function ContactPage() {
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Direct</p>
             <a
               href="mailto:admin@radiancelaser.in"
-              className="mt-3 flex items-center gap-2.5 font-brand text-lg font-bold text-brown-900 hover:text-gold-600"
+              className="mt-3 flex items-center gap-2.5 font-display text-lg font-bold text-brown-900 hover:text-gold-600"
             >
               <Mail size={18} className="text-gold-600" />
               admin@radiancelaser.in
