@@ -2,10 +2,7 @@
 
 import { getClinic } from "@/lib/db/clinics";
 import { getClinicAccess } from "@/lib/subscription";
-import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
-import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import { findPatientByPhone } from "@/lib/db/patients";
-import { getPatientVisits } from "@/lib/db/visits";
 import { createAppointment } from "@/lib/db/appointments";
 import { isValidPhone } from "@/lib/phone";
 import { todayLocalStr } from "@/lib/calendar";
@@ -15,29 +12,31 @@ import { todayLocalStr } from "@/lib/calendar";
 // rather than trusting anything the client sent beyond the raw form
 // fields, the same caution app/api/public/appointments/route.ts uses for
 // the marketing site's booking form.
+//
+// This page only ever books a "consultation" (see BUILT_IN_SESSION_TYPE_
+// CONFIG in lib/sessionTypes.ts) — a visitor booking online, new or
+// returning, doesn't know which specific treatment they need yet, so
+// there's deliberately no treatment picker here for either. That's
+// decided in person, by the doctor, at the consultation.
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-export interface RecentVisitSummary {
-  sessionType: string;
-  date: string;
-}
-
 export interface MatchedPatient {
   patientId: string;
   patientName: string;
-  recentVisits: RecentVisitSummary[];
 }
 
 /**
  * Looks a patient up by phone, then requires the name they typed to match
- * too before revealing anything about their visit history — phone numbers
- * alone are guessable, and this page has no login. A mismatch (or no
- * patient at all) both come back as `{ matched: false }`, deliberately
- * indistinguishable, so this can't be used to probe whether a given phone
- * number belongs to an existing patient.
+ * too before confirming a match — phone numbers alone are guessable, and
+ * this page has no login. A mismatch (or no patient at all) both come back
+ * as `{ matched: false }`, deliberately indistinguishable, so this can't be
+ * used to probe whether a given phone number belongs to an existing
+ * patient. This only confirms identity for a friendlier "welcome back"
+ * message — it doesn't expose any visit or treatment history, since
+ * nothing on this page depends on it.
  */
 export async function lookupPatientAction(
   clinicId: string,
@@ -61,20 +60,7 @@ export async function lookupPatientAction(
       return { matched: false };
     }
 
-    const visits = await getPatientVisits(clinicId, found.id);
-    const latestPerType = new Map<string, { sessionType: string; date: string; createdAt: number }>();
-    for (const v of visits) {
-      const existing = latestPerType.get(v.sessionType);
-      if (!existing || v.createdAt > existing.createdAt) {
-        latestPerType.set(v.sessionType, { sessionType: v.sessionType, date: v.date, createdAt: v.createdAt });
-      }
-    }
-    const recentVisits = [...latestPerType.values()]
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 4)
-      .map(({ sessionType, date }) => ({ sessionType, date }));
-
-    return { matched: true, patient: { patientId: found.id, patientName: found.name, recentVisits } };
+    return { matched: true, patient: { patientId: found.id, patientName: found.name } };
   } catch (err) {
     console.error("Failed to look up patient for public booking:", err);
     return { error: "Something went wrong looking that up. Please try again." };
@@ -84,7 +70,6 @@ export async function lookupPatientAction(
 export interface PublicBookingInput {
   name: string;
   phone: string;
-  sessionType: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
   notes?: string;
@@ -98,7 +83,6 @@ export async function submitBookingAction(
   const phone = input.phone.trim();
   if (!name) return { error: "Enter your name." };
   if (!isValidPhone(phone)) return { error: "Enter a valid phone number." };
-  if (!input.sessionType) return { error: "Choose a treatment." };
   if (!input.date || input.date < todayLocalStr()) return { error: "Choose a date from today onward." };
   if (!input.time) return { error: "Choose a time." };
 
@@ -109,25 +93,19 @@ export async function submitBookingAction(
       return { error: "This clinic isn't accepting online bookings right now." };
     }
 
-    // Never trust a caller-supplied sessionType — validate it against this
-    // clinic's actual treatment list, since an unrecognized key crashes the
-    // staff calendar views (they index straight into SESSION_TYPE_CONFIG
-    // with no fallback).
-    const customTypes = await getClinicSessionTypeDefs(clinicId);
-    const config = buildSessionTypeConfig(customTypes);
-    if (!config[input.sessionType]) return { error: "Choose a valid treatment." };
-
     // Re-derive the patient link server-side, same reasoning as
     // lookupPatientAction — a client-supplied patientId is never trusted.
     const found = await findPatientByPhone(clinicId, phone);
     const patientId = found && normalizeName(found.name) === normalizeName(name) ? found.id : undefined;
 
+    // sessionType is fixed, not caller-supplied — this page never lets a
+    // visitor pick a treatment, so there's nothing to validate here.
     await createAppointment({
       clinicId,
       patientId,
       patientName: name,
       patientPhone: phone,
-      sessionType: input.sessionType,
+      sessionType: "consultation",
       date: input.date,
       time: input.time,
       durationMinutes: 30,

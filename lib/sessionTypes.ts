@@ -9,11 +9,24 @@ export interface SessionTypeConfig {
   custom?: boolean; // true for clinic-defined machine types (vs. built-in QS/LHR)
 }
 
-// The two treatment types every clinic starts with. Clinics can add their
-// own major machine types (e.g. "CO2 Laser") from Settings — see
+// The treatment types every clinic starts with. Clinics can add their own
+// major machine types (e.g. "CO2 Laser") from Settings — see
 // SessionTypeDef in types/index.ts and buildSessionTypeConfig() below,
 // which merges those in alongside these built-ins.
+//
+// "consultation" is the one type the public booking page (app/book/
+// [clinicId]) is allowed to create — a new visitor doesn't know which
+// treatment they need yet, so that page never offers a treatment picker at
+// all, it always books this. No machine-data columns, since a consultation
+// is a doctor assessment, not a treatment session.
 export const BUILT_IN_SESSION_TYPE_CONFIG: Record<string, SessionTypeConfig> = {
+  consultation: {
+    label: "Consultation",
+    badgeText: "CONSULT",
+    badgeClassName: "bg-beige-300 text-brown-800",
+    chartColor: "#8C7B6B",
+    columns: [],
+  },
   qs: {
     label: "Q-Switch",
     badgeText: "QS",

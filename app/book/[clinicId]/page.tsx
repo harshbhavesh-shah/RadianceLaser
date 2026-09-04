@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { getClinic } from "@/lib/db/clinics";
 import { getClinicAccess } from "@/lib/subscription";
-import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
-import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import BookingClient from "@/components/booking/BookingClient";
 
 // The patient-facing counterpart to app/dashboard/appointments — no auth,
@@ -12,10 +10,13 @@ import BookingClient from "@/components/booking/BookingClient";
 // reception). Branded with the clinic's own name today; the logo/wordmark
 // stays Radiance Laser's until a client wants their own swapped in (see
 // ClinicBrandHeader below).
+//
+// Always books a consultation, never a specific treatment — see
+// components/booking/BookingClient.tsx and app/book/[clinicId]/actions.ts.
 
 export async function generateMetadata({ params }: { params: { clinicId: string } }): Promise<Metadata> {
   const clinic = await getClinic(params.clinicId);
-  return { title: clinic ? `Book an Appointment — ${clinic.name}` : "Book an Appointment" };
+  return { title: clinic ? `Book a Consultation — ${clinic.name}` : "Book a Consultation" };
 }
 
 function ClinicBrandHeader({ clinicName }: { clinicName: string }) {
@@ -49,14 +50,11 @@ export default async function BookingPage({ params }: { params: { clinicId: stri
     );
   }
 
-  const customTypes = await getClinicSessionTypeDefs(clinic.id);
-  const sessionTypeConfig = buildSessionTypeConfig(customTypes);
-
   return (
     <div className="min-h-screen bg-canvas pb-16">
       <ClinicBrandHeader clinicName={clinic.name} />
       <div className="mx-auto mt-8 max-w-md px-4">
-        <BookingClient clinicId={clinic.id} sessionTypeConfig={sessionTypeConfig} />
+        <BookingClient clinicId={clinic.id} />
       </div>
     </div>
   );

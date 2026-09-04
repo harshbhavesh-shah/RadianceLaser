@@ -10,7 +10,7 @@ export const TRIAL_LENGTH_DAYS = 30;
 
 // The one and only plan for now: a flat annual price, no tiers. See
 // app/dashboard/billing/actions.ts for where this is actually charged.
-export const ANNUAL_PRICE_INR = 5000;
+export const ANNUAL_PRICE_INR = 20000;
 export const ANNUAL_PRICE_PAISE = ANNUAL_PRICE_INR * 100; // Razorpay amounts are in the smallest currency unit
 export const SUBSCRIPTION_LENGTH_DAYS = 365;
 

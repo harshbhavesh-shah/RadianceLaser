@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CalendarCheck, ChevronLeft, RotateCcw } from "lucide-react";
 import { lookupPatientAction, submitBookingAction, type MatchedPatient } from "@/app/book/[clinicId]/actions";
 import { todayLocalStr, parseDateStr } from "@/lib/calendar";
-import type { SessionTypeConfig } from "@/lib/sessionTypes";
 
 type Step = "lookup" | "book" | "success";
 
@@ -17,13 +16,12 @@ function formatVisitDate(dateStr: string): string {
   return parseDateStr(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function BookingClient({
-  clinicId,
-  sessionTypeConfig,
-}: {
-  clinicId: string;
-  sessionTypeConfig: Record<string, SessionTypeConfig>;
-}) {
+// This page only ever books a consultation — a visitor booking online
+// doesn't know which treatment they need yet, new patient or returning.
+// The doctor decides that at the consultation itself, so there's
+// deliberately no treatment picker anywhere in this flow (see
+// app/book/[clinicId]/actions.ts).
+export default function BookingClient({ clinicId }: { clinicId: string }) {
   const [step, setStep] = useState<Step>("lookup");
 
   // Carried from the lookup step into the booking form.
@@ -35,18 +33,11 @@ export default function BookingClient({
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
 
-  const [sessionType, setSessionType] = useState("");
   const [date, setDate] = useState(todayLocalStr());
   const [time, setTime] = useState("10:00");
   const [notes, setNotes] = useState("");
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
-  const [confirmedType, setConfirmedType] = useState("");
-
-  const sessionTypeEntries = useMemo(
-    () => Object.entries(sessionTypeConfig).sort((a, b) => a[1].label.localeCompare(b[1].label)),
-    [sessionTypeConfig]
-  );
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
@@ -60,13 +51,7 @@ export default function BookingClient({
       return;
     }
     setCheckedMatch(true);
-    if (result.matched) {
-      setMatchedPatient(result.patient);
-      setSessionType(result.patient.recentVisits[0]?.sessionType || "");
-    } else {
-      setMatchedPatient(null);
-      setSessionType("");
-    }
+    setMatchedPatient(result.matched ? result.patient : null);
     setStep("book");
   }
 
@@ -74,14 +59,13 @@ export default function BookingClient({
     e.preventDefault();
     setBookingError(null);
     setBooking(true);
-    const result = await submitBookingAction(clinicId, { name, phone, sessionType, date, time, notes });
+    const result = await submitBookingAction(clinicId, { name, phone, date, time, notes });
     setBooking(false);
 
     if ("error" in result) {
       setBookingError(result.error);
       return;
     }
-    setConfirmedType(sessionTypeConfig[sessionType]?.label || sessionType);
     setStep("success");
   }
 
@@ -91,7 +75,6 @@ export default function BookingClient({
     setPhone("");
     setMatchedPatient(null);
     setCheckedMatch(false);
-    setSessionType("");
     setNotes("");
     setBookingError(null);
     setLookupError(null);
@@ -105,7 +88,7 @@ export default function BookingClient({
         </div>
         <h1 className="mt-4 font-display text-xl font-medium text-brown-900">You&apos;re booked!</h1>
         <p className="mt-2 text-sm leading-relaxed text-brown-600">
-          {confirmedType} on {formatVisitDate(date)} at {formatTimeLabel(time)}. We&apos;ll see you then — call the
+          Consultation on {formatVisitDate(date)} at {formatTimeLabel(time)}. We&apos;ll see you then — call the
           clinic if you need to reschedule.
         </p>
         <button
@@ -136,74 +119,20 @@ export default function BookingClient({
             <h1 className="mt-3 font-display text-lg font-medium text-brown-900">
               Welcome back, {matchedPatient.patientName.split(" ")[0]}
             </h1>
-            <p className="mt-1 text-sm text-brown-600">Book another session, or choose something new below.</p>
+            <p className="mt-1 text-sm text-brown-600">Let&apos;s get your next consultation booked.</p>
           </>
         ) : (
           <>
-            <h1 className="mt-3 font-display text-lg font-medium text-brown-900">Let&apos;s get you booked</h1>
+            <h1 className="mt-3 font-display text-lg font-medium text-brown-900">Book your consultation</h1>
             <p className="mt-1 text-sm text-brown-600">
               {checkedMatch
                 ? "We couldn't find you as an existing patient — no problem, book as a new patient below."
-                : ""}
+                : "The doctor will assess you and recommend the right treatment, so there's nothing to choose here."}
             </p>
           </>
         )}
 
         <form onSubmit={handleBook} className="mt-5 space-y-4">
-          {matchedPatient && matchedPatient.recentVisits.length > 0 && (
-            <div>
-              <label className={LABEL_CLASS}>Book again</label>
-              <div className="flex flex-col gap-2">
-                {matchedPatient.recentVisits.map((v) => {
-                  const cfg = sessionTypeConfig[v.sessionType];
-                  if (!cfg) return null;
-                  const selected = sessionType === v.sessionType;
-                  return (
-                    <button
-                      key={v.sessionType}
-                      type="button"
-                      onClick={() => setSessionType(v.sessionType)}
-                      className={`flex items-center justify-between rounded-md border px-3.5 py-2.5 text-left text-sm transition-colors ${
-                        selected
-                          ? "border-gold-500 bg-gold-100/50"
-                          : "border-beige-300 bg-canvas hover:border-gold-400"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}>
-                          {cfg.badgeText}
-                        </span>
-                        <span className="font-medium text-brown-900">{cfg.label}</span>
-                      </span>
-                      <span className="text-xs text-brown-400">Last: {formatVisitDate(v.date)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className={LABEL_CLASS}>
-              {matchedPatient && matchedPatient.recentVisits.length > 0 ? "Or choose a different treatment" : "Treatment"}
-            </label>
-            <select
-              value={sessionType}
-              onChange={(e) => setSessionType(e.target.value)}
-              className={INPUT_CLASS}
-              required
-            >
-              <option value="" disabled>
-                Select a treatment
-              </option>
-              {sessionTypeEntries.map(([key, cfg]) => (
-                <option key={key} value={key}>
-                  {cfg.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={LABEL_CLASS}>Date</label>
@@ -231,7 +160,7 @@ export default function BookingClient({
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className={INPUT_CLASS}
-              placeholder="e.g. first time getting this treatment"
+              placeholder="e.g. concerns you'd like the doctor to look at"
             />
           </div>
 
@@ -239,10 +168,10 @@ export default function BookingClient({
 
           <button
             type="submit"
-            disabled={booking || !sessionType}
+            disabled={booking}
             className="w-full rounded-md bg-brown-900 px-5 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
           >
-            {booking ? "Booking…" : "Confirm Appointment"}
+            {booking ? "Booking…" : "Confirm Consultation"}
           </button>
         </form>
       </div>
@@ -251,9 +180,10 @@ export default function BookingClient({
 
   return (
     <div className="rounded-xl bg-surface p-6 shadow-card ring-1 ring-beige-300 sm:p-7">
-      <h1 className="font-display text-lg font-medium text-brown-900">Book an Appointment</h1>
+      <h1 className="font-display text-lg font-medium text-brown-900">Book a Consultation</h1>
       <p className="mt-1 text-sm text-brown-600">
-        Already a patient? Enter your details and we&apos;ll pull up your past sessions.
+        Enter your details and we&apos;ll get you on the schedule. New or returning, this books a consultation with
+        the doctor, who&apos;ll recommend the right treatment for you.
       </p>
 
       <form onSubmit={handleLookup} className="mt-5 space-y-4">
