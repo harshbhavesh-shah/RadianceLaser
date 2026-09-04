@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CreditCard } from "lucide-react";
 import { createRenewalOrderAction, verifyPaymentAction } from "@/app/dashboard/billing/actions";
-import type { ClinicAccess } from "@/lib/subscription";
+import { ANNUAL_PRICE_INR, type ClinicAccess } from "@/lib/subscription";
 import type { Payment } from "@/types";
 
 declare global {
@@ -145,7 +145,7 @@ export default function BillingSection({
               className="flex items-center gap-2 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
             >
               <CreditCard size={16} />
-              {isProcessing ? "Opening checkout…" : "Subscribe — ₹5,000/year"}
+              {isProcessing ? "Opening checkout…" : `Subscribe — ₹${ANNUAL_PRICE_INR.toLocaleString("en-IN")}/year`}
             </button>
             {error && <span className="text-sm text-red-700">{error}</span>}
           </div>
