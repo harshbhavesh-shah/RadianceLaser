@@ -307,6 +307,15 @@ export default async function HomePage() {
         <p className="mt-1">
           Udyam Registered: UDYAM-GJ-20-0310289 · Medical Advisor: Dr. Bhavesh Shah (MD Dermatology, DVD)
         </p>
+        <p className="mt-1">
+          <Link href="/privacy-policy" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+            Privacy Policy
+          </Link>{" "}
+          ·{" "}
+          <Link href="/terms-of-service" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+            Terms of Service
+          </Link>
+        </p>
       </footer>
     </div>
   );

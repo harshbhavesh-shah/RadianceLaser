@@ -549,6 +549,27 @@ model LedgerEntry {
   @@map("ledgerEntries")
 }
 
+// A single platform-wide row (id is always "global", same singleton
+// pattern as PlatformSettings) holding the OAuth grant that lets the app
+// read and send mail as admin@radiancelaser.in via the Gmail API. The
+// underlying mailbox is a real Gmail account (Cloudflare Email Routing
+// forwards admin@radiancelaser.in into it, and it has a verified "Send
+// mail as" alias for that address) — gmailAccount records which Google
+// account actually authorized this, for display only; every send uses the
+// fixed RADIANCE_EMAIL_ADDRESS constant as the From address, not this
+// field. See app/admin/email and lib/gmail/.
+model EmailConnection {
+  id                   String  @id
+  gmailAccount         String
+  refreshToken         String
+  accessToken          String?
+  accessTokenExpiresAt BigInt?
+  connectedAt          BigInt
+  updatedAt            BigInt
+
+  @@map("emailConnections")
+}
+
 // Mirrors types/index.ts Payment — chunk 12 of the post-launch cleanup
 // (going Firestore-free past the original 11-chunk migration). Clinic-
 // scoped only, no Patient FK — a payment belongs to the clinic's

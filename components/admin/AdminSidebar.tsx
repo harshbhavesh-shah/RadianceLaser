@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, IndianRupee, BarChart3, BookOpen } from "lucide-react";
+import { Building2, IndianRupee, BarChart3, BookOpen, Mail } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 
 const NAV_ITEMS = [
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: "Pricing", href: "/admin/pricing", icon: IndianRupee },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Ledger", href: "/admin/ledger", icon: BookOpen },
+  { label: "Email", href: "/admin/email", icon: Mail },
 ];
 
 /** The super-admin counterpart to components/Sidebar.tsx — same dark
