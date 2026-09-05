@@ -603,7 +603,12 @@ export type MessageTemplateCategory =
 // one template covering all of a clinic's no-show follow-ups, not one
 // template per follow-up kind.
 export const TEMPLATE_VARIABLE_LABELS: Record<Exclude<MessageTemplateCategory, "custom">, string[]> = {
-  appointment_reminder: ["Patient name", "Date", "Time"],
+  // Includes the clinic's own name as {{2}} — a reminder message read out
+  // of context (no app branding around it, just raw WhatsApp text) needs
+  // to say who it's from, and that's exactly the shape Meta's template
+  // guidance nudges you toward when you draft one ("...appointment with
+  // {{business_name}} on {{date}}...").
+  appointment_reminder: ["Patient name", "Clinic name", "Date", "Time"],
   appointment_confirmation: ["Patient name", "Date", "Time"],
   receipt_sent: ["Patient name", "Receipt number", "Amount"],
   visit_feedback: ["Patient name", "Feedback link"],

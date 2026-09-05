@@ -87,7 +87,7 @@ async function processReminders(clinic: Clinic, templates: MessageTemplate[], co
         connection,
         phone,
         template.name,
-        [appt.patientName, appt.date, formatTime12h(appt.time)],
+        [appt.patientName, clinic.name, appt.date, formatTime12h(appt.time)],
         template.language
       );
       await markReminderSent(appt.id);

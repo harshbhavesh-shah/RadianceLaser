@@ -17,7 +17,16 @@ const GRAPH_API_VERSION = "v21.0";
 const GRAPH_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 interface GraphErrorBody {
-  error?: { message?: string; type?: string; code?: number };
+  error?: {
+    message?: string;
+    type?: string;
+    code?: number;
+    error_subcode?: number;
+    error_user_title?: string;
+    error_user_msg?: string;
+    error_data?: { details?: string };
+    fbtrace_id?: string;
+  };
 }
 
 async function callMessagesApi(connection: WhatsAppConnectionCreds, body: Record<string, unknown>): Promise<SendResult> {
@@ -39,7 +48,16 @@ async function callMessagesApi(connection: WhatsAppConnectionCreds, body: Record
     let message = raw;
     try {
       const parsed = JSON.parse(raw) as GraphErrorBody;
-      if (parsed.error?.message) message = parsed.error.message;
+      if (parsed.error?.message) {
+        // Meta's top-level `message` is often generic ("Invalid parameter")
+        // — `error_data.details` and `error_user_msg` are where the actually
+        // actionable explanation lives, when present, so surface all of it
+        // rather than just the headline.
+        const parts = [parsed.error.message, parsed.error.error_data?.details, parsed.error.error_user_msg].filter(
+          Boolean
+        );
+        message = parts.join(" — ");
+      }
     } catch {
       // raw wasn't JSON — fall back to the plain response text above.
     }
