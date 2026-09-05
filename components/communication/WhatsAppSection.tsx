@@ -5,12 +5,14 @@ import { MessageCircle } from "lucide-react";
 import { connectWhatsAppAction, disconnectWhatsAppAction } from "@/app/dashboard/communication/actions";
 import type { WhatsAppConnection } from "@/types";
 
-/** Connection card for the clinic's BhashSMS WhatsApp account — see
- * types/index.ts WhatsAppConnection and lib/bhashsms/client.ts. Unlike the
- * old Gupshup flow, there's no OAuth popup or partner account: BhashSMS is
- * just a username/password/sender id, saved directly and used on every
- * send. There's no live validation call to check them against before
- * saving — a wrong password only surfaces on the first real send. */
+/** Connection card for the clinic's official Meta WhatsApp Cloud API
+ * account — see types/index.ts WhatsAppConnection and
+ * lib/whatsapp/providers/metaCloudApi.ts. No OAuth popup or partner
+ * account: each clinic brings its own phone number id + System User access
+ * token from their own Meta Business Account, saved directly and used on
+ * every send. There's no live validation call to check them against before
+ * saving — a wrong token only surfaces on the first real send (or on
+ * "Send Test" in Message Templates below). */
 export default function WhatsAppSection({
   initialConnection,
   canEdit,
@@ -22,16 +24,23 @@ export default function WhatsAppSection({
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [bhashUser, setBhashUser] = useState(connection?.bhashUser || "");
-  const [bhashPass, setBhashPass] = useState("");
-  const [senderId, setSenderId] = useState(connection?.senderId || "");
+  const [phoneNumberId, setPhoneNumberId] = useState(connection?.phoneNumberId || "");
+  const [accessToken, setAccessToken] = useState("");
+  const [appSecret, setAppSecret] = useState("");
+  const [wabaId, setWabaId] = useState(connection?.wabaId || "");
   const [phoneNumber, setPhoneNumber] = useState(connection?.phoneNumber || "");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await connectWhatsAppAction(bhashUser.trim(), bhashPass.trim(), senderId.trim(), phoneNumber.trim());
+    const result = await connectWhatsAppAction(
+      phoneNumberId.trim(),
+      accessToken.trim(),
+      appSecret.trim(),
+      wabaId.trim(),
+      phoneNumber.trim()
+    );
     setBusy(false);
     if (result.error) {
       setError(result.error);
@@ -41,12 +50,13 @@ export default function WhatsAppSection({
       id: "",
       clinicId: "",
       status: "connected",
-      bhashUser: bhashUser.trim(),
-      senderId: senderId.trim(),
+      phoneNumberId: phoneNumberId.trim(),
+      ...(wabaId.trim() ? { wabaId: wabaId.trim() } : {}),
       ...(phoneNumber.trim() ? { phoneNumber: phoneNumber.trim() } : {}),
       updatedAt: Date.now(),
     });
-    setBhashPass("");
+    setAccessToken("");
+    setAppSecret("");
     setEditing(false);
   }
 
@@ -71,12 +81,12 @@ export default function WhatsAppSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">WhatsApp Messaging</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Send appointment reminders, confirmations, and receipts over WhatsApp via BhashSMS.
+            Send appointment reminders, confirmations, and receipts over the official Meta WhatsApp Cloud API.
           </p>
         </div>
         {connection?.status === "connected" && !editing && (
           <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-            Connected · {connection.bhashUser}
+            Connected · {connection.phoneNumber || connection.phoneNumberId}
           </span>
         )}
       </div>
@@ -104,37 +114,62 @@ export default function WhatsAppSection({
           <div className="flex items-start gap-2 rounded-lg border border-beige-300 bg-canvas p-3">
             <MessageCircle className="mt-0.5 flex-shrink-0 text-gold-600" size={16} />
             <p className="text-xs text-brown-600">
-              From your BhashSMS account's WhatsApp API details — the same username, password, and sender id used in
-              their sendmsg.php URL.
+              From your own Meta Business Account — Phone Number ID and App Secret from the App Dashboard, and a
+              permanent access token from Business Settings &gt; System Users. See{" "}
+              <a
+                href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-gold-600 hover:underline"
+              >
+                Meta's Cloud API setup guide
+              </a>
+              .
             </p>
           </div>
           <div>
-            <label className="text-sm font-medium text-brown-700">BhashSMS Username</label>
+            <label className="text-sm font-medium text-brown-700">Phone Number ID</label>
             <input
-              value={bhashUser}
-              onChange={(e) => setBhashUser(e.target.value)}
+              value={phoneNumberId}
+              onChange={(e) => setPhoneNumberId(e.target.value)}
+              placeholder="e.g. 109876543212345"
               required
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-brown-700">Password</label>
+            <label className="text-sm font-medium text-brown-700">Access Token</label>
             <input
-              value={bhashPass}
-              onChange={(e) => setBhashPass(e.target.value)}
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
               type="password"
-              placeholder={connection ? "Enter to change" : undefined}
+              placeholder={connection ? "Enter to change" : "Permanent System User token"}
               required={!connection}
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-brown-700">Sender ID</label>
+            <label className="text-sm font-medium text-brown-700">App Secret</label>
             <input
-              value={senderId}
-              onChange={(e) => setSenderId(e.target.value)}
-              placeholder="e.g. BUZWAP"
-              required
+              value={appSecret}
+              onChange={(e) => setAppSecret(e.target.value)}
+              type="password"
+              placeholder={connection ? "Enter to change" : "From App Dashboard > Settings > Basic"}
+              required={!connection}
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+            />
+            <p className="mt-1 text-xs text-brown-400">
+              Used to verify inbound messages actually came from Meta — never shared anywhere else.
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-brown-700">
+              WhatsApp Business Account ID <span className="text-brown-400">(optional)</span>
+            </label>
+            <input
+              value={wabaId}
+              onChange={(e) => setWabaId(e.target.value)}
+              placeholder="e.g. 987654321098765"
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
           </div>
@@ -148,9 +183,7 @@ export default function WhatsAppSection({
               placeholder="e.g. +919876543210"
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
-            <p className="mt-1 text-xs text-brown-400">
-              The clinic's own WhatsApp Business number — needed so patient replies land in your Inbox.
-            </p>
+            <p className="mt-1 text-xs text-brown-400">Shown in the connection status above — for your reference only.</p>
           </div>
           <div className="flex items-center gap-2">
             <button

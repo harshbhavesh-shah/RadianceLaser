@@ -31,7 +31,7 @@ export async function sendReplyAction(
     if (!trimmed) return { error: "Type a message first." };
 
     const connection = await getWhatsAppConnection(session.clinicId);
-    if (!connection?.bhashPass) return { error: "WhatsApp isn't connected. Set it up in Communication first." };
+    if (!connection?.accessToken) return { error: "WhatsApp isn't connected. Set it up in Communication first." };
 
     const conversations = await getClinicConversations(session.clinicId);
     const conversation = conversations.find((c) => c.id === conversationId);

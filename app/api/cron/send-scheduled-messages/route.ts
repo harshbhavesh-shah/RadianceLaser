@@ -22,7 +22,7 @@ import {
 } from "@/lib/db/noShowSurvey";
 import { getWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates } from "@/lib/db/messageTemplates";
-import { sendTemplateMessage } from "@/lib/bhashsms/client";
+import { activeProvider } from "@/lib/whatsapp/activeProvider";
 import { normalizePhone } from "@/lib/phone";
 import { formatTime12h } from "@/lib/calendar";
 import type { Clinic, MessageTemplate, NoShowFollowUp } from "@/types";
@@ -83,11 +83,13 @@ async function processReminders(clinic: Clinic, templates: MessageTemplate[], co
     if (!phone) continue;
 
     try {
-      await sendTemplateMessage(connection, phone, template.name, [
-        appt.patientName,
-        appt.date,
-        formatTime12h(appt.time),
-      ]);
+      await activeProvider.sendTemplateMessage(
+        connection,
+        phone,
+        template.name,
+        [appt.patientName, appt.date, formatTime12h(appt.time)],
+        template.language
+      );
       await markReminderSent(appt.id);
       sent++;
     } catch (err) {
@@ -119,7 +121,7 @@ async function processFeedbackSurveys(clinic: Clinic, templates: MessageTemplate
     const link = `${appUrl.replace(/\/$/, "")}/feedback/${feedback.token}`;
 
     try {
-      await sendTemplateMessage(connection, phone, template.name, [visit.patientName, link]);
+      await activeProvider.sendTemplateMessage(connection, phone, template.name, [visit.patientName, link], template.language);
       await markFeedbackSent(feedback.id);
       sent++;
     } catch (err) {
@@ -181,7 +183,13 @@ async function processNoShowFollowUps(
       }
 
       try {
-        await sendTemplateMessage(connection, phone, template.name, [appt.patientName, secondVar]);
+        await activeProvider.sendTemplateMessage(
+          connection,
+          phone,
+          template.name,
+          [appt.patientName, secondVar],
+          template.language
+        );
         if (surveyId) await markNoShowSurveySent(surveyId);
         await logNoShowMessageSent(clinic.id, appt.id, followUp.id);
         sent++;

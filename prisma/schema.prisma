@@ -393,6 +393,12 @@ model MessageTemplate {
   clinicId       String
   name           String
   category       String
+  // The language code the template was approved under in Meta's Template
+  // Library (e.g. "en_US", "en", "hi") — required on every send, since
+  // Meta looks up the approved template by (name, language) together, not
+  // name alone. Defaults to "en_US" since that's what most clinics approve
+  // their templates under.
+  language       String  @default("en_US")
   variableLabels Json // string[]
   bodyPreview    String?
   createdAt      BigInt
@@ -636,27 +642,41 @@ model AuditLog {
 }
 
 // Mirrors types/index.ts WhatsAppConnection — chunk 14 of the post-launch
-// cleanup. Migrated in its current BhashSMS-credential shape (username/
-// password/sender id) rather than redesigned, since that integration is
-// being replaced by the Meta Cloud API later anyway — not worth reshaping
-// a table about to be thrown out. `id` is the clinicId itself (one
-// connection per clinic), same as the Firestore doc id this replaces.
+// cleanup, later replaced with the official Meta WhatsApp Cloud API (Graph
+// API) instead of a BhashSMS-style reseller integration, since that's the
+// direct, no-middleman way to connect a clinic's own WhatsApp Business
+// Account. `id` is the clinicId itself (one connection per clinic), same
+// as the Firestore doc id this replaces.
 model WhatsAppConnection {
-  id          String  @id
-  status      String
-  bhashUser   String
-  bhashPass   String?
-  senderId    String
+  id            String  @id
+  status        String
+  // Meta's own identifier for the sending number (Business Settings >
+  // WhatsApp Accounts > Phone Numbers) — this, not the phone number itself,
+  // is what every Graph API send call and inbound webhook payload actually
+  // key off. `phoneNumber` below is for display only.
+  phoneNumberId String
+  // A permanent access token from a System User on the clinic's own Meta
+  // Business Account (Business Settings > System Users > Generate Token,
+  // with the whatsapp_business_messaging permission) — a temporary token
+  // from the App dashboard's Quick Start expires in 24 hours and isn't
+  // enough for a real connection.
+  accessToken   String?
+  // The Meta App's own App Secret (App Dashboard > Settings > Basic) — used
+  // to verify X-Hub-Signature-256 on every inbound webhook delivery so a
+  // request can't be forged. Never sent to the client.
+  appSecret     String?
+  // The WhatsApp Business Account id the phone number belongs to — not
+  // needed to send or receive messages, just shown in the UI as a sanity
+  // check that the right account is connected.
+  wabaId        String?
   // The clinic's own WhatsApp Business number (E.164, e.g.
-  // "+919876543210") — needed to route an inbound webhook event to the
-  // right clinic, since one shared webhook endpoint receives traffic for
-  // every clinic's number. Optional because it wasn't captured before
-  // inbound messaging existed; a clinic connected before this field
-  // existed just can't receive inbound messages until they re-save it.
-  phoneNumber String?
-  lastError   String?
-  connectedAt BigInt?
-  updatedAt   BigInt
+  // "+919876543210"), for display purposes only — routing uses
+  // phoneNumberId above, which is exact, unlike matching on a phone number
+  // string.
+  phoneNumber   String?
+  lastError     String?
+  connectedAt   BigInt?
+  updatedAt     BigInt
 
   @@map("whatsappConnections")
 }

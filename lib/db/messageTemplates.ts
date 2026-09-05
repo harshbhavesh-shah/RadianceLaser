@@ -15,6 +15,7 @@ function toMessageTemplate(row: PrismaMessageTemplateRow): MessageTemplate {
     clinicId: row.clinicId,
     name: row.name,
     category: row.category as MessageTemplateCategory,
+    language: row.language,
     variableLabels: row.variableLabels as unknown as string[],
     createdAt: Number(row.createdAt),
     updatedAt: Number(row.updatedAt),
@@ -34,6 +35,7 @@ export interface CreateMessageTemplateInput {
   clinicId: string;
   name: string;
   category: MessageTemplateCategory;
+  language: string;
   variableLabels: string[];
   bodyPreview?: string;
 }
@@ -45,6 +47,7 @@ export async function createMessageTemplate(input: CreateMessageTemplateInput): 
       clinicId: input.clinicId,
       name: input.name,
       category: input.category,
+      language: input.language,
       variableLabels: input.variableLabels,
       bodyPreview: input.bodyPreview ?? null,
       createdAt: now,

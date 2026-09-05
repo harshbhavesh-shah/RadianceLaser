@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db/client";
-import { getWhatsAppConnectionByPhoneNumber } from "@/lib/db/whatsapp";
+import { getWhatsAppConnectionByPhoneNumberId } from "@/lib/db/whatsapp";
 import { findPatientByPhone } from "@/lib/db/patients";
 import { normalizePhone } from "@/lib/phone";
 import type {
@@ -82,19 +82,20 @@ export async function markConversationRead(clinicId: string, conversationId: str
 /**
  * The landing point for every inbound message, regardless of which
  * provider's webhook it came from — the webhook route calls this once per
- * normalized event. Routes to a clinic by matching `toPhone` against
- * WhatsAppConnection.phoneNumber, finds or creates that patient's
- * conversation thread, and best-effort links it to a Patient record by
- * phone (a match isn't required — an unrecognized number still gets a
- * conversation, same as an unlinked public appointment booking).
+ * normalized event, after that event's signature has already been
+ * verified. Routes to a clinic by matching `toPhone` (Meta's phoneNumberId)
+ * against WhatsAppConnection.phoneNumberId, finds or creates that
+ * patient's conversation thread, and best-effort links it to a Patient
+ * record by phone (a match isn't required — an unrecognized number still
+ * gets a conversation, same as an unlinked public appointment booking).
  *
  * Returns null (and does nothing else) if no connected clinic owns
  * `toPhone` — nothing to route an orphaned event to.
  */
 export async function recordInboundMessage(event: NormalizedInboundMessage): Promise<WhatsAppMessage | null> {
-  const connection = await getWhatsAppConnectionByPhoneNumber(event.toPhone);
+  const connection = await getWhatsAppConnectionByPhoneNumberId(event.toPhone);
   if (!connection) {
-    console.error(`Inbound WhatsApp message to unrecognized number ${event.toPhone} — no clinic owns it.`);
+    console.error(`Inbound WhatsApp message to unrecognized phoneNumberId ${event.toPhone} — no clinic owns it.`);
     return null;
   }
 

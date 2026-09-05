@@ -534,36 +534,44 @@ export interface Receipt extends TenantScoped {
 }
 
 // ---------------------------------------------------------------------------
-// WhatsApp messaging (see lib/bhashsms/, components/communication/). Built
-// against BhashSMS — the clinic's own WhatsApp Business API provider — as a
-// simple GET-based send API (no OAuth, no partner account): a clinic
-// username/password/sender id, called directly per send. Templates are
-// authored and approved entirely on BhashSMS/Meta's own dashboard, outside
-// this app; all this app stores is the approved template's exact name and
-// how many/which variables it expects, so a send can fill them in in the
-// right order. See lib/bhashsms/client.ts for the actual HTTP call.
+// WhatsApp messaging (see lib/whatsapp/providers/metaCloudApi.ts,
+// components/communication/). Built against the official Meta WhatsApp
+// Cloud API — a clinic's own phone number id + System User access token,
+// called directly against the Graph API per send, no reseller/BSP in
+// between. Templates are authored and approved entirely in Meta's own
+// Template Library, outside this app; all this app stores is the approved
+// template's exact name, language, and how many/which variables it
+// expects, so a send can fill them in in the right order. See
+// lib/whatsapp/providers/metaCloudApi.ts for the actual HTTP call.
 export type WhatsAppConnectionStatus = "not_connected" | "connected" | "error";
 
-// Firestore path: whatsappConnections/{clinicId} — one per clinic, doc id
-// deliberately equals clinicId rather than being a random id, since a
-// clinic can only ever have exactly one connection.
+// One connection per clinic — `id` deliberately equals the clinicId rather
+// than being a random id, since a clinic can only ever have exactly one.
 export interface WhatsAppConnection extends TenantScoped {
   id: string;
   status: WhatsAppConnectionStatus;
-  bhashUser: string; // BhashSMS account username, e.g. "Advancedskinclinic"
-  // Deliberately never included in anything returned to a "use client"
-  // component — server actions expose only a redacted status/bhashUser/
-  // senderId view, never this field itself. A production deployment
-  // handling real customer credentials at scale should encrypt this at
-  // rest (e.g. via a KMS) rather than storing it as a plain field; left as
-  // plain text for now, same reasoning as the old byoApiKey field this
-  // replaces — already behind both Firestore's per-clinic isolation rules
+  // Meta's identifier for the clinic's WhatsApp Business phone number — the
+  // key every Graph API send call and inbound webhook payload actually use.
+  phoneNumberId: string;
+  // A permanent access token from a System User on the clinic's Meta
+  // Business Account. Deliberately never included in anything returned to
+  // a "use client" component — server actions expose only a redacted
+  // status/phoneNumberId/phoneNumber/wabaId view, never this field itself.
+  // A production deployment handling real customer credentials at scale
+  // should encrypt this at rest (e.g. via a KMS) rather than storing it as
+  // a plain field; already behind both this table's per-clinic isolation
   // and the server-only read path.
-  bhashPass?: string;
-  senderId: string; // BhashSMS "sender" param, e.g. "BUZWAP"
-  // The clinic's own WhatsApp Business number (E.164) — needed to route an
-  // inbound webhook event to the right clinic. Optional: absent for a
-  // connection saved before inbound messaging existed.
+  accessToken?: string;
+  // The Meta App's own App Secret, used to verify each inbound webhook
+  // delivery's X-Hub-Signature-256 header. Same handling as accessToken —
+  // never sent to the client.
+  appSecret?: string;
+  // The WhatsApp Business Account id the number belongs to — shown in the
+  // UI for confirmation only, not required to send or receive.
+  wabaId?: string;
+  // The clinic's own WhatsApp Business number (E.164), for display only —
+  // phoneNumberId above is what actually routes an inbound webhook event to
+  // the right clinic.
   phoneNumber?: string;
   lastError?: string;
   connectedAt?: number;
@@ -583,7 +591,8 @@ export type MessageTemplateCategory =
 // appointment_reminder/visit_feedback/no_show_followup → the
 // scheduled-messages cron, see app/api/cron/send-scheduled-messages) that
 // fill in the template's variables automatically from real data, in this
-// fixed order — see lib/bhashsms/send.ts. Because of that, their variable
+// fixed order — see lib/whatsapp/activeProvider.ts's sendTemplateMessage
+// call sites. Because of that, their variable
 // count/order isn't editable when creating a template: it has to match
 // what the app actually fills in. "custom" has no automatic trigger yet,
 // so its variables are freely defined instead.
@@ -601,17 +610,20 @@ export const TEMPLATE_VARIABLE_LABELS: Record<Exclude<MessageTemplateCategory, "
   no_show_followup: ["Patient name", "Offer, link, or blank"],
 };
 
-// Firestore path: messageTemplates/{id}
 export interface MessageTemplate extends TenantScoped {
   id: string;
-  name: string; // must exactly match the template name approved on BhashSMS/Meta's side — this is the `text` param on send
+  name: string; // must exactly match the template name approved in Meta's Template Library — this is the template's `name` param on send
   category: MessageTemplateCategory;
+  // The language code the template was approved under (e.g. "en_US", "en",
+  // "hi") — Meta looks up an approved template by name *and* language
+  // together, so this must match exactly or the send fails.
+  language: string;
   // For "custom" templates only, since the built-in categories' labels are
   // fixed (see TEMPLATE_VARIABLE_LABELS) — free text a staff member sets to
   // remember what each of the template's approved {{n}} placeholders means.
   variableLabels: string[];
   // Optional, for staff reference only when picking a template — NOT sent
-  // anywhere. The actual approved wording lives on BhashSMS/Meta's side;
+  // anywhere. The actual approved wording lives in Meta's Template Library;
   // this app never sees or controls it, only the template name + params.
   bodyPreview?: string;
   createdAt: number;

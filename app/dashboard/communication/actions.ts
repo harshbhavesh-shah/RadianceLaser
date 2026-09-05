@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { getSession } from "@/lib/session";
-import { sendTemplateMessage } from "@/lib/bhashsms/client";
+import { activeProvider } from "@/lib/whatsapp/activeProvider";
 import { sendSms } from "@/lib/smsgate/client";
 import { getWhatsAppConnection, upsertWhatsAppConnection, deleteWhatsAppConnection } from "@/lib/db/whatsapp";
 import { getClinicMessageTemplates, createMessageTemplate, deleteMessageTemplate } from "@/lib/db/messageTemplates";
@@ -19,44 +19,53 @@ async function requireOwner() {
   return session;
 }
 
-/** Connects (or re-connects/updates) this clinic's BhashSMS WhatsApp
- * credentials. Unlike the old Gupshup BYO flow, there's no separate
- * validation endpoint to check these against before saving — BhashSMS's API
- * (as supplied) is just the send call itself, so a typo'd password only
- * surfaces on the first real send.
+/** Connects (or re-connects/updates) this clinic's Meta WhatsApp Cloud API
+ * credentials. There's no separate validation endpoint to check these
+ * against before saving — a typo'd access token only surfaces on the first
+ * real send (or on "Send Test" below).
  *
- * `bhashPass` is optional on an edit — leaving it blank in the form keeps
- * whatever password is already saved rather than forcing it to be retyped
- * every time the username or sender id changes. */
+ * `accessToken` and `appSecret` are both optional on an edit — leaving
+ * either blank in the form keeps whatever's already saved rather than
+ * forcing both to be retyped every time the phone number id or WABA id
+ * changes. */
 export async function connectWhatsAppAction(
-  bhashUser: string,
-  bhashPass: string,
-  senderId: string,
+  phoneNumberId: string,
+  accessToken: string,
+  appSecret: string,
+  wabaId: string,
   phoneNumber: string
 ): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();
-    if (!bhashUser.trim() || !senderId.trim()) {
-      return { error: "Username and sender id are required." };
+    if (!phoneNumberId.trim()) {
+      return { error: "Phone Number ID is required." };
     }
 
-    let finalPass = bhashPass.trim();
-    if (!finalPass) {
-      const existing = await getWhatsAppConnection(session.clinicId);
-      finalPass = existing?.bhashPass || "";
-      if (!finalPass) return { error: "Password is required." };
+    const existing = await getWhatsAppConnection(session.clinicId);
+
+    let finalAccessToken = accessToken.trim();
+    if (!finalAccessToken) {
+      finalAccessToken = existing?.accessToken || "";
+      if (!finalAccessToken) return { error: "Access token is required." };
+    }
+
+    let finalAppSecret = appSecret.trim();
+    if (!finalAppSecret) {
+      finalAppSecret = existing?.appSecret || "";
+      if (!finalAppSecret) return { error: "App secret is required." };
     }
 
     await upsertWhatsAppConnection(session.clinicId, {
-      bhashUser: bhashUser.trim(),
-      bhashPass: finalPass,
-      senderId: senderId.trim(),
+      phoneNumberId: phoneNumberId.trim(),
+      accessToken: finalAccessToken,
+      appSecret: finalAppSecret,
+      wabaId: wabaId.trim() || undefined,
       phoneNumber: phoneNumber.trim() || undefined,
     });
     revalidatePath("/dashboard/communication");
     return {};
   } catch (err) {
-    console.error("Failed to connect BhashSMS WhatsApp:", err);
+    console.error("Failed to connect Meta WhatsApp Cloud API:", err);
     return { error: err instanceof Error ? err.message : "Couldn't save this connection. Please try again." };
   }
 }
@@ -76,12 +85,14 @@ export async function disconnectWhatsAppAction(): Promise<{ error?: string }> {
 export async function createTemplateAction(input: {
   name: string;
   category: MessageTemplateCategory;
+  language: string;
   variableLabels: string[];
   bodyPreview?: string;
 }): Promise<{ template?: MessageTemplate; error?: string }> {
   try {
     const session = await requireOwner();
     if (!input.name.trim()) return { error: "Template name is required." };
+    if (!input.language.trim()) return { error: "Language is required." };
 
     // The three built-in categories fill their variables automatically from
     // real data (see TEMPLATE_VARIABLE_LABELS) — the labels aren't staff-
@@ -94,6 +105,7 @@ export async function createTemplateAction(input: {
       clinicId: session.clinicId,
       name: input.name.trim(),
       category: input.category,
+      language: input.language.trim(),
       variableLabels,
       bodyPreview: input.bodyPreview?.trim() || undefined,
     });
@@ -122,11 +134,11 @@ function formatCurrency(n: number): string {
 }
 
 /** Sends a real WhatsApp message to a phone number of the owner's choosing,
- * using one of the clinic's saved templates — for verifying a BhashSMS
- * connection actually works (right credentials, right template name/
- * approval) before relying on it for real patients. Returns BhashSMS's raw
- * response text on success since its response format is otherwise
- * unverified — seeing it here is how that gets confirmed. */
+ * using one of the clinic's saved templates — for verifying a Meta WhatsApp
+ * Cloud API connection actually works (right credentials, right template
+ * name/language/approval) before relying on it for real patients. Returns
+ * Meta's raw response body on success as visible confirmation of what was
+ * actually sent. */
 export async function sendTestMessageAction(
   templateId: string,
   phone: string,
@@ -147,7 +159,13 @@ export async function sendTestMessageAction(
     const normalizedPhone = normalizePhone(phone);
     if (!normalizedPhone) return { error: "Enter a phone number to send to." };
 
-    const { raw } = await sendTemplateMessage(connection, normalizedPhone, template.name, params);
+    const { raw } = await activeProvider.sendTemplateMessage(
+      connection,
+      normalizedPhone,
+      template.name,
+      params,
+      template.language
+    );
     return { raw };
   } catch (err) {
     console.error("Failed to send test WhatsApp message:", err);
@@ -193,11 +211,13 @@ export async function sendReceiptMessageAction(
       return { error: "No \"Receipt Sent\" template set up yet — add one in Communication settings." };
     }
 
-    await sendTemplateMessage(connection, phone, template.name, [
-      receipt.patientName,
-      receipt.receiptNumber,
-      formatCurrency(receipt.amount),
-    ]);
+    await activeProvider.sendTemplateMessage(
+      connection,
+      phone,
+      template.name,
+      [receipt.patientName, receipt.receiptNumber, formatCurrency(receipt.amount)],
+      template.language
+    );
     return {};
   } catch (err) {
     console.error("Failed to send receipt message:", err);

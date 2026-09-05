@@ -24,6 +24,7 @@ export default function TemplateFormModal({
 }) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<MessageTemplateCategory>("appointment_reminder");
+  const [language, setLanguage] = useState("en_US");
   const [customVariableLabels, setCustomVariableLabels] = useState<string[]>([]);
   const [bodyPreview, setBodyPreview] = useState("");
   const [saving, setSaving] = useState(false);
@@ -49,6 +50,7 @@ export default function TemplateFormModal({
     const result = await createTemplateAction({
       name: name.trim(),
       category,
+      language: language.trim(),
       variableLabels: category === "custom" ? customVariableLabels.filter((v) => v.trim()) : [],
       bodyPreview: bodyPreview.trim() || undefined,
     });
@@ -76,9 +78,23 @@ export default function TemplateFormModal({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Must exactly match the name approved on BhashSMS/Meta"
+              placeholder="Must exactly match the name approved in Meta's Template Library"
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-brown-700">Language</label>
+            <input
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              placeholder="e.g. en_US"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+            />
+            <p className="mt-1 text-xs text-brown-400">
+              The exact language code this template was approved under in Meta's Template Library — sends fail if
+              this doesn't match.
+            </p>
           </div>
 
           <div>
@@ -101,7 +117,7 @@ export default function TemplateFormModal({
               <label className="text-sm font-medium text-brown-700">Variables (fixed for this category)</label>
               <p className="mt-1 text-xs text-brown-400">
                 The app fills these in automatically, in this order, when it sends this kind of message:{" "}
-                {fixedLabels.join(" → ")}. The template approved on BhashSMS/Meta needs its {"{{1}}"},{" "}
+                {fixedLabels.join(" → ")}. The template approved in Meta's Template Library needs its {"{{1}}"},{" "}
                 {"{{2}}"}, … placeholders in this same order.
               </p>
             </div>
@@ -156,7 +172,7 @@ export default function TemplateFormModal({
             />
             <p className="mt-1 text-xs text-brown-400">
               Not sent anywhere — just a note so staff can recognize which template this is. The real wording lives
-              on your BhashSMS/Meta account.
+              in your Meta Template Library.
             </p>
           </div>
 

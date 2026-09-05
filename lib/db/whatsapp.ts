@@ -1,23 +1,23 @@
 import "server-only";
 import { prisma } from "@/lib/db/client";
-import { normalizePhone } from "@/lib/phone";
 import type { WhatsAppConnection as PrismaWhatsAppConnectionRow } from "@prisma/client";
 import type { WhatsAppConnection, WhatsAppConnectionStatus } from "@/types";
 
 // Postgres migration, chunk 14 (post-launch cleanup) — WhatsAppConnection,
-// migrated in its current BhashSMS shape (see prisma/schema.prisma's model
-// comment for why). Function names/signatures intentionally match
-// lib/firestore/whatsapp.ts as closely as possible.
+// since replaced with the official Meta WhatsApp Cloud API in place of the
+// original BhashSMS-credential shape. Function names/signatures still
+// intentionally match lib/firestore/whatsapp.ts as closely as possible.
 
 function toConnection(row: PrismaWhatsAppConnectionRow): WhatsAppConnection {
   return {
     id: row.id,
     clinicId: row.id,
     status: row.status as WhatsAppConnectionStatus,
-    bhashUser: row.bhashUser,
-    senderId: row.senderId,
+    phoneNumberId: row.phoneNumberId,
     updatedAt: Number(row.updatedAt),
-    ...(row.bhashPass ? { bhashPass: row.bhashPass } : {}),
+    ...(row.accessToken ? { accessToken: row.accessToken } : {}),
+    ...(row.appSecret ? { appSecret: row.appSecret } : {}),
+    ...(row.wabaId ? { wabaId: row.wabaId } : {}),
     ...(row.phoneNumber ? { phoneNumber: row.phoneNumber } : {}),
     ...(row.lastError ? { lastError: row.lastError } : {}),
     ...(row.connectedAt !== null ? { connectedAt: Number(row.connectedAt) } : {}),
@@ -25,20 +25,19 @@ function toConnection(row: PrismaWhatsAppConnectionRow): WhatsAppConnection {
 }
 
 /** Finds which clinic a WhatsApp number belongs to — how an inbound
- * webhook event (which only knows the receiving number, not a clinicId)
- * gets routed. A full scan over connected accounts rather than a
- * normalized-column query: there's one row per clinic here, not per
- * patient, so this table stays small enough that it doesn't need the same
- * indexed-column treatment as findPatientByPhone. */
-export async function getWhatsAppConnectionByPhoneNumber(phoneNumber: string): Promise<WhatsAppConnection | null> {
-  const target = normalizePhone(phoneNumber);
-  if (!target) return null;
-
-  const rows = await prisma.whatsAppConnection.findMany({
-    where: { status: "connected", phoneNumber: { not: null } },
+ * webhook event (which only knows the receiving number's Meta
+ * phoneNumberId, not a clinicId) gets routed. A full scan over connected
+ * accounts rather than an indexed lookup: there's one row per clinic here,
+ * not per patient, so this table stays small enough that it doesn't need
+ * the same treatment as findPatientByPhone. Unlike the old phone-number
+ * matching this replaced, phoneNumberId is an exact opaque id from Meta —
+ * no normalization needed. */
+export async function getWhatsAppConnectionByPhoneNumberId(phoneNumberId: string): Promise<WhatsAppConnection | null> {
+  if (!phoneNumberId) return null;
+  const row = await prisma.whatsAppConnection.findFirst({
+    where: { status: "connected", phoneNumberId },
   });
-  const match = rows.find((row) => row.phoneNumber && normalizePhone(row.phoneNumber) === target);
-  return match ? toConnection(match) : null;
+  return row ? toConnection(row) : null;
 }
 
 /** Fails soft (logs and returns null) rather than letting a database-side
@@ -56,9 +55,10 @@ export async function getWhatsAppConnection(clinicId: string): Promise<WhatsAppC
 }
 
 export interface UpsertWhatsAppConnectionInput {
-  bhashUser: string;
-  bhashPass: string;
-  senderId: string;
+  phoneNumberId: string;
+  accessToken: string;
+  appSecret: string;
+  wabaId?: string;
   phoneNumber?: string;
 }
 
@@ -69,18 +69,20 @@ export async function upsertWhatsAppConnection(clinicId: string, input: UpsertWh
     create: {
       id: clinicId,
       status: "connected",
-      bhashUser: input.bhashUser,
-      bhashPass: input.bhashPass,
-      senderId: input.senderId,
+      phoneNumberId: input.phoneNumberId,
+      accessToken: input.accessToken,
+      appSecret: input.appSecret,
+      wabaId: input.wabaId ?? null,
       phoneNumber: input.phoneNumber ?? null,
       connectedAt: now,
       updatedAt: now,
     },
     update: {
       status: "connected",
-      bhashUser: input.bhashUser,
-      bhashPass: input.bhashPass,
-      senderId: input.senderId,
+      phoneNumberId: input.phoneNumberId,
+      accessToken: input.accessToken,
+      appSecret: input.appSecret,
+      wabaId: input.wabaId ?? null,
       phoneNumber: input.phoneNumber ?? null,
       updatedAt: now,
     },

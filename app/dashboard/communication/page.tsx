@@ -6,6 +6,7 @@ import { getClinic } from "@/lib/db/clinics";
 import { getClinicVisitFeedback } from "@/lib/db/visitFeedback";
 import ClientLinksSection from "@/components/communication/ClientLinksSection";
 import WhatsAppSection from "@/components/communication/WhatsAppSection";
+import WebhookInfoSection from "@/components/communication/WebhookInfoSection";
 import MessageTemplatesSection from "@/components/communication/MessageTemplatesSection";
 import ScheduledMessagesSection from "@/components/communication/ScheduledMessagesSection";
 import FeedbackResultsSection from "@/components/communication/FeedbackResultsSection";
@@ -23,9 +24,12 @@ export default async function CommunicationPage() {
 
   const isOwner = session.role === "owner";
   const isConnected = whatsappConnection?.status === "connected";
-  // Never forward bhashPass to the client — WhatsAppSection only needs to
-  // know whether/how a connection exists, not the secret itself.
-  const redactedConnection = whatsappConnection ? { ...whatsappConnection, bhashPass: undefined } : null;
+  // Never forward accessToken/appSecret to the client — WhatsAppSection
+  // only needs to know whether/how a connection exists, not the secrets
+  // themselves.
+  const redactedConnection = whatsappConnection
+    ? { ...whatsappConnection, accessToken: undefined, appSecret: undefined }
+    : null;
 
   return (
     <div className="max-w-6xl">
@@ -51,6 +55,8 @@ export default async function CommunicationPage() {
           <ClientLinksSection clinicId={session.clinicId} />
 
           <WhatsAppSection initialConnection={redactedConnection} canEdit={isOwner} />
+
+          <WebhookInfoSection verifyToken={process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || null} />
 
           <ScheduledMessagesSection
             initialClinic={{

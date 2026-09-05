@@ -16,11 +16,11 @@ const CATEGORY_LABELS: Record<MessageTemplateCategory, string> = {
 };
 
 /** Inline "send this template to a real number" form — lets the owner
- * verify a BhashSMS connection actually works (right password, right
- * template name/approval) by triggering a real send and checking their own
- * phone, without needing a real patient/receipt to do it through. Shows
- * BhashSMS's raw response text on success since that response format is
- * otherwise unverified. */
+ * verify a Meta WhatsApp Cloud API connection actually works (right token,
+ * right template name/language/approval) by triggering a real send and
+ * checking their own phone, without needing a real patient/receipt to do
+ * it through. Shows Meta's raw response body on success as visible
+ * confirmation of what was actually sent. */
 function TestSendRow({ template, onClose }: { template: MessageTemplate; onClose: () => void }) {
   const [phone, setPhone] = useState("");
   const [values, setValues] = useState<string[]>(() => template.variableLabels.map(() => ""));
@@ -35,7 +35,7 @@ function TestSendRow({ template, onClose }: { template: MessageTemplate; onClose
     if (res.error) {
       setResult({ ok: false, text: res.error });
     } else {
-      setResult({ ok: true, text: res.raw ? `Sent. BhashSMS response: ${res.raw}` : "Sent." });
+      setResult({ ok: true, text: res.raw ? `Sent. Meta response: ${res.raw}` : "Sent." });
     }
   }
 
@@ -79,11 +79,10 @@ function TestSendRow({ template, onClose }: { template: MessageTemplate; onClose
   );
 }
 
-/** Templates here are just a name + variable order the app needs to send —
- * the actual wording and Meta approval both live entirely on BhashSMS's own
- * dashboard, outside this app (see types/index.ts MessageTemplate). Unlike
- * the old Gupshup flow, there's no "submit for approval" step or status to
- * track here at all. */
+/** Templates here are just a name + language + variable order the app needs
+ * to send — the actual wording and approval both live entirely in Meta's
+ * Template Library, outside this app (see types/index.ts MessageTemplate).
+ * There's no "submit for approval" step or status to track here at all. */
 export default function MessageTemplatesSection({
   initialTemplates,
   isConnected,
@@ -109,7 +108,7 @@ export default function MessageTemplatesSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Message Templates</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Templates approved on your BhashSMS/Meta account — this just tells the app the exact name and what
+            Templates approved in your Meta Template Library — this just tells the app the exact name, language, and
             variables to fill in.
           </p>
         </div>
@@ -139,6 +138,9 @@ export default function MessageTemplatesSection({
                     <span className="text-sm font-medium text-brown-900">{t.name}</span>
                     <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold text-brown-600">
                       {CATEGORY_LABELS[t.category]}
+                    </span>
+                    <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold uppercase text-brown-600">
+                      {t.language}
                     </span>
                   </div>
                   {t.variableLabels.length > 0 && (

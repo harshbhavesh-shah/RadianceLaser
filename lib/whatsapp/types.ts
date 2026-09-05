@@ -4,15 +4,14 @@ import type { WhatsAppConnection } from "@/types";
 // The contract every WhatsApp BSP adapter implements — the webhook route,
 // the reply action, and the reminder/feedback cron all talk to this
 // interface, never to a specific provider's request/response shape
-// directly. Swapping providers later (e.g. once a wholesale reseller deal
-// is in place) means writing one new file under lib/whatsapp/providers/
-// and pointing lib/whatsapp/activeProvider.ts at it — nothing that calls
-// through this interface needs to change.
+// directly. Only one adapter exists today (lib/whatsapp/providers/
+// metaCloudApi.ts, the official Meta WhatsApp Cloud API), but nothing
+// calling through this interface needs to change if that ever swaps.
 
-/** Only the fields an adapter actually needs to authenticate a send —
+/** Only the fields an adapter actually needs to authenticate a call —
  * never the full WhatsAppConnection row (callers already have that; this
  * just documents the minimum shape). */
-export type WhatsAppConnectionCreds = Pick<WhatsAppConnection, "bhashUser" | "bhashPass" | "senderId">;
+export type WhatsAppConnectionCreds = Pick<WhatsAppConnection, "phoneNumberId" | "accessToken" | "appSecret">;
 
 export interface SendResult {
   providerMessageId?: string;
@@ -20,10 +19,11 @@ export interface SendResult {
 }
 
 /** One inbound message, already normalized out of whatever shape the
- * provider's webhook payload actually uses. `toPhone` is what routes this
- * to the right clinic — see lib/db/whatsappConversations.ts
- * recordInboundMessage, which looks up the clinic by
- * WhatsAppConnection.phoneNumber. */
+ * provider's webhook payload actually uses. `toPhone` is the provider's own
+ * id for the receiving number (Meta's phoneNumberId, not a phone number
+ * string) — what routes this to the right clinic, see
+ * lib/db/whatsappConversations.ts recordInboundMessage, which looks it up
+ * against WhatsAppConnection.phoneNumberId. */
 export interface NormalizedInboundMessage {
   fromPhone: string;
   toPhone: string;
@@ -35,30 +35,34 @@ export interface NormalizedInboundMessage {
 export interface WhatsAppProvider {
   name: string;
 
-  /** Sends an approved template message — the only kind of send every
-   * provider (and WhatsApp's own policy) allows outside a 24-hour
-   * customer-service window. */
+  /** Sends an approved template message — the only kind of send WhatsApp's
+   * own policy allows outside a 24-hour customer-service window.
+   * `languageCode` must match exactly what the template was approved
+   * under (e.g. "en_US") — see types/index.ts MessageTemplate.language. */
   sendTemplateMessage(
     connection: WhatsAppConnectionCreds,
     toPhone: string,
     templateName: string,
-    params: string[]
+    params: string[],
+    languageCode: string
   ): Promise<SendResult>;
 
   /** Sends free-form text — only valid inside the 24-hour window opened by
-   * the patient's own last inbound message. Not every provider's API
-   * supports this the same way (or at all on a lower-tier plan), so an
-   * adapter that can't do this yet should reject with a clear message
-   * rather than silently no-op. */
+   * the patient's own last inbound message. */
   sendFreeText(connection: WhatsAppConnectionCreds, toPhone: string, text: string): Promise<SendResult>;
 
-  /** Verifies the webhook request actually came from this provider (HMAC
-   * signature, shared secret, whatever the provider uses) before any
-   * payload parsing happens. Return false to reject the request outright. */
-  verifyWebhookRequest(rawBody: string, headers: Headers): boolean;
-
   /** Turns the provider's own webhook payload shape into our normalized
-   * form. A provider's webhook can batch multiple events in one delivery,
-   * hence the array return. */
+   * form, without verifying authenticity yet — that needs to know which
+   * clinic's connection (and secret) the payload belongs to, which this
+   * step is what discovers (via each event's `toPhone`). A provider's
+   * webhook can batch multiple events in one delivery, hence the array
+   * return. Status-update-only deliveries (sent/delivered/read receipts,
+   * no new message) should just return an empty array, not throw. */
   parseInboundWebhook(rawBody: string): NormalizedInboundMessage[];
+
+  /** Verifies one delivery actually came from the provider, using the
+   * matched clinic's own connection secret — called once per event, after
+   * parseInboundWebhook has identified which clinic it's for. Return false
+   * to have that event rejected outright. */
+  verifyWebhookSignature(rawBody: string, headers: Headers, connection: WhatsAppConnectionCreds): boolean;
 }
