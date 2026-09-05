@@ -5,6 +5,7 @@ import { getAdminSession } from "@/lib/session";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/db/client";
 import { clinicCacheTag, updateClinicSubscription, deleteClinic } from "@/lib/db/clinics";
+import { updatePlatformPricing, PLATFORM_SETTINGS_CACHE_TAG } from "@/lib/db/platformSettings";
 import type { AdminSession } from "@/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -17,6 +18,36 @@ async function requireSuperAdmin(): Promise<AdminSession> {
 
 export interface AdminActionResult {
   error?: string;
+}
+
+/**
+ * The single knob that changes the software's price everywhere at once —
+ * see lib/db/platformSettings.ts for the read side (landing page, signup
+ * page, dashboard billing, and what Razorpay actually charges all read
+ * this same row). revalidateTag makes existing pages pick it up
+ * immediately rather than waiting out the cache's 5-minute window.
+ */
+export async function updatePlatformPriceAction(annualPriceInr: number): Promise<AdminActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+
+    if (!Number.isFinite(annualPriceInr) || annualPriceInr <= 0) {
+      return { error: "Enter a positive price." };
+    }
+    if (!Number.isInteger(annualPriceInr)) {
+      return { error: "Enter a whole number of rupees." };
+    }
+
+    await updatePlatformPricing(annualPriceInr, session.email || "unknown");
+    revalidateTag(PLATFORM_SETTINGS_CACHE_TAG);
+    revalidatePath("/admin/pricing");
+    revalidatePath("/");
+    revalidatePath("/signup");
+    return {};
+  } catch (err) {
+    console.error("Failed to update platform pricing:", err);
+    return { error: "Couldn't save this price. Please try again." };
+  }
 }
 
 /**

@@ -8,10 +8,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // any clinic that was already created.
 export const TRIAL_LENGTH_DAYS = 30;
 
-// The one and only plan for now: a flat annual price, no tiers. See
-// app/dashboard/billing/actions.ts for where this is actually charged.
-export const ANNUAL_PRICE_INR = 20000;
-export const ANNUAL_PRICE_PAISE = ANNUAL_PRICE_INR * 100; // Razorpay amounts are in the smallest currency unit
+// The one and only plan for now: a flat annual price, no tiers. The price
+// itself is no longer a constant here — it's a single editable value in
+// the database (see lib/db/platformSettings.ts getAnnualPriceInr), so a
+// super admin can change it from /admin and have it apply everywhere at
+// once: the landing page, signup page, dashboard billing, and what
+// Razorpay actually charges (app/dashboard/billing/actions.ts).
 export const SUBSCRIPTION_LENGTH_DAYS = 365;
 
 // Once a trialing clinic has this many days or fewer left, or a paying

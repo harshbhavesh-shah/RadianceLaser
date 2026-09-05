@@ -49,6 +49,13 @@ export async function getClinicPayments(clinicId: string): Promise<Payment[]> {
   return rows.map(toPayment);
 }
 
+/** Every successfully completed payment across every clinic — backs
+ * app/admin/analytics, the platform-wide (not per-clinic) revenue view. */
+export async function getAllPaidPayments(): Promise<Payment[]> {
+  const rows = await prisma.payment.findMany({ where: { status: "paid" }, orderBy: { paidAt: "asc" } });
+  return rows.map(toPayment);
+}
+
 /**
  * The one place that actually grants access after a payment — called from
  * both the client-side checkout verification

@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { getSession } from "@/lib/session";
-import { ANNUAL_PRICE_INR, TRIAL_LENGTH_DAYS } from "@/lib/subscription";
+import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
+import { getAnnualPriceInr } from "@/lib/db/platformSettings";
 import SiteHeader from "@/components/marketing/SiteHeader";
 
 // Written after an actual line-by-line compliance review (see
@@ -51,6 +52,7 @@ export default async function HomePage() {
   const session = await getSession();
   if (session) redirect("/dashboard");
 
+  const annualPriceInr = await getAnnualPriceInr();
   const trialMonths = Math.round(TRIAL_LENGTH_DAYS / 30);
   const trialLengthLabel = `${trialMonths} month${trialMonths === 1 ? "" : "s"}`;
 
@@ -267,7 +269,7 @@ export default async function HomePage() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Annual plan</p>
             <div className="mt-3 font-brand text-5xl font-extrabold text-brown-900 sm:text-6xl">
-              ₹{ANNUAL_PRICE_INR.toLocaleString("en-IN")}
+              ₹{annualPriceInr.toLocaleString("en-IN")}
               <span className="text-lg font-medium text-brown-400">/year</span>
             </div>
           </div>

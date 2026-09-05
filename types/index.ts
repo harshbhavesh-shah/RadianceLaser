@@ -73,6 +73,21 @@ export interface Payment extends TenantScoped {
   paidAt?: number;
 }
 
+export type LedgerEntryType = "cost" | "profit";
+
+// A manual bookkeeping row on Radiance Laser's own ledger (app/admin/
+// ledger) — platform-level, no clinicId, entirely separate from any
+// clinic's own financial data.
+export interface LedgerEntry {
+  id: string;
+  type: LedgerEntryType;
+  amountInr: number;
+  description: string;
+  date: string; // YYYY-MM-DD
+  createdAt: number;
+  createdByEmail?: string;
+}
+
 // Roles a staff member can have within their clinic. Extend this as the
 // product grows (e.g. "doctor" vs "reception" vs "owner" already maps onto
 // the role distinctions the original admin.html had).

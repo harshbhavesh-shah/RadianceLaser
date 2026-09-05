@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { createOrder, verifyCheckoutSignature } from "@/lib/razorpay";
 import { createPendingPayment, confirmPayment } from "@/lib/db/payments";
 import { clinicCacheTag } from "@/lib/db/clinics";
-import { ANNUAL_PRICE_PAISE } from "@/lib/subscription";
+import { getAnnualPriceInr } from "@/lib/db/platformSettings";
 import type { Session } from "@/types";
 
 async function requireOwner(): Promise<Session> {
@@ -31,8 +31,13 @@ export async function createRenewalOrderAction(): Promise<CreateOrderResult> {
     const keyId = process.env.RAZORPAY_KEY_ID;
     if (!keyId) return { error: "Billing isn't configured yet — contact support." };
 
+    // Read fresh at checkout time, not cached at module load — a price
+    // change from the admin panel should apply to the very next checkout,
+    // not wait for a server restart.
+    const annualPricePaise = (await getAnnualPriceInr()) * 100;
+
     const order = await createOrder({
-      amount: ANNUAL_PRICE_PAISE,
+      amount: annualPricePaise,
       currency: "INR",
       receipt: `${session.clinicId}-${Date.now()}`,
     });
@@ -40,11 +45,11 @@ export async function createRenewalOrderAction(): Promise<CreateOrderResult> {
     await createPendingPayment({
       clinicId: session.clinicId,
       razorpayOrderId: order.id,
-      amount: ANNUAL_PRICE_PAISE,
+      amount: annualPricePaise,
       currency: "INR",
     });
 
-    return { order: { orderId: order.id, amount: ANNUAL_PRICE_PAISE, currency: "INR", keyId } };
+    return { order: { orderId: order.id, amount: annualPricePaise, currency: "INR", keyId } };
   } catch (err) {
     console.error("Failed to create Razorpay order:", err);
     return { error: "Couldn't start checkout. Please try again." };

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getAdminSession, getSession } from "@/lib/session";
-import LogoutButton from "@/components/LogoutButton";
+import AdminSidebar from "@/components/admin/AdminSidebar";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // The REAL auth check for everything under /admin — middleware.ts only
@@ -19,23 +18,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const clinicSession = await getSession();
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
-      <header className="flex items-center justify-between border-b border-beige-300 bg-brown-900 px-6 py-4 text-beige-200">
-        <div>
-          <div className="font-display text-lg font-medium text-white">Radiance Laser — Admin</div>
-          <div className="mt-1 h-[2px] w-6 bg-gold-500" />
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          {clinicSession && (
-            <Link href="/dashboard" className="text-beige-200 hover:text-white hover:underline">
-              My Clinic Dashboard
-            </Link>
-          )}
-          <span className="text-brown-400">{adminSession.email}</span>
-          <LogoutButton />
-        </div>
-      </header>
-      <main className="flex-1 p-6 md:p-10">{children}</main>
+    <div className="flex h-screen overflow-hidden bg-canvas">
+      <AdminSidebar adminEmail={adminSession.email || ""} hasClinicSession={!!clinicSession} />
+      <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-10">{children}</main>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { getClinicMachines } from "@/lib/db/machines";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { getClinicPayments } from "@/lib/db/payments";
 import { getClinicAccess } from "@/lib/subscription";
+import { getAnnualPriceInr } from "@/lib/db/platformSettings";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";
 import MachinesSection from "@/components/settings/MachinesSection";
@@ -21,12 +22,13 @@ export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [clinic, staff, machines, sessionTypeDefs, payments] = await Promise.all([
+  const [clinic, staff, machines, sessionTypeDefs, payments, annualPriceInr] = await Promise.all([
     getClinic(session.clinicId),
     getClinicStaff(session.clinicId),
     getClinicMachines(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
     getClinicPayments(session.clinicId),
+    getAnnualPriceInr(),
   ]);
 
   const isOwner = session.role === "owner";
@@ -57,6 +59,7 @@ export default async function SettingsPage() {
             clinicName={clinic?.name || "Your Clinic"}
             ownerEmail={session.email || ""}
             payments={payments}
+            annualPriceInr={annualPriceInr}
           />
 
           <StaffSection initialStaff={staff} currentUid={session.uid} isOwner={isOwner} />

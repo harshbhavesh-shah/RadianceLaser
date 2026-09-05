@@ -514,6 +514,41 @@ model ReceiptCounter {
   @@map("receipt_counters")
 }
 
+// A single platform-wide row (id is always the literal string "global" —
+// not a per-clinic table), so the one annual price shown on the landing
+// page, signup page, dashboard billing, and actually charged via Razorpay
+// all read the exact same number. Editable only from /admin (super admin),
+// see lib/db/platformSettings.ts.
+model PlatformSettings {
+  id             String  @id
+  annualPriceInr Int
+  updatedAt      BigInt
+  // Who last changed it, for the "last updated by" line in the admin UI —
+  // not an audit trail, just a courtesy note for whoever looks at this next.
+  updatedByEmail String?
+
+  @@map("platformSettings")
+}
+
+// The platform's own bookkeeping — manual entries for what running Radiance
+// Laser itself costs and earns (hosting, Meta/BSP fees, one-off income),
+// entirely separate from any clinic's own data. See app/admin/ledger.
+model LedgerEntry {
+  id             String  @id @default(cuid())
+  type           String // "cost" | "profit"
+  amountInr      Int
+  description    String
+  // The date the entry is FOR (a bill's due date, a payment's date) — kept
+  // as a plain string, same YYYY-MM-DD convention as Visit.date/
+  // Appointment.date elsewhere in this app, not necessarily today.
+  date           String
+  createdAt      BigInt
+  createdByEmail String?
+
+  @@index([date])
+  @@map("ledgerEntries")
+}
+
 // Mirrors types/index.ts Payment — chunk 12 of the post-launch cleanup
 // (going Firestore-free past the original 11-chunk migration). Clinic-
 // scoped only, no Patient FK — a payment belongs to the clinic's
