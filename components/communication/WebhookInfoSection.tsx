@@ -46,7 +46,7 @@ export default function WebhookInfoSection({ verifyToken }: { verifyToken: strin
         <div>
           <label className="text-xs font-medium uppercase tracking-wide text-brown-400">Callback URL</label>
           <div className="mt-1 flex items-center gap-2 rounded-md border border-beige-300 bg-canvas px-3 py-2">
-            <span className="flex-1 truncate text-sm text-brown-700">{callbackUrl}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-brown-700">{callbackUrl}</span>
             <button
               type="button"
               onClick={() => copy("url", callbackUrl)}
@@ -62,7 +62,7 @@ export default function WebhookInfoSection({ verifyToken }: { verifyToken: strin
           <label className="text-xs font-medium uppercase tracking-wide text-brown-400">Verify Token</label>
           {verifyToken ? (
             <div className="mt-1 flex items-center gap-2 rounded-md border border-beige-300 bg-canvas px-3 py-2">
-              <span className="flex-1 truncate text-sm text-brown-700">{verifyToken}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-brown-700">{verifyToken}</span>
               <button
                 type="button"
                 onClick={() => copy("token", verifyToken)}

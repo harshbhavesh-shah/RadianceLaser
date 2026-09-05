@@ -42,7 +42,7 @@ export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
       </p>
 
       <div className="mt-3 flex items-center gap-2 rounded-md border border-beige-300 bg-canvas px-3 py-2">
-        <span className="flex-1 truncate text-sm text-brown-700">{bookingUrl}</span>
+        <span className="min-w-0 flex-1 truncate text-sm text-brown-700">{bookingUrl}</span>
         <button
           type="button"
           onClick={handleCopy}

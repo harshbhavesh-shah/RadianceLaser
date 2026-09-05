@@ -41,8 +41,14 @@ export default async function CommunicationPage() {
           automation toggles are both short, settings-shaped controls, so
           they sit in a narrower sidebar instead of stretching to match the
           main column's width for no reason. */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
-        <div className="space-y-6">
+      {/* minmax(0,1fr), not a bare 1fr — a bare 1fr's implicit minimum is
+          "auto" (its content's own width), so a long unbroken string
+          anywhere in the left column (a template name, an API response) can
+          force this track past its fair share and push the fixed 380px
+          column off the edge of the page entirely, with no scrollbar to
+          reach it since <main> deliberately never scrolls horizontally. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <div className="min-w-0 space-y-6">
           <MessageTemplatesSection
             initialTemplates={messageTemplates}
             isConnected={isConnected}
@@ -51,7 +57,7 @@ export default async function CommunicationPage() {
           <FeedbackResultsSection feedback={visitFeedback} />
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <ClientLinksSection clinicId={session.clinicId} />
 
           <WhatsAppSection initialConnection={redactedConnection} canEdit={isOwner} />
