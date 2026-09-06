@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Manrope, Michroma } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import NativeAppBridge from "@/components/native/NativeAppBridge";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -49,7 +50,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${manrope.variable} ${michroma.variable} ${asimovian.variable}`}>
-      <body className="bg-canvas font-sans text-brown-900 antialiased">{children}</body>
+      <body className="bg-canvas font-sans text-brown-900 antialiased">
+        <NativeAppBridge />
+        {children}
+      </body>
     </html>
   );
 }

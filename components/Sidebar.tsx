@@ -138,11 +138,24 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
         <div className="w-[34px]" /> {/* balances the hamburger button for centering */}
       </div>
 
-      {/* Mobile drawer + backdrop */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-brown-900/50" onClick={() => setMobileOpen(false)} />
-          <aside className="relative flex h-full w-72 flex-col bg-brown-900 text-beige-200 shadow-2xl">
+      {/* Mobile drawer + backdrop — always mounted (rather than conditionally
+          rendered) so both open AND close animate; a closed drawer is fully
+          inert via pointer-events-none rather than being removed from the DOM. */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden ${mobileOpen ? "pointer-events-auto" : "pointer-events-none"}`}
+        aria-hidden={!mobileOpen}
+      >
+        <div
+          className={`absolute inset-0 bg-brown-900/50 transition-opacity duration-300 ${
+            mobileOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setMobileOpen(false)}
+        />
+        <aside
+          className={`relative flex h-full w-72 flex-col bg-brown-900 text-beige-200 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
             <div className="flex items-center justify-between px-6 pt-6 pb-6">
               <div className="flex items-center gap-3">
                 <Image src="/logo.png" alt="" width={36} height={36} />
@@ -178,7 +191,6 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
             </div>
           </aside>
         </div>
-      )}
 
       {/* Desktop sidebar — hidden below md, collapsible between full/icon-rail */}
       <aside

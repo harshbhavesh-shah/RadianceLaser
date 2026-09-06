@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Radiance Laser</string>
+    <string name="title_activity_main">Radiance Laser</string>
+    <string name="package_name">in.radiancelaser.app</string>
+    <string name="custom_url_scheme">in.radiancelaser.app</string>
+</resources>

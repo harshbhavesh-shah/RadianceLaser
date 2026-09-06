@@ -7,6 +7,7 @@ import "server-only";
 import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getMessaging, type Messaging } from "firebase-admin/messaging";
 
 // Lazily initialized — deliberately NOT created as a top-level const. Next.js
 // analyzes API route modules during `next build` ("collecting page data"),
@@ -47,4 +48,8 @@ export function adminAuth(): Auth {
 
 export function adminDb(): Firestore {
   return getFirestore(getAdminApp());
+}
+
+export function adminMessaging(): Messaging {
+  return getMessaging(getAdminApp());
 }

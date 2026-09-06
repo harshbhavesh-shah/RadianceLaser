@@ -820,3 +820,24 @@ model InventoryLog {
   @@index([itemId, createdAt])
   @@map("inventoryLogs")
 }
+
+// One row per installed Android app instance signed in as some Firebase
+// user — the FCM registration token identifies the physical device/app
+// install, not the person, so the same uid can have several rows (a staff
+// member's phone and tablet) and re-registering the same token (relogin,
+// app reinstall) just overwrites the uid it points at. clinicId is null for
+// a super-admin-only session (see types/index.ts Session.isSuperAdmin) —
+// nothing today sends to those, but the shape allows it later without a
+// migration. See lib/push/send.ts.
+model PushToken {
+  token        String  @id
+  uid          String
+  clinicId     String?
+  isSuperAdmin Boolean @default(false)
+  createdAt    BigInt
+  updatedAt    BigInt
+
+  @@index([clinicId])
+  @@index([uid])
+  @@map("pushTokens")
+}

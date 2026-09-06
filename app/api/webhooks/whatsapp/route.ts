@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { activeProvider } from "@/lib/whatsapp/activeProvider";
 import { getWhatsAppConnectionByPhoneNumberId } from "@/lib/db/whatsapp";
 import { recordInboundMessage } from "@/lib/db/whatsappConversations";
+import { sendPushToClinic } from "@/lib/push/send";
 
 // One shared endpoint for every clinic's inbound WhatsApp traffic — each
 // event identifies which clinic it belongs to via its own phoneNumberId
@@ -64,8 +65,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         continue;
       }
 
-      await recordInboundMessage(event);
+      const message = await recordInboundMessage(event);
       recorded++;
+
+      if (message) {
+        // Best-effort — a clinic with no devices registered (or a push
+        // send failure) should never affect whether the message itself
+        // was recorded, which already succeeded above.
+        sendPushToClinic(message.clinicId, {
+          title: "New WhatsApp message",
+          body: message.body.length > 120 ? `${message.body.slice(0, 120)}…` : message.body,
+          data: { path: "/dashboard/inbox" },
+        }).catch((err) => console.error("Failed to send push for inbound WhatsApp message:", err));
+      }
     } catch (err) {
       console.error("Failed to record inbound WhatsApp message:", err);
     }

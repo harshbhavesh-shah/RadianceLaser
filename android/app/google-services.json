@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1035339144812",
+    "project_id": "radiancelaser-c9bd4",
+    "storage_bucket": "radiancelaser-c9bd4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1035339144812:android:dd9919faa4c78615638249",
+        "android_client_info": {
+          "package_name": "in.radiancelaser.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1035339144812-im1881kf3c5044iqssckbjq5s81jragv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBi5AjsrG52IRUbTviJkG8wpOfosOHlfaE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1035339144812-3732b4qvp1qht8rcn4662qrf1r9no1es.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
