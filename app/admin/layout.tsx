@@ -18,9 +18,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const clinicSession = await getSession();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-canvas">
+    <div className="flex h-screen flex-col overflow-hidden bg-canvas md:flex-row">
       <AdminSidebar adminEmail={adminSession.email || ""} hasClinicSession={!!clinicSession} />
-      <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-10">{children}</main>
+      <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10">{children}</main>
     </div>
   );
 }

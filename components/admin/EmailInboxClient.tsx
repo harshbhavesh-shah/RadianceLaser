@@ -112,11 +112,13 @@ export default function EmailInboxClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300">
-        <div className="flex items-center gap-2 text-sm text-brown-600">
-          <Mail size={15} className="text-gold-600" />
-          Connected as <span className="font-medium text-brown-900">{gmailAccount}</span>, sending as{" "}
-          <span className="font-medium text-brown-900">{RADIANCE_EMAIL_ADDRESS}</span>
+      <div className="flex flex-col gap-3 rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-2 text-sm text-brown-600 sm:items-center">
+          <Mail size={15} className="mt-0.5 flex-shrink-0 text-gold-600 sm:mt-0" />
+          <span>
+            Connected as <span className="font-medium text-brown-900">{gmailAccount}</span>, sending as{" "}
+            <span className="font-medium text-brown-900">{RADIANCE_EMAIL_ADDRESS}</span>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -124,7 +126,7 @@ export default function EmailInboxClient({
               setCompose({ to: "", subject: "", body: "" });
               setSelectedId(null);
             }}
-            className="flex items-center gap-1.5 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 sm:flex-none"
           >
             <PenSquare size={14} />
             Compose
@@ -132,7 +134,7 @@ export default function EmailInboxClient({
           <button
             onClick={handleDisconnect}
             disabled={disconnecting}
-            className="rounded-md border border-beige-300 px-3 py-2 text-xs font-medium text-brown-600 transition-colors hover:border-red-300 hover:text-red-700 disabled:opacity-50"
+            className="flex-shrink-0 rounded-md border border-beige-300 px-3 py-2 text-xs font-medium text-brown-600 transition-colors hover:border-red-300 hover:text-red-700 disabled:opacity-50"
           >
             Disconnect
           </button>

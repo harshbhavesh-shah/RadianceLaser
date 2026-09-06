@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, IndianRupee, BarChart3, BookOpen, Mail } from "lucide-react";
+import { Building2, IndianRupee, BarChart3, BookOpen, Mail, Menu, X } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 
 const NAV_ITEMS = [
@@ -15,23 +16,21 @@ const NAV_ITEMS = [
 ];
 
 /** The super-admin counterpart to components/Sidebar.tsx — same dark
- * brown/gold visual language as the clinic-facing dashboard, so /admin
- * reads as part of the same product rather than a bolted-on internal tool.
- * Simpler on purpose: no collapse toggle, no mobile drawer — this is a
- * small, single-operator surface, not something staff use day to day. */
+ * brown/gold visual language, and the same responsive shape: a persistent
+ * sidebar at md+ widths, a top bar with an off-canvas drawer below it. No
+ * collapse toggle, unlike the clinic dashboard's sidebar — this is a small,
+ * single-operator surface with only five destinations, not something that
+ * benefits from an icon-only rail. */
 export default function AdminSidebar({ adminEmail, hasClinicSession }: { adminEmail: string; hasClinicSession: boolean }) {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return (
-    <aside className="flex h-screen w-60 flex-shrink-0 flex-col bg-brown-900 text-beige-200">
-      <div className="flex items-center gap-3 px-6 pt-7 pb-6">
-        <Image src="/logo.png" alt="" width={40} height={40} className="flex-shrink-0" />
-        <div>
-          <div className="font-display text-lg font-medium text-white">Radiance Laser</div>
-          <div className="mt-2 h-[2px] w-8 bg-gold-500" />
-        </div>
-      </div>
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
+  function NavLinks() {
+    return (
       <nav className="flex-1 space-y-0.5 px-3">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -50,23 +49,97 @@ export default function AdminSidebar({ adminEmail, hasClinicSession }: { adminEm
           );
         })}
       </nav>
+    );
+  }
 
-      {hasClinicSession && (
-        <div className="px-3 pb-2">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-beige-200 transition-colors hover:bg-brown-700/60 hover:text-white"
-          >
-            My Clinic Dashboard
-          </Link>
+  return (
+    <>
+      {/* Mobile top bar — only visible below md, triggers the drawer */}
+      <div className="flex items-center justify-between border-b border-beige-300 bg-surface px-4 py-3 md:hidden">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="rounded-md p-1.5 text-brown-700 hover:bg-beige-200"
+          aria-label="Open menu"
+        >
+          <Menu size={22} />
+        </button>
+        <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="" width={28} height={28} />
+          <span className="font-display text-lg font-medium text-brown-900">Radiance Laser</span>
+        </div>
+        <div className="w-[34px]" /> {/* balances the hamburger button for centering */}
+      </div>
+
+      {/* Mobile drawer + backdrop */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-brown-900/50" onClick={() => setMobileOpen(false)} />
+          <aside className="relative flex h-full w-72 flex-col bg-brown-900 text-beige-200 shadow-2xl">
+            <div className="flex items-center justify-between px-6 pt-6 pb-6">
+              <div className="flex items-center gap-3">
+                <Image src="/logo.png" alt="" width={36} height={36} />
+                <div>
+                  <div className="font-display text-xl font-medium text-white">Radiance Laser</div>
+                  <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+                </div>
+              </div>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md p-1 text-beige-200 hover:text-white"
+                aria-label="Close menu"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <NavLinks />
+            {hasClinicSession && (
+              <div className="px-3 pb-2">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-beige-200 transition-colors hover:bg-brown-700/60 hover:text-white"
+                >
+                  My Clinic Dashboard
+                </Link>
+              </div>
+            )}
+            <div className="border-t border-brown-700/60 px-6 py-4">
+              <div className="truncate text-sm text-beige-200">{adminEmail}</div>
+              <div className="mb-3 text-xs uppercase tracking-wide text-brown-400">Super Admin</div>
+              <LogoutButton />
+            </div>
+          </aside>
         </div>
       )}
 
-      <div className="border-t border-brown-700/60 px-6 py-4">
-        <div className="truncate text-sm text-beige-200">{adminEmail}</div>
-        <div className="mb-3 text-xs uppercase tracking-wide text-brown-400">Super Admin</div>
-        <LogoutButton />
-      </div>
-    </aside>
+      {/* Desktop sidebar — hidden below md */}
+      <aside className="hidden h-screen w-60 flex-shrink-0 flex-col bg-brown-900 text-beige-200 md:flex">
+        <div className="flex items-center gap-3 px-6 pt-7 pb-6">
+          <Image src="/logo.png" alt="" width={40} height={40} className="flex-shrink-0" />
+          <div>
+            <div className="font-display text-lg font-medium text-white">Radiance Laser</div>
+            <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+          </div>
+        </div>
+
+        <NavLinks />
+
+        {hasClinicSession && (
+          <div className="px-3 pb-2">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-beige-200 transition-colors hover:bg-brown-700/60 hover:text-white"
+            >
+              My Clinic Dashboard
+            </Link>
+          </div>
+        )}
+
+        <div className="border-t border-brown-700/60 px-6 py-4">
+          <div className="truncate text-sm text-beige-200">{adminEmail}</div>
+          <div className="mb-3 text-xs uppercase tracking-wide text-brown-400">Super Admin</div>
+          <LogoutButton />
+        </div>
+      </aside>
+    </>
   );
 }

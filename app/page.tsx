@@ -69,7 +69,7 @@ export default async function HomePage() {
       <section className="flex min-h-[calc(100vh-4rem)] items-center">
         <div className={`${CONTAINER} grid w-full grid-cols-1 items-center gap-12 py-14 lg:grid-cols-2 lg:gap-14`}>
           <div>
-            <h1 className="font-brand text-5xl font-extrabold leading-[1.1] tracking-tight text-brown-900 sm:text-6xl">
+            <h1 className="font-brand text-4xl font-extrabold leading-[1.1] tracking-tight text-brown-900 sm:text-5xl lg:text-6xl">
               Run your clinic. Not a spreadsheet.
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-brown-600">
@@ -268,7 +268,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 gap-10 rounded-2xl border border-beige-300 bg-surface p-8 shadow-card sm:p-12 lg:grid-cols-2 lg:items-center lg:gap-14">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Annual plan</p>
-            <div className="mt-3 font-brand text-5xl font-extrabold text-brown-900 sm:text-6xl">
+            <div className="mt-3 font-brand text-4xl font-extrabold text-brown-900 sm:text-5xl lg:text-6xl">
               ₹{annualPriceInr.toLocaleString("en-IN")}
               <span className="text-lg font-medium text-brown-400">/year</span>
             </div>
