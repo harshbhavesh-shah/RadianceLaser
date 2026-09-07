@@ -4,11 +4,11 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { createTrialClinicAction } from "@/app/signup/actions";
 import { provisionGoogleClinicAction } from "@/app/login/actions";
-import { proceedAfterPrimaryAuth, finishAfterOtp } from "@/lib/authFlow";
+import { proceedAfterPrimaryAuth, finishAfterOtp, signInWithGoogle } from "@/lib/authFlow";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import AuthShell from "@/components/marketing/AuthShell";
 
@@ -81,7 +81,7 @@ export default function SignUpForm({ annualPriceInr }: { annualPriceInr: number 
     setError(null);
     setLoading(true);
     try {
-      const credential = await signInWithPopup(auth, new GoogleAuthProvider());
+      const credential = await signInWithGoogle();
       const idTokenResult = await credential.user.getIdTokenResult();
 
       if (!idTokenResult.claims.clinicId) {

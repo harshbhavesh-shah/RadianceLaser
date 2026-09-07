@@ -12,6 +12,7 @@
     "grant-super-admin": "node scripts/grantSuperAdmin.mjs"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "^8.5.1",
     "@capacitor/android": "^8.5.1",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.1",
@@ -21,7 +22,7 @@
     "@capacitor/status-bar": "^8.0.3",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "firebase": "^10.12.4",
+    "firebase": "^12.18.0",
     "firebase-admin": "^12.3.0",
     "lucide-react": "^0.424.0",
     "next": "^14.2.5",

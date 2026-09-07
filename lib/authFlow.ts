@@ -1,6 +1,32 @@
 "use client";
 
+import { Capacitor } from "@capacitor/core";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
+import { GoogleAuthProvider, signInWithCredential, signInWithPopup, type UserCredential } from "firebase/auth";
+import { auth } from "@/lib/firebase/client";
 import { requestTwoFactorIfEnabledAction, verifyTwoFactorCodeAction } from "@/app/login/actions";
+
+/**
+ * Shared by app/login/page.tsx and components/auth/SignUpForm.tsx. Google
+ * blocks OAuth sign-in inside an embedded WebView (the account picker opens
+ * but never hands control back) — signInWithPopup() only works on the real
+ * web. Inside the Android app, this goes through Android's native account
+ * picker instead (via @capacitor-firebase/authentication) and exchanges the
+ * resulting Google credential for a Firebase sign-in with signInWithCredential,
+ * so callers get back the same UserCredential shape either way.
+ */
+export async function signInWithGoogle(): Promise<UserCredential> {
+  if (!Capacitor.isNativePlatform()) {
+    return signInWithPopup(auth, new GoogleAuthProvider());
+  }
+
+  const result = await FirebaseAuthentication.signInWithGoogle();
+  if (!result.credential?.idToken) {
+    throw new Error("Google sign-in did not return a credential.");
+  }
+  const credential = GoogleAuthProvider.credential(result.credential.idToken, result.credential.accessToken);
+  return signInWithCredential(auth, credential);
+}
 
 // Matches just the two router methods actually used here — avoids importing
 // Next's internal (and version-fragile) app-router type path just to type

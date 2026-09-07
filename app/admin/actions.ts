@@ -5,7 +5,9 @@ import { getAdminSession } from "@/lib/session";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/db/client";
 import { clinicCacheTag, updateClinicSubscription, deleteClinic } from "@/lib/db/clinics";
-import { updatePlatformPricing, PLATFORM_SETTINGS_CACHE_TAG } from "@/lib/db/platformSettings";
+import { updatePlatformPricing, PLATFORM_SETTINGS_CACHE_TAG, getAnnualPriceInr } from "@/lib/db/platformSettings";
+import { createLedgerEntry } from "@/lib/db/ledger";
+import { SUBSCRIPTION_LENGTH_DAYS } from "@/lib/subscription";
 import type { AdminSession } from "@/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -93,6 +95,48 @@ export async function extendAccessAction(clinicId: string, days: number): Promis
   } catch (err) {
     console.error("Failed to extend clinic access:", err);
     return { error: "Couldn't extend access. Please try again." };
+  }
+}
+
+/**
+ * Marks a clinic "active" for a full year, exactly as if they'd just paid
+ * through Razorpay — for a clinic that actually paid you outside the app
+ * (bank transfer, cash, etc.). Unlike extendAccessAction, this always
+ * lands on "active" status even for a clinic that's still on/never left
+ * its trial, rather than just adding days to whichever deadline currently
+ * governs it. Also logs the sale in the Ledger (see app/admin/ledger) at
+ * the current platform price, since a payment collected this way would
+ * otherwise never show up anywhere in the platform's own bookkeeping —
+ * Payment (prisma/schema.prisma) is Razorpay-specific (a required
+ * razorpayOrderId), so this isn't recorded there.
+ */
+export async function activateAccountAction(clinicId: string): Promise<AdminActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+    if (!clinic) return { error: "Clinic not found." };
+
+    const current = Number(clinic.subscriptionRenewsAt ?? 0);
+    const newRenewsAt = Math.max(Date.now(), current) + SUBSCRIPTION_LENGTH_DAYS * DAY_MS;
+    await updateClinicSubscription(clinicId, { subscriptionStatus: "active", subscriptionRenewsAt: newRenewsAt });
+
+    const annualPriceInr = await getAnnualPriceInr();
+    await createLedgerEntry({
+      type: "profit",
+      amountInr: annualPriceInr,
+      description: `Manual activation — ${clinic.name} (1 year)`,
+      date: new Date().toISOString().slice(0, 10),
+      createdByEmail: session.email || undefined,
+    });
+
+    revalidateTag(clinicCacheTag(clinicId));
+    revalidatePath("/admin");
+    revalidatePath("/admin/ledger");
+    return {};
+  } catch (err) {
+    console.error("Failed to activate clinic:", err);
+    return { error: "Couldn't activate this clinic. Please try again." };
   }
 }
 

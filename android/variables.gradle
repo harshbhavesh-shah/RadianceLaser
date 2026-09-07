@@ -1,4 +1,10 @@
 ext {
+    // Required by @capacitor-firebase/authentication's native Google
+    // Sign-In (see docs/setup-google.md) — signInWithPopup() is blocked by
+    // Google inside an embedded WebView, so the Android app needs the real
+    // native account picker instead.
+    rgcfaIncludeGoogle = true
+    androidxCredentialsVersion = '1.3.0'
     minSdkVersion = 24
     compileSdkVersion = 36
     targetSdkVersion = 36

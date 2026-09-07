@@ -38,6 +38,13 @@ const config: CapacitorConfig = {
       backgroundColor: "#FBF8F3",
       style: "DARK", // dark icons/text — every screen sits on a light background
     },
+    FirebaseAuthentication: {
+      // Native Google Sign-In (Android's own account picker) instead of
+      // the web signInWithPopup() flow, which Google blocks inside an
+      // embedded WebView — see lib/authFlow.ts signInWithGoogle().
+      providers: ["google.com"],
+      skipNativeAuth: false,
+    },
   },
 };
 

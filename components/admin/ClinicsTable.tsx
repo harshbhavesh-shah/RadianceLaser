@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteClinicAction, extendAccessAction, terminateAccessAction } from "@/app/admin/actions";
+import { activateAccountAction, deleteClinicAction, extendAccessAction, terminateAccessAction } from "@/app/admin/actions";
 import { getClinicAccess, type ClinicAccess } from "@/lib/subscription";
 import type { Clinic } from "@/types";
 
@@ -40,7 +40,7 @@ function deadlineLabel(clinic: Clinic): string {
  * rendered in the desktop table's last cell or the mobile card's footer
  * (see ClinicsTable below). Each render gets its own independent state,
  * which is harmless since only one layout is ever visible at a time. */
-function ClinicActions({ clinic }: { clinic: Clinic }) {
+function ClinicActions({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr: number }) {
   const router = useRouter();
   const [days, setDays] = useState(30);
   const [isPending, setIsPending] = useState(false);
@@ -50,6 +50,27 @@ function ClinicActions({ clinic }: { clinic: Clinic }) {
     setIsPending(true);
     setError(null);
     const result = await extendAccessAction(clinic.id, days);
+    setIsPending(false);
+    if (result.error) setError(result.error);
+    else router.refresh();
+  }
+
+  // "Active" (not just "trial extended") — for a clinic that actually paid
+  // outside the app (bank transfer, cash, etc.). Also logs the sale on the
+  // Ledger at the current price, so it shows up there without your having
+  // to remember to add it separately — see activateAccountAction.
+  async function handleActivate() {
+    if (
+      !confirm(
+        `Activate "${clinic.name}" for 1 year, as if they just paid ₹${annualPriceInr.toLocaleString("en-IN")}?\n\n` +
+          `This also logs ₹${annualPriceInr.toLocaleString("en-IN")} as profit in the Ledger.`
+      )
+    ) {
+      return;
+    }
+    setIsPending(true);
+    setError(null);
+    const result = await activateAccountAction(clinic.id);
     setIsPending(false);
     if (result.error) setError(result.error);
     else router.refresh();
@@ -106,6 +127,13 @@ function ClinicActions({ clinic }: { clinic: Clinic }) {
           Extend
         </button>
         <button
+          onClick={handleActivate}
+          disabled={isPending}
+          className="rounded-md bg-green-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-800 disabled:opacity-50"
+        >
+          Activate (1yr)
+        </button>
+        <button
           onClick={handleTerminate}
           disabled={isPending}
           className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
@@ -125,7 +153,7 @@ function ClinicActions({ clinic }: { clinic: Clinic }) {
   );
 }
 
-function ClinicRow({ clinic }: { clinic: Clinic }) {
+function ClinicRow({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr: number }) {
   const access = getClinicAccess(clinic);
   return (
     <tr className="border-b border-beige-300 last:border-0">
@@ -138,7 +166,7 @@ function ClinicRow({ clinic }: { clinic: Clinic }) {
       </td>
       <td className="px-4 py-3 text-sm text-brown-600">{deadlineLabel(clinic)}</td>
       <td className="px-4 py-3">
-        <ClinicActions clinic={clinic} />
+        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} />
       </td>
     </tr>
   );
@@ -147,7 +175,7 @@ function ClinicRow({ clinic }: { clinic: Clinic }) {
 /** Same information as ClinicRow, restacked into a card — a 4-column table
  * has no room to breathe below md, where the viewport itself is often
  * narrower than the Status/Deadline/Actions columns need. */
-function ClinicCard({ clinic }: { clinic: Clinic }) {
+function ClinicCard({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr: number }) {
   const access = getClinicAccess(clinic);
   return (
     <div className="rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300">
@@ -160,13 +188,13 @@ function ClinicCard({ clinic }: { clinic: Clinic }) {
       </div>
       <div className="mt-2 text-sm text-brown-600">{deadlineLabel(clinic)}</div>
       <div className="mt-3 border-t border-beige-300 pt-3">
-        <ClinicActions clinic={clinic} />
+        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} />
       </div>
     </div>
   );
 }
 
-export default function ClinicsTable({ clinics }: { clinics: Clinic[] }) {
+export default function ClinicsTable({ clinics, annualPriceInr }: { clinics: Clinic[]; annualPriceInr: number }) {
   if (clinics.length === 0) {
     return <p className="text-sm text-brown-400">No clinics yet.</p>;
   }
@@ -178,7 +206,7 @@ export default function ClinicsTable({ clinics }: { clinics: Clinic[] }) {
           phone widths. */}
       <div className="space-y-3 md:hidden">
         {clinics.map((clinic) => (
-          <ClinicCard key={clinic.id} clinic={clinic} />
+          <ClinicCard key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
         ))}
       </div>
 
@@ -195,7 +223,7 @@ export default function ClinicsTable({ clinics }: { clinics: Clinic[] }) {
           </thead>
           <tbody>
             {clinics.map((clinic) => (
-              <ClinicRow key={clinic.id} clinic={clinic} />
+              <ClinicRow key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
             ))}
           </tbody>
         </table>

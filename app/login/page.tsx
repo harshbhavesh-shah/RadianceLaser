@@ -3,15 +3,14 @@
 import { Suspense, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  type UserCredential,
-} from "firebase/auth";
+import { signInWithEmailAndPassword, type UserCredential } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { provisionGoogleClinicAction } from "./actions";
-import { proceedAfterPrimaryAuth as sharedProceedAfterPrimaryAuth, finishAfterOtp } from "@/lib/authFlow";
+import {
+  proceedAfterPrimaryAuth as sharedProceedAfterPrimaryAuth,
+  finishAfterOtp,
+  signInWithGoogle,
+} from "@/lib/authFlow";
 import AuthShell from "@/components/marketing/AuthShell";
 
 // credentials: the normal email/password (or "click Google") screen.
@@ -80,7 +79,7 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const credential: UserCredential = await signInWithPopup(auth, new GoogleAuthProvider());
+      const credential: UserCredential = await signInWithGoogle();
       const idTokenResult = await credential.user.getIdTokenResult();
 
       if (!idTokenResult.claims.clinicId) {
