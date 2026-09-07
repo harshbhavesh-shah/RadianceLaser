@@ -88,6 +88,20 @@ export interface LedgerEntry {
   createdByEmail?: string;
 }
 
+export type AdminAuditAction = "extend" | "activate" | "terminate" | "delete" | "price_change";
+
+// One row per manual super-admin override — see prisma/schema.prisma's
+// AdminAuditLog comment for why this exists separately from LedgerEntry.
+export interface AdminAuditLogEntry {
+  id: string;
+  clinicId: string | null;
+  clinicName: string | null;
+  action: AdminAuditAction;
+  detail: string;
+  performedBy: string;
+  createdAt: number;
+}
+
 // Roles a staff member can have within their clinic. Extend this as the
 // product grows (e.g. "doctor" vs "reception" vs "owner" already maps onto
 // the role distinctions the original admin.html had).

@@ -10,7 +10,7 @@ import AppointmentsClient from "@/components/appointments/AppointmentsClient";
 
 export default async function AppointmentsPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const [patients, appointments, visits, packages, receipts] = await Promise.all([
     getPatients(session.clinicId),

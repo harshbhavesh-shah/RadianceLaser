@@ -6,7 +6,7 @@ import InventoryDashboard from "@/components/inventory/InventoryDashboard";
 
 export default async function InventoryPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const [items, recentLogs] = await Promise.all([
     getClinicInventoryItems(session.clinicId),

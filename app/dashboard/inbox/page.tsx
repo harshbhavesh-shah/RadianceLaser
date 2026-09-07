@@ -5,7 +5,7 @@ import InboxClient from "@/components/inbox/InboxClient";
 
 export default async function InboxPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const conversations = await getClinicConversations(session.clinicId);
 

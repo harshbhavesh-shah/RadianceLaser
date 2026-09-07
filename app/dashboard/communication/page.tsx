@@ -13,7 +13,7 @@ import FeedbackResultsSection from "@/components/communication/FeedbackResultsSe
 
 export default async function CommunicationPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const [whatsappConnection, messageTemplates, clinic, visitFeedback] = await Promise.all([
     getWhatsAppConnection(session.clinicId),

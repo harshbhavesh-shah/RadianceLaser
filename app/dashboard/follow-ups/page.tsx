@@ -19,7 +19,7 @@ function formatDayLabel(dateStr: string): string {
 // anywhere on its own before this page.
 export default async function FollowUpsPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const today = todayLocalStr();
   const tomorrow = toDateStr(addDays(new Date(), 1));

@@ -18,7 +18,7 @@ export async function updatePatientAction(
   formData: FormData
 ): Promise<UpdatePatientState> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const patient = await getPatient(session.clinicId, patientId);
   if (!patient) return { error: "Patient not found." };
@@ -81,7 +81,7 @@ export interface EraseState {
  */
 export async function erasePatientAction(patientId: string, _prevState: EraseState, formData: FormData): Promise<EraseState> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
   if (session.role !== "owner") return { error: "Only the clinic owner can erase a patient's data." };
 
   const patient = await getPatient(session.clinicId, patientId);

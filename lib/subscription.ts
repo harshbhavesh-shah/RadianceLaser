@@ -75,3 +75,19 @@ export function getClinicAccess(
 
   return { status: "locked" }; // "canceled"
 }
+
+/**
+ * The single timestamp that answers "when does this clinic next need
+ * attention" — trialEndsAt while trialing, subscriptionRenewsAt while
+ * active, or null for a clinic that's already locked/canceled (that's a
+ * "not paying" problem, not a "coming due" one — see
+ * components/admin/ClinicsTable.tsx, the only current caller, which sorts
+ * and filters the Clinics page by this).
+ */
+export function getClinicDeadline(
+  clinic: Pick<Clinic, "subscriptionStatus" | "trialEndsAt" | "subscriptionRenewsAt">
+): number | null {
+  if (clinic.subscriptionStatus === "trialing") return clinic.trialEndsAt;
+  if (clinic.subscriptionStatus === "active") return clinic.subscriptionRenewsAt ?? null;
+  return null;
+}

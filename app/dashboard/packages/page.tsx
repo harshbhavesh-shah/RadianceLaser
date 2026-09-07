@@ -22,7 +22,7 @@ function formatCurrency(n: number): string {
 
 export default async function PackagesPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const [packages, sessionTypeDefs] = await Promise.all([
     getClinicPackages(session.clinicId),

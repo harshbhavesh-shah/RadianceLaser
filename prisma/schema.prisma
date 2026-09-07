@@ -549,6 +549,31 @@ model LedgerEntry {
   @@map("ledgerEntries")
 }
 
+// A record of every manual override a super admin makes to a clinic's
+// access or the platform's pricing — Extend, Activate, Terminate, Delete,
+// price changes. Separate from LedgerEntry (that's what it cost/earned);
+// this is *who did what, to whom, and when* — so a clinic disputing "you
+// said I had access until X" has an answer, and a change made months ago
+// isn't just invisible once the resulting state gets overwritten by a
+// later action. Append-only: nothing ever updates or deletes a row here.
+model AdminAuditLog {
+  id String @id @default(cuid())
+  // Null for a platform-wide action (a price change) rather than one
+  // scoped to a specific clinic. Deliberately not a foreign key — a
+  // clinic can be deleted (deleteClinicAction) after its own audit trail
+  // was written, and that history should survive the clinic it's about.
+  clinicId     String?
+  clinicName   String? // snapshotted at write time, same reason as above
+  action       String // "extend" | "activate" | "terminate" | "delete" | "price_change"
+  detail       String // human-readable summary, e.g. "+30 days" or "₹18,000 -> ₹20,000"
+  performedBy  String // admin's email
+  createdAt    BigInt
+
+  @@index([clinicId])
+  @@index([createdAt])
+  @@map("adminAuditLogs")
+}
+
 // A single platform-wide row (id is always "global", same singleton
 // pattern as PlatformSettings) holding the OAuth grant that lets the app
 // read and send mail as admin@radiancelaser.in via the Gmail API. The

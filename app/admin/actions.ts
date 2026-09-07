@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db/client";
 import { clinicCacheTag, updateClinicSubscription, deleteClinic } from "@/lib/db/clinics";
 import { updatePlatformPricing, PLATFORM_SETTINGS_CACHE_TAG, getAnnualPriceInr } from "@/lib/db/platformSettings";
 import { createLedgerEntry } from "@/lib/db/ledger";
+import { createAdminAuditLogEntry } from "@/lib/db/adminAuditLog";
 import { SUBSCRIPTION_LENGTH_DAYS } from "@/lib/subscription";
 import type { AdminSession } from "@/types";
 
@@ -40,7 +41,13 @@ export async function updatePlatformPriceAction(annualPriceInr: number): Promise
       return { error: "Enter a whole number of rupees." };
     }
 
+    const oldPriceInr = await getAnnualPriceInr();
     await updatePlatformPricing(annualPriceInr, session.email || "unknown");
+    await createAdminAuditLogEntry({
+      action: "price_change",
+      detail: `₹${oldPriceInr.toLocaleString("en-IN")} → ₹${annualPriceInr.toLocaleString("en-IN")}`,
+      performedBy: session.email || "unknown",
+    });
     revalidateTag(PLATFORM_SETTINGS_CACHE_TAG);
     revalidatePath("/admin/pricing");
     revalidatePath("/");
@@ -64,7 +71,7 @@ export async function updatePlatformPriceAction(annualPriceInr: number): Promise
  */
 export async function extendAccessAction(clinicId: string, days: number): Promise<AdminActionResult> {
   try {
-    await requireSuperAdmin();
+    const session = await requireSuperAdmin();
 
     if (!Number.isFinite(days) || days <= 0) {
       return { error: "Enter a positive number of days." };
@@ -88,6 +95,14 @@ export async function extendAccessAction(clinicId: string, days: number): Promis
       const newTrialEndsAt = Math.max(Date.now(), current) + days * DAY_MS;
       await updateClinicSubscription(clinicId, { subscriptionStatus: "trialing", trialEndsAt: newTrialEndsAt });
     }
+
+    await createAdminAuditLogEntry({
+      clinicId,
+      clinicName: clinic.name,
+      action: "extend",
+      detail: `+${days} day${days === 1 ? "" : "s"}`,
+      performedBy: session.email || "unknown",
+    });
 
     revalidateTag(clinicCacheTag(clinicId));
     revalidatePath("/admin");
@@ -129,6 +144,13 @@ export async function activateAccountAction(clinicId: string): Promise<AdminActi
       date: new Date().toISOString().slice(0, 10),
       createdByEmail: session.email || undefined,
     });
+    await createAdminAuditLogEntry({
+      clinicId,
+      clinicName: clinic.name,
+      action: "activate",
+      detail: `Activated for 1 year (₹${annualPriceInr.toLocaleString("en-IN")})`,
+      performedBy: session.email || "unknown",
+    });
 
     revalidateTag(clinicCacheTag(clinicId));
     revalidatePath("/admin");
@@ -145,12 +167,20 @@ export async function activateAccountAction(clinicId: string): Promise<AdminActi
  * clinicIsActive()), regardless of what its trial/subscription dates say. */
 export async function terminateAccessAction(clinicId: string): Promise<AdminActionResult> {
   try {
-    await requireSuperAdmin();
+    const session = await requireSuperAdmin();
 
-    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true } });
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true, name: true } });
     if (!clinic) return { error: "Clinic not found." };
 
     await updateClinicSubscription(clinicId, { subscriptionStatus: "canceled" });
+
+    await createAdminAuditLogEntry({
+      clinicId,
+      clinicName: clinic.name,
+      action: "terminate",
+      detail: "Access terminated",
+      performedBy: session.email || "unknown",
+    });
 
     revalidateTag(clinicCacheTag(clinicId));
     revalidatePath("/admin");
@@ -221,7 +251,7 @@ async function deleteQueryInChunks(query: FirebaseFirestore.Query): Promise<numb
  */
 export async function deleteClinicAction(clinicId: string): Promise<AdminActionResult> {
   try {
-    await requireSuperAdmin();
+    const session = await requireSuperAdmin();
 
     const db = adminDb();
     const auth = adminAuth();
@@ -229,10 +259,11 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
     // just below: a clinic created before Clinic moved to Postgres (see
     // lib/db/clinics.ts) may only exist as a Firestore doc.
     const [clinicRow, clinicSnap] = await Promise.all([
-      prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true } }),
+      prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true, name: true } }),
       db.collection("clinics").doc(clinicId).get(),
     ]);
     if (!clinicRow && !clinicSnap.exists) return { error: "Clinic not found." };
+    const clinicName = clinicRow?.name ?? (clinicSnap.data()?.name as string | undefined) ?? clinicId;
 
     // Staff docs/rows double as the id of who to delete from Firebase Auth —
     // collect their uids before deleting them below. Checked in both
@@ -289,6 +320,17 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
     } else {
       await db.collection("clinics").doc(clinicId).delete();
     }
+
+    // Written after the clinic itself is gone — AdminAuditLog.clinicId is
+    // deliberately not a foreign key (see prisma/schema.prisma), precisely
+    // so this history survives the clinic it's about.
+    await createAdminAuditLogEntry({
+      clinicId,
+      clinicName,
+      action: "delete",
+      detail: "Clinic permanently deleted",
+      performedBy: session.email || "unknown",
+    });
 
     revalidateTag(clinicCacheTag(clinicId));
     revalidatePath("/admin");

@@ -17,7 +17,7 @@ export async function createPatientAction(
   formData: FormData
 ): Promise<CreatePatientState> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const name = (formData.get("name") as string)?.trim();
   const phone = (formData.get("phone") as string)?.trim();

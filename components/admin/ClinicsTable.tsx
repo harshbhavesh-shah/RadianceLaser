@@ -3,11 +3,31 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { activateAccountAction, deleteClinicAction, extendAccessAction, terminateAccessAction } from "@/app/admin/actions";
-import { getClinicAccess, type ClinicAccess } from "@/lib/subscription";
+import { getClinicAccess, getClinicDeadline, type ClinicAccess } from "@/lib/subscription";
 import type { Clinic } from "@/types";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DUE_SOON_WINDOW_DAYS = 30;
 
 function formatDate(ms: number): string {
   return new Date(ms).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Locked clinics sort first (already not paying — the most urgent case),
+ * then everyone else soonest-deadline-first, with no-deadline clinics
+ * (shouldn't normally happen for an active clinic) pushed to the end. */
+function sortKey(clinic: Clinic): number {
+  if (getClinicAccess(clinic).status === "locked") return -Infinity;
+  return getClinicDeadline(clinic) ?? Infinity;
+}
+
+/** Locked (already needs a decision) or renewing/trial-ending within the
+ * window — the two states that actually warrant a super admin's attention
+ * right now, as opposed to a clinic that's simply fine for months yet. */
+function needsAttention(clinic: Clinic): boolean {
+  if (getClinicAccess(clinic).status === "locked") return true;
+  const deadline = getClinicDeadline(clinic);
+  return deadline !== null && deadline - Date.now() <= DUE_SOON_WINDOW_DAYS * DAY_MS;
 }
 
 function StatusBadge({ access }: { access: ClinicAccess }) {
@@ -195,39 +215,75 @@ function ClinicCard({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr
 }
 
 export default function ClinicsTable({ clinics, annualPriceInr }: { clinics: Clinic[]; annualPriceInr: number }) {
+  const [attentionOnly, setAttentionOnly] = useState(false);
+
   if (clinics.length === 0) {
     return <p className="text-sm text-brown-400">No clinics yet.</p>;
   }
 
+  // Soonest-deadline-first by default (locked clinics always lead) — the
+  // point is that this list is a to-do list, not just a database dump, so
+  // the thing that needs attention next is always what you see first.
+  const sorted = [...clinics].sort((a, b) => sortKey(a) - sortKey(b));
+  const attentionCount = clinics.filter(needsAttention).length;
+  const visible = attentionOnly ? sorted.filter(needsAttention) : sorted;
+
   return (
     <>
-      {/* Mobile: stacked cards — a table this dense has nowhere to put a
-          Status badge, a Deadline string, and three action buttons at
-          phone widths. */}
-      <div className="space-y-3 md:hidden">
-        {clinics.map((clinic) => (
-          <ClinicCard key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
-        ))}
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          onClick={() => setAttentionOnly((v) => !v)}
+          className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+            attentionOnly
+              ? "bg-brown-900 text-beige-200"
+              : "border border-beige-300 bg-surface text-brown-700 hover:border-gold-500 hover:text-gold-600"
+          }`}
+        >
+          Needs attention
+          <span
+            className={`rounded-full px-1.5 py-0.5 text-[11px] ${
+              attentionOnly ? "bg-beige-200/20" : "bg-beige-200 text-brown-700"
+            }`}
+          >
+            {attentionCount}
+          </span>
+        </button>
+        <span className="text-xs text-brown-400">Locked, or renewing/trial-ending within {DUE_SOON_WINDOW_DAYS} days</span>
       </div>
 
-      {/* md+: the original table. */}
-      <div className="hidden overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300 md:block">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">
-              <th className="px-4 py-3 font-medium">Clinic</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Deadline</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clinics.map((clinic) => (
-              <ClinicRow key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
+      {visible.length === 0 ? (
+        <p className="text-sm text-brown-400">Nothing needs attention right now.</p>
+      ) : (
+        <>
+          {/* Mobile: stacked cards — a table this dense has nowhere to put a
+              Status badge, a Deadline string, and three action buttons at
+              phone widths. */}
+          <div className="space-y-3 md:hidden">
+            {visible.map((clinic) => (
+              <ClinicCard key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          {/* md+: the original table. */}
+          <div className="hidden overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300 md:block">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">
+                  <th className="px-4 py-3 font-medium">Clinic</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Deadline</th>
+                  <th className="px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((clinic) => (
+                  <ClinicRow key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </>
   );
 }

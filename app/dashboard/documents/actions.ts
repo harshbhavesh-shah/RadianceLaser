@@ -9,7 +9,7 @@ import { getClinicConsentFormsPage, type ConsentFormsPage } from "@/lib/db/conse
  * lib/db/receipts.ts getClinicReceiptsPage. */
 export async function loadMoreReceiptsAction(cursor: string): Promise<ReceiptsPage> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
   return getClinicReceiptsPage(session.clinicId, { cursor });
 }
 
@@ -17,6 +17,6 @@ export async function loadMoreReceiptsAction(cursor: string): Promise<ReceiptsPa
  * lib/db/consentForms.ts getClinicConsentFormsPage. */
 export async function loadMoreConsentFormsAction(cursor: string): Promise<ConsentFormsPage> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
   return getClinicConsentFormsPage(session.clinicId, { cursor });
 }

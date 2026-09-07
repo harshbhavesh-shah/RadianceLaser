@@ -10,7 +10,7 @@ import type { Patient } from "@/types";
  * "Load more" button. */
 export async function loadMorePatientsAction(cursor: string): Promise<PatientsPage> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
   return getPatientsPage(session.clinicId, { cursor });
 }
 
@@ -19,6 +19,6 @@ export async function loadMorePatientsAction(cursor: string): Promise<PatientsPa
  * from PatientsTable as the user types in the search bar. */
 export async function searchPatientsAction(query: string): Promise<Patient[]> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
   return searchPatients(session.clinicId, query);
 }

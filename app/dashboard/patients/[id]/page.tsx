@@ -27,7 +27,7 @@ export default async function PatientDetailPage({
   searchParams: { logVisit?: string; sessionType?: string; appointmentId?: string };
 }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const patient = await getPatient(session.clinicId, params.id);
   if (!patient) notFound();

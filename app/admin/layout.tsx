@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // since actions can be invoked directly, not just reached by navigating
   // through this layout.
   const adminSession = await getAdminSession();
-  if (!adminSession) redirect("/login");
+  if (!adminSession) redirect("/api/auth/force-logout");
 
   // If this same account also happens to run a clinic (dual-purpose
   // account — see types/index.ts Session.isSuperAdmin), offer a way back to

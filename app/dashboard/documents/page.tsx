@@ -18,7 +18,7 @@ export default async function DocumentsPage({
   searchParams: { tab?: string; newReceiptForPatient?: string; visitId?: string };
 }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const [clinic, patients, visits, packages, staff, templates, formsPage, receiptsPage] = await Promise.all([
     getClinic(session.clinicId),

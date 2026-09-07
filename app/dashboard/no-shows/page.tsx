@@ -13,7 +13,7 @@ import FollowUpsSection from "@/components/no-shows/FollowUpsSection";
 
 export default async function NoShowsPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const [allAppointments, recentNoShows, followUps, messageLog, surveyResponses, templates, connection] =
     await Promise.all([

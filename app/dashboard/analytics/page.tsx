@@ -43,7 +43,7 @@ function StatInline({ label, value }: { label: string; value: string }) {
 
 export default async function AnalyticsPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   if (session.role !== "owner" && session.role !== "doctor") {
     return (

@@ -6,7 +6,7 @@ import PatientsTable from "@/components/patients/PatientsTable";
 
 export default async function PatientsPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const { patients, nextCursor } = await getPatientsPage(session.clinicId);
 

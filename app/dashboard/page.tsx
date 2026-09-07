@@ -18,7 +18,7 @@ import RevenueChart from "@/components/RevenueChart";
 // two appointment sections only; doctor and owner also get revenue.
 export default async function DashboardPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/force-logout");
 
   const today = todayLocalStr();
   const weekDays = getWeekDays(new Date());
