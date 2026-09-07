@@ -209,8 +209,11 @@ email/password you just created.
   claims, and staff mirror doc all server-side (`app/signup/actions.ts`),
   then signs the new owner in through the exact same code path `/login`
   uses, so there's only one tested way a browser session actually gets
-  established. No CAPTCHA or rate limiting on this yet — a known gap on a
-  genuinely public, unauthenticated endpoint that creates real accounts.
+  established. Rate-limited by IP (`lib/db/signupAttempts.ts` — 5 attempts
+  per hour) since this is a genuinely public, unauthenticated endpoint that
+  creates real accounts; no visible CAPTCHA challenge yet, since the rate
+  limit alone closes off scripted mass-account-creation without adding
+  friction to real signups.
 - **Every clinic starts on a free trial** (`lib/subscription.ts
   TRIAL_LENGTH_DAYS`, currently 365 days). `getClinicAccess()` there is the
   single source of truth for whether a clinic is `trialing`, `active`
@@ -220,7 +223,9 @@ email/password you just created.
   `create`/`update`/`delete` rule on every tenant-scoped collection checks
   this and rejects the write, independent of anything the Next.js server
   does or doesn't check. `components/TrialBanner.tsx` shows the in-app
-  reminder/lock notice; there's no email/SMS reminder yet, only that banner.
+  reminder/lock notice; `app/api/cron/send-renewal-reminders` additionally
+  emails the owner once the same deadline is close, so it's not only
+  visible to someone who happens to be logged in and looking.
 - **Billing is Razorpay**, one-time annual payments (not auto-renewing
   subscriptions — a customer clicks "Renew," nothing auto-charges their
   card). See `lib/razorpay.ts` (order creation + signature verification),
@@ -247,19 +252,32 @@ email/password you just created.
 
 ## Google sign-in and email-OTP 2FA
 
-- **Google Sign-In** works for both login and signup, on the same button.
-  `signInWithPopup` with `GoogleAuthProvider` runs client-side as normal;
-  the interesting part is deciding what happens next. If the resulting
-  account's ID token already carries a `clinicId` claim, it's treated as an
-  ordinary login. If not — a Google account signing in for the first
-  time — the user is asked to name their clinic, then
-  `app/login/actions.ts` `provisionGoogleClinicAction()` attaches a clinic
-  doc, custom claims, and a staff mirror doc to the Auth user Firebase
-  already created automatically (unlike email/password signup, which
-  creates the Auth user itself via the Admin SDK — here it already exists).
-  Just needs Google enabled once in Firebase Console → Authentication →
-  Sign-in method → Google; no new env vars, it reuses the existing
-  `NEXT_PUBLIC_FIREBASE_*` client config.
+- **Google Sign-In** works for both login and signup, on the same button,
+  via `lib/authFlow.ts`'s `signInWithGoogle()` — `signInWithPopup` with
+  `GoogleAuthProvider` on the real web, but native Android account-picker
+  sign-in (`@capacitor-firebase/authentication`) inside the Capacitor app,
+  since Google blocks OAuth completion inside an embedded WebView (the
+  popup opens but never hands control back). Either way the interesting
+  part is deciding what happens next. If the resulting account's ID token
+  already carries a `clinicId` claim, it's treated as an ordinary login. If
+  not — a Google account signing in for the first time — the user is asked
+  to name their clinic, then `app/login/actions.ts`
+  `provisionGoogleClinicAction()` attaches a clinic doc, custom claims, and
+  a staff mirror doc to the Auth user Firebase already created
+  automatically (unlike email/password signup, which creates the Auth user
+  itself via the Admin SDK — here it already exists). Just needs Google
+  enabled once in Firebase Console → Authentication → Sign-in method →
+  Google; no new env vars for the web, it reuses the existing
+  `NEXT_PUBLIC_FIREBASE_*` client config (the Android native path needs its
+  own Firebase Android app registration — see `android/app/google-services.json`).
+- **Forgot password** (`/forgot-password` → `/reset-password`) uses
+  Firebase's own `sendPasswordResetEmail`/`confirmPasswordReset` with
+  `handleCodeInApp: true`, so the emailed link lands on our own branded
+  `/reset-password` page (reading `oobCode` itself) instead of Firebase's
+  generic hosted UI. Shows the same "check your email" message whether or
+  not the address has an account, to avoid leaking which emails exist. Only
+  works for accounts with the `password` provider linked — a Google-only
+  account has no password to reset yet.
 - **Email-OTP 2FA is opt-in per staff member**, toggled from their own
   Settings page (`components/settings/TwoFactorSection.tsx`) — there's no
   owner-mandated "require this for everyone" yet. When on, primary auth
@@ -336,13 +354,15 @@ features built on top of them:
 
 ## Known limitations / next steps
 
-- **No CAPTCHA/rate limiting on `/signup`** — it's a genuinely public,
-  unauthenticated endpoint that creates real Firebase Auth accounts and
-  Firestore docs; worth closing before this gets meaningful signup traffic
-- **No outbound trial/renewal reminders** — the countdown only shows as an
-  in-app banner (`components/TrialBanner.tsx`) when someone happens to be
-  logged in and looking; there's no email/SMS reminder sent ahead of a
-  trial ending or a subscription lapsing
+- **Outbound trial/renewal reminders**: a daily cron
+  (`app/api/cron/send-renewal-reminders`, same `Bearer <CRON_SECRET>`
+  external-scheduler pattern as `send-scheduled-messages`) emails the
+  clinic owner once their trial/subscription deadline enters
+  `REMINDER_THRESHOLD_DAYS`, via Resend — same underlying sender the 2FA
+  codes already use. Sent at most once per distinct deadline
+  (`Clinic.renewalReminderSentForDeadline`), so it fires again if a later
+  renewal deadline later comes due, but never repeats for the same one.
+  No SMS/WhatsApp version yet, only email.
 - **Billing is manual-renewal only** — a customer has to come back and
   click "Renew" every year; there's no auto-charging Razorpay Subscription,
   by design (see "Self-serve signup, trials, and billing" above), but it
@@ -369,9 +389,13 @@ features built on top of them:
 - **No automated tests** — worth adding around the receipt-number counter
   transaction and the package ledger computation first, since bugs there
   turn into billing disputes rather than just UI glitches
-- **No audit log** — no record of who viewed/edited what, which matters
-  once this holds real patient health data and signed consent forms for
-  paying customers
+- **Audit log has a viewer now, but partial coverage** — `lib/db/auditLog.ts`
+  (CERT-In 2022 / DPDP-oriented) records patient create/update/erase, and
+  Settings → Activity Log (owner-only) shows the history, but nothing else
+  writes to it yet — a visit, consent form, receipt, or photo touching the
+  same patient leaves no trace. Worth extending to those next, especially
+  consent form signing, before this holds real patient data for paying
+  customers
 - Role-based UI is ad hoc per-page rather than one shared `can(action,
   role)` policy helper — fine for 3 roles, will get harder to keep
   consistent as it grows

@@ -5,6 +5,7 @@ import { getClinicStaff } from "@/lib/db/staff";
 import { getClinicMachines } from "@/lib/db/machines";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { getClinicPayments } from "@/lib/db/payments";
+import { getAuditLogs } from "@/lib/db/auditLog";
 import { getClinicAccess } from "@/lib/subscription";
 import { getAnnualPriceInr } from "@/lib/db/platformSettings";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
@@ -17,18 +18,20 @@ import VisitImportSection from "@/components/settings/VisitImportSection";
 import BillingSection from "@/components/settings/BillingSection";
 import TwoFactorSection from "@/components/settings/TwoFactorSection";
 import ReplayTourSection from "@/components/settings/ReplayTourSection";
+import ActivityLogSection from "@/components/settings/ActivityLogSection";
 
 export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
 
-  const [clinic, staff, machines, sessionTypeDefs, payments, annualPriceInr] = await Promise.all([
+  const [clinic, staff, machines, sessionTypeDefs, payments, annualPriceInr, auditLogEntries] = await Promise.all([
     getClinic(session.clinicId),
     getClinicStaff(session.clinicId),
     getClinicMachines(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
     getClinicPayments(session.clinicId),
     getAnnualPriceInr(),
+    getAuditLogs(session.clinicId),
   ]);
 
   const isOwner = session.role === "owner";
@@ -70,6 +73,8 @@ export default async function SettingsPage() {
           />
 
           <ReplayTourSection role={session.role} />
+
+          {isOwner && <ActivityLogSection entries={auditLogEntries} />}
         </div>
 
         <div className="space-y-6">

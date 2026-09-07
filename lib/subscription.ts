@@ -18,10 +18,9 @@ export const SUBSCRIPTION_LENGTH_DAYS = 365;
 
 // Once a trialing clinic has this many days or fewer left, or a paying
 // clinic is this many days or fewer from its next renewal, the dashboard
-// shows a reminder banner (see components/TrialBanner.tsx). This is the
-// only "reminder" mechanism that exists so far — an in-app banner, not an
-// email/SMS. Actual outbound reminders are follow-up work once there's a
-// transactional email provider wired up.
+// shows a reminder banner (see components/TrialBanner.tsx). Also the
+// window app/api/cron/send-renewal-reminders uses to decide when to email
+// the owner — the two stay in sync by both reading this one constant.
 // Kept well under TRIAL_LENGTH_DAYS (a "last week" warning, not the whole
 // trial) — this was 30 back when the trial itself was 365 days; left equal
 // to the trial length here would make the banner show from day one.

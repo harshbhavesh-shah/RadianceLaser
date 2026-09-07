@@ -22,18 +22,37 @@ import {
   Boxes,
   PhoneCall,
   Inbox,
+  ClipboardList,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
 import type { Session, UserRole } from "@/types";
 
-const NAV_ITEMS: {
+interface LeafNavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
   soon?: boolean;
   roles?: UserRole[]; // omit = visible to everyone
-}[] = [
+}
+
+// A non-clickable header (icon + label, no href) whose children render
+// indented beneath it — "No Shows" and "Follow-Ups" are two distinct pages
+// (each keeps its own route, data, and tour target), just grouped under
+// one heading rather than two peer-level sidebar rows.
+interface GroupNavItem {
+  label: string;
+  icon: typeof LayoutDashboard;
+  children: LeafNavItem[];
+}
+
+type NavItem = LeafNavItem | GroupNavItem;
+
+function isGroup(item: NavItem): item is GroupNavItem {
+  return "children" in item;
+}
+
+const NAV_ITEMS: NavItem[] = [
   // "Today" (not "Overview" / "Dashboard") on purpose — this is meant to be
   // the one page someone opens each morning and gets everything about their
   // day from, so the label should say what it's for, not just where it is.
@@ -42,8 +61,14 @@ const NAV_ITEMS: {
   { label: "Patients", href: "/dashboard/patients", icon: Users },
   { label: "Packages", href: "/dashboard/packages", icon: Package },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
-  { label: "No Shows", href: "/dashboard/no-shows", icon: UserX },
-  { label: "Follow-Ups", href: "/dashboard/follow-ups", icon: PhoneCall },
+  {
+    label: "Patient Management",
+    icon: ClipboardList,
+    children: [
+      { label: "No Shows", href: "/dashboard/no-shows", icon: UserX },
+      { label: "Follow-Ups", href: "/dashboard/follow-ups", icon: PhoneCall },
+    ],
+  },
   { label: "Inventory", href: "/dashboard/inventory", icon: Boxes },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Communication", href: "/dashboard/communication", icon: MessageCircle },
@@ -61,60 +86,80 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
     setMobileOpen(false);
   }, [pathname]);
 
+  function renderLeaf(item: LeafNavItem, showLabels: boolean, iconSize = 18) {
+    const Icon = item.icon;
+    const isActive = pathname === item.href;
+
+    if (item.soon) {
+      return (
+        <div
+          key={item.href}
+          title={showLabels ? undefined : `${item.label} (Soon)`}
+          className={`flex items-center rounded-md px-3 py-2.5 text-sm text-brown-400 ${
+            showLabels ? "justify-between" : "justify-center"
+          }`}
+        >
+          <span className="flex items-center gap-3">
+            <Icon size={iconSize} className="flex-shrink-0" />
+            {showLabels && <span>{item.label}</span>}
+          </span>
+          {showLabels && (
+            <span className="rounded-full bg-brown-700/50 px-2 py-0.5 text-[10px] uppercase tracking-wide">
+              Soon
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        title={showLabels ? undefined : item.label}
+        // Targeted by the guided tour (components/onboarding/
+        // ProductTour.tsx) to spotlight this item. The tour forces
+        // the sidebar open (SidebarContext's temporary override) for
+        // the duration, so in practice this only ever needs to match
+        // the desktop, labeled render — the mobile drawer copy is
+        // unmounted (closed) while the tour runs.
+        data-tour={`nav-${item.href}`}
+        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+          showLabels ? "" : "justify-center"
+        } ${isActive ? "bg-brown-700/60 text-white" : "text-beige-200 hover:bg-brown-700/60 hover:text-white"}`}
+      >
+        <Icon size={iconSize} className="flex-shrink-0" />
+        {showLabels && <span>{item.label}</span>}
+      </Link>
+    );
+  }
+
   function NavLinks({ showLabels }: { showLabels: boolean }) {
-    const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(session.role));
+    const visibleItems = NAV_ITEMS.filter((item) => !("roles" in item) || !item.roles || item.roles.includes(session.role));
     return (
       <nav className="flex-1 space-y-0.5 px-3">
         {visibleItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-
-          if (item.soon) {
+          if (isGroup(item)) {
+            const GroupIcon = item.icon;
             return (
-              <div
-                key={item.href}
-                title={showLabels ? undefined : `${item.label} (Soon)`}
-                className={`flex items-center rounded-md px-3 py-2.5 text-sm text-brown-400 ${
-                  showLabels ? "justify-between" : "justify-center"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <Icon size={18} className="flex-shrink-0" />
-                  {showLabels && <span>{item.label}</span>}
-                </span>
+              <div key={item.label}>
+                {/* Collapsed (icon-rail) mode skips the header entirely —
+                    it has no href of its own, so there's nothing useful an
+                    icon-only row could do there; just the two children's
+                    own icons show, same as before this was grouped. */}
                 {showLabels && (
-                  <span className="rounded-full bg-brown-700/50 px-2 py-0.5 text-[10px] uppercase tracking-wide">
-                    Soon
-                  </span>
+                  <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-sm text-beige-200/70">
+                    <GroupIcon size={18} className="flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </div>
                 )}
+                <div className={showLabels ? "ml-4 space-y-0.5 border-l border-brown-700/60 pl-2" : "space-y-0.5"}>
+                  {item.children.map((child) => renderLeaf(child, showLabels, 16))}
+                </div>
               </div>
             );
           }
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={showLabels ? undefined : item.label}
-              // Targeted by the guided tour (components/onboarding/
-              // ProductTour.tsx) to spotlight this item. The tour forces
-              // the sidebar open (SidebarContext's temporary override) for
-              // the duration, so in practice this only ever needs to match
-              // the desktop, labeled render — the mobile drawer copy is
-              // unmounted (closed) while the tour runs.
-              data-tour={`nav-${item.href}`}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
-                showLabels ? "" : "justify-center"
-              } ${
-                isActive
-                  ? "bg-brown-700/60 text-white"
-                  : "text-beige-200 hover:bg-brown-700/60 hover:text-white"
-              }`}
-            >
-              <Icon size={18} className="flex-shrink-0" />
-              {showLabels && <span>{item.label}</span>}
-            </Link>
-          );
+          return renderLeaf(item, showLabels);
         })}
       </nav>
     );

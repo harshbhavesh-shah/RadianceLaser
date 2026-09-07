@@ -2,6 +2,7 @@
 
 import { Suspense, useState, type FormEvent } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword, type UserCredential } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
@@ -192,9 +193,14 @@ function LoginForm() {
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-brown-700">
-                  Password
-                </label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label htmlFor="password" className="block text-sm font-medium text-brown-700">
+                    Password
+                  </label>
+                  <Link href="/forgot-password" className="text-xs font-medium text-gold-600 hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <input
                   id="password"
                   type="password"

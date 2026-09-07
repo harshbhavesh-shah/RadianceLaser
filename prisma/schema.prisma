@@ -499,6 +499,15 @@ model Clinic {
   feedbackSurveyEnabled    Boolean @default(false)
   feedbackSurveyDelayHours Int     @default(3)
   createdAt            BigInt
+  // The exact trialEndsAt/subscriptionRenewsAt value the owner was last
+  // emailed a renewal reminder about (see
+  // app/api/cron/send-renewal-reminders) — not just a sent/not-sent flag,
+  // since a clinic can go through this more than once over its lifetime
+  // (a trial-ending reminder, then a subscription-renewal reminder a year
+  // later). Comparing against the CURRENT deadline is what lets a new
+  // reminder fire once a fresh deadline is close, while never re-sending
+  // for the same one twice.
+  renewalReminderSentForDeadline BigInt?
 
   @@map("clinics")
 }
@@ -696,6 +705,30 @@ model AreaDef {
   @@map("areaDefs")
 }
 
+// A clinic-defined, reusable named preset for creating a Package (see
+// Package above) — "Bridal Package", "Holiday Package", etc. Backs
+// app/dashboard/packages, which used to be a read-only clinic-wide list of
+// every patient's purchased packages (redundant: that management already
+// happens per-patient, see components/PackageFormModal.tsx) and is now
+// where a clinic defines these presets instead. Purely a convenience:
+// picking one just pre-fills PackageFormModal's fields, which stay
+// editable — nothing here is referenced by id once a Package is created
+// (same reasoning as AreaDef above), so deleting a preset never affects
+// packages already sold from it.
+model PackageTypeDef {
+  id              String @id @default(cuid())
+  clinicId        String
+  sessionType     String
+  name            String
+  totalSessions   Int
+  suggestedAmount Float
+  createdAt       BigInt
+
+  @@index([clinicId])
+  @@index([clinicId, sessionType])
+  @@map("packageTypeDefs")
+}
+
 // Compliance record — CERT-In's 2022 Directions require ICT system logs
 // retained 180 days; this also gives DPDP breach-notification a way to
 // scope "which patients were affected" after an incident, and backs the
@@ -865,4 +898,20 @@ model PushToken {
   @@index([clinicId])
   @@index([uid])
   @@map("pushTokens")
+}
+
+// Backs the rate limit on /signup (app/signup/actions.ts) — a genuinely
+// public, unauthenticated endpoint that creates real Firebase Auth
+// accounts and clinic records, previously with no abuse protection at all
+// (see README's "Known limitations"). One row per attempt (successful or
+// not, so a burst of failed attempts still counts), keyed by IP so a
+// single source can't script-create unlimited clinics. No relation to
+// anything else — this is purely an abuse counter, not app data.
+model SignupAttempt {
+  id        String @id @default(cuid())
+  ipAddress String
+  createdAt BigInt
+
+  @@index([ipAddress, createdAt])
+  @@map("signupAttempts")
 }
