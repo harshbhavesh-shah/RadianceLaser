@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { activateAccountAction, deleteClinicAction, extendAccessAction, terminateAccessAction } from "@/app/admin/actions";
+import {
+  activateAccountAction,
+  deleteClinicAction,
+  extendAccessAction,
+  startImpersonationAction,
+  terminateAccessAction,
+} from "@/app/admin/actions";
 import { getClinicAccess, getClinicDeadline, type ClinicAccess } from "@/lib/subscription";
 import type { Clinic } from "@/types";
 
@@ -75,6 +81,17 @@ function ClinicActions({ clinic, annualPriceInr }: { clinic: Clinic; annualPrice
     else router.refresh();
   }
 
+  // Redirects to /dashboard on success (see startImpersonationAction) — a
+  // Next.js server action's redirect() takes over the client navigation
+  // itself, so there's nothing to do here on the happy path.
+  async function handleViewAs() {
+    setIsPending(true);
+    setError(null);
+    const result = await startImpersonationAction(clinic.id);
+    setIsPending(false);
+    if (result?.error) setError(result.error);
+  }
+
   // "Active" (not just "trial extended") — for a clinic that actually paid
   // outside the app (bank transfer, cash, etc.). Also logs the sale on the
   // Ledger at the current price, so it shows up there without your having
@@ -131,6 +148,13 @@ function ClinicActions({ clinic, annualPriceInr }: { clinic: Clinic; annualPrice
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={handleViewAs}
+          disabled={isPending}
+          className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600 disabled:opacity-50"
+        >
+          View as
+        </button>
         <input
           type="number"
           min={1}

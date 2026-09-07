@@ -8,6 +8,21 @@ const SESSION_COOKIE_NAME = "__session";
 // clinical/admin tool where staff share shared devices at a front desk.
 const SESSION_EXPIRES_IN_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
 
+// A super admin's "View as" state (app/admin/actions.ts
+// startImpersonationAction) — deliberately a separate, plain (not a signed
+// Firebase JWT) cookie, since it's only ever trusted in combination with an
+// independently-verified super-admin session on the real __session cookie
+// below (see getSession()). Short-lived on purpose: this is a one-off
+// support session, not a standing login.
+const IMPERSONATE_COOKIE_NAME = "__impersonate";
+const IMPERSONATE_MAX_AGE_S = 60 * 60 * 2; // 2 hours
+
+interface ImpersonationPayload {
+  clinicId: string;
+  clinicName: string;
+  role: UserRole;
+}
+
 /**
  * Exchanges a Firebase Auth ID token (from client-side sign-in) for a secure,
  * HttpOnly session cookie, and sets it on the response. Call this from the
@@ -31,6 +46,35 @@ export function clearSessionCookie(): void {
   cookies().delete(SESSION_COOKIE_NAME);
 }
 
+/** Starts a "View as" support session — see app/admin/actions.ts
+ * startImpersonationAction, the only caller. */
+export function startImpersonation(payload: ImpersonationPayload): void {
+  cookies().set(IMPERSONATE_COOKIE_NAME, JSON.stringify(payload), {
+    maxAge: IMPERSONATE_MAX_AGE_S,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    sameSite: "lax",
+  });
+}
+
+/** Reads the current impersonation payload without clearing it — used by
+ * stopImpersonationAction to know which clinic to log as "stopped viewing
+ * as" before it clears the cookie. */
+export function peekImpersonation(): ImpersonationPayload | null {
+  const raw = cookies().get(IMPERSONATE_COOKIE_NAME)?.value;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as ImpersonationPayload;
+  } catch {
+    return null;
+  }
+}
+
+export function stopImpersonation(): void {
+  cookies().delete(IMPERSONATE_COOKIE_NAME);
+}
+
 /**
  * Reads and verifies the session cookie server-side. Returns null if there's
  * no cookie, it's expired/invalid, or it's missing the clinicId/role custom
@@ -41,6 +85,28 @@ export function clearSessionCookie(): void {
  * that happens there instead).
  */
 export async function getSession(): Promise<Session | null> {
+  // A present impersonation cookie always short-circuits to either an
+  // impersonated session or null — never falls through to a normal
+  // session check, since that could use mismatched real session state (or
+  // none at all) alongside a stray/forged impersonation cookie.
+  const impersonation = peekImpersonation();
+  if (impersonation) {
+    // Only trust the cookie's clinicId if this request ALSO carries a
+    // genuinely verified super-admin session — otherwise anyone could set
+    // this cookie themselves and grant themselves access to any clinic.
+    const adminSession = await getAdminSession();
+    if (!adminSession) return null;
+
+    return {
+      uid: adminSession.uid,
+      email: adminSession.email,
+      clinicId: impersonation.clinicId,
+      role: impersonation.role,
+      isSuperAdmin: true,
+      impersonating: { clinicName: impersonation.clinicName },
+    };
+  }
+
   const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!sessionCookie) return null;
 

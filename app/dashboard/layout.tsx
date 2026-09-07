@@ -9,6 +9,7 @@ import { SessionTypeConfigProvider } from "@/lib/sessionTypeConfigContext";
 import { AreaDefsProvider } from "@/lib/areaDefsContext";
 import Sidebar from "@/components/Sidebar";
 import TrialBanner from "@/components/TrialBanner";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 import { SidebarProvider } from "@/components/SidebarContext";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <SessionTypeConfigProvider initialConfig={sessionTypeConfig}>
         <AreaDefsProvider initialAreaDefs={areaDefs}>
           <div className="flex h-screen flex-col overflow-hidden bg-canvas">
+            {session.impersonating && <ImpersonationBanner clinicName={session.impersonating.clinicName} />}
             <TrialBanner access={access} role={session.role} />
             <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
               <Sidebar clinicName={clinicName} session={session} />

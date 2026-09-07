@@ -10,6 +10,7 @@ const ACTION_LABELS: Record<AdminAuditAction, string> = {
   terminate: "Terminated",
   delete: "Deleted",
   price_change: "Price changed",
+  impersonate: "Viewed as",
 };
 
 const ACTION_STYLES: Record<AdminAuditAction, string> = {
@@ -18,6 +19,7 @@ const ACTION_STYLES: Record<AdminAuditAction, string> = {
   terminate: "bg-orange-100 text-orange-800",
   delete: "bg-red-100 text-red-800",
   price_change: "bg-gold-100 text-brown-800",
+  impersonate: "bg-blue-100 text-blue-800",
 };
 
 function ActionBadge({ action }: { action: AdminAuditAction }) {

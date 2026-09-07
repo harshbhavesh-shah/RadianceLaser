@@ -88,7 +88,7 @@ export interface LedgerEntry {
   createdByEmail?: string;
 }
 
-export type AdminAuditAction = "extend" | "activate" | "terminate" | "delete" | "price_change";
+export type AdminAuditAction = "extend" | "activate" | "terminate" | "delete" | "price_change" | "impersonate";
 
 // One row per manual super-admin override — see prisma/schema.prisma's
 // AdminAuditLog comment for why this exists separately from LedgerEntry.
@@ -127,6 +127,12 @@ export interface Session {
   // show a link to /admin (see components/Sidebar.tsx) — the actual /admin
   // access check is AdminSession/getAdminSession() below, not this flag.
   isSuperAdmin: boolean;
+  // Set only when a super admin is using "View as" from /admin (see
+  // lib/session.ts's impersonation cookie) — uid/email above still
+  // identify the real admin, not a clinic staff member; this is purely a
+  // UI hook for showing the impersonation banner (components/
+  // ImpersonationBanner.tsx), not a separate identity.
+  impersonating?: { clinicName: string };
 }
 
 // The decoded, verified session for the platform-level admin panel

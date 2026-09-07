@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getAdminSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { getAdminSession, startImpersonation, stopImpersonation, peekImpersonation } from "@/lib/session";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/db/client";
 import { clinicCacheTag, updateClinicSubscription, deleteClinic } from "@/lib/db/clinics";
@@ -339,4 +340,61 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
     console.error("Failed to delete clinic:", err);
     return { error: "Couldn't delete this clinic. Please try again." };
   }
+}
+
+/**
+ * "View as" — lets a super admin see exactly what a clinic sees (their own
+ * dashboard, their own data) for support, without needing their login.
+ * Sets a short-lived impersonation cookie (see lib/session.ts) rather than
+ * touching the clinic's own staff accounts or the admin's real Firebase
+ * custom claims, so nothing about the clinic's own account list changes
+ * and there's nothing to undo on the clinic's end afterward. Always lands
+ * as "owner" — the point is to see everything a clinic could see, not to
+ * test a specific staff member's narrower permissions.
+ *
+ * redirect() is called AFTER the try/catch, not inside it — Next's
+ * redirect works by throwing, and this file's catch blocks don't
+ * distinguish that from a real error, so throwing it inside the try would
+ * get swallowed and reported as a failure instead of navigating.
+ */
+export async function startImpersonationAction(clinicId: string): Promise<AdminActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true, name: true } });
+    if (!clinic) return { error: "Clinic not found." };
+
+    startImpersonation({ clinicId, clinicName: clinic.name, role: "owner" });
+    await createAdminAuditLogEntry({
+      clinicId,
+      clinicName: clinic.name,
+      action: "impersonate",
+      detail: "Started viewing as this clinic",
+      performedBy: session.email || "unknown",
+    });
+  } catch (err) {
+    console.error("Failed to start impersonation:", err);
+    return { error: "Couldn't view as this clinic. Please try again." };
+  }
+  redirect("/dashboard");
+}
+
+/** Ends a "View as" session (components/ImpersonationBanner.tsx's "Return
+ * to admin" button) and sends the admin back to the Clinics page. */
+export async function stopImpersonationAction(): Promise<void> {
+  const session = await getAdminSession();
+  const impersonation = peekImpersonation();
+  stopImpersonation();
+
+  if (session && impersonation) {
+    await createAdminAuditLogEntry({
+      clinicId: impersonation.clinicId,
+      clinicName: impersonation.clinicName,
+      action: "impersonate",
+      detail: "Stopped viewing as this clinic",
+      performedBy: session.email || "unknown",
+    }).catch((err) => console.error("Failed to log end of impersonation:", err));
+  }
+
+  redirect("/admin");
 }
