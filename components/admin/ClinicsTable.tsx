@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   activateAccountAction,
@@ -66,7 +67,15 @@ function deadlineLabel(clinic: Clinic): string {
  * rendered in the desktop table's last cell or the mobile card's footer
  * (see ClinicsTable below). Each render gets its own independent state,
  * which is harmless since only one layout is ever visible at a time. */
-function ClinicActions({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr: number }) {
+function ClinicActions({
+  clinic,
+  annualPriceInr,
+  ownerEmail,
+}: {
+  clinic: Clinic;
+  annualPriceInr: number;
+  ownerEmail: string | undefined;
+}) {
   const router = useRouter();
   const [days, setDays] = useState(30);
   const [isPending, setIsPending] = useState(false);
@@ -155,6 +164,21 @@ function ClinicActions({ clinic, annualPriceInr }: { clinic: Clinic; annualPrice
         >
           View as
         </button>
+        {ownerEmail ? (
+          <Link
+            href={`/admin/email?to=${encodeURIComponent(ownerEmail)}&subject=${encodeURIComponent(`Regarding ${clinic.name}`)}`}
+            className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600"
+          >
+            Email
+          </Link>
+        ) : (
+          <span
+            title="No owner email on record for this clinic"
+            className="cursor-not-allowed rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-400"
+          >
+            Email
+          </span>
+        )}
         <input
           type="number"
           min={1}
@@ -197,7 +221,15 @@ function ClinicActions({ clinic, annualPriceInr }: { clinic: Clinic; annualPrice
   );
 }
 
-function ClinicRow({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr: number }) {
+function ClinicRow({
+  clinic,
+  annualPriceInr,
+  ownerEmail,
+}: {
+  clinic: Clinic;
+  annualPriceInr: number;
+  ownerEmail: string | undefined;
+}) {
   const access = getClinicAccess(clinic);
   return (
     <tr className="border-b border-beige-300 last:border-0">
@@ -210,7 +242,7 @@ function ClinicRow({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr:
       </td>
       <td className="px-4 py-3 text-sm text-brown-600">{deadlineLabel(clinic)}</td>
       <td className="px-4 py-3">
-        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} />
+        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} ownerEmail={ownerEmail} />
       </td>
     </tr>
   );
@@ -219,7 +251,15 @@ function ClinicRow({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr:
 /** Same information as ClinicRow, restacked into a card — a 4-column table
  * has no room to breathe below md, where the viewport itself is often
  * narrower than the Status/Deadline/Actions columns need. */
-function ClinicCard({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr: number }) {
+function ClinicCard({
+  clinic,
+  annualPriceInr,
+  ownerEmail,
+}: {
+  clinic: Clinic;
+  annualPriceInr: number;
+  ownerEmail: string | undefined;
+}) {
   const access = getClinicAccess(clinic);
   return (
     <div className="rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300">
@@ -232,13 +272,21 @@ function ClinicCard({ clinic, annualPriceInr }: { clinic: Clinic; annualPriceInr
       </div>
       <div className="mt-2 text-sm text-brown-600">{deadlineLabel(clinic)}</div>
       <div className="mt-3 border-t border-beige-300 pt-3">
-        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} />
+        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} ownerEmail={ownerEmail} />
       </div>
     </div>
   );
 }
 
-export default function ClinicsTable({ clinics, annualPriceInr }: { clinics: Clinic[]; annualPriceInr: number }) {
+export default function ClinicsTable({
+  clinics,
+  annualPriceInr,
+  ownerEmails,
+}: {
+  clinics: Clinic[];
+  annualPriceInr: number;
+  ownerEmails: Record<string, string>;
+}) {
   const [attentionOnly, setAttentionOnly] = useState(false);
 
   if (clinics.length === 0) {
@@ -284,7 +332,12 @@ export default function ClinicsTable({ clinics, annualPriceInr }: { clinics: Cli
               phone widths. */}
           <div className="space-y-3 md:hidden">
             {visible.map((clinic) => (
-              <ClinicCard key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
+              <ClinicCard
+                key={clinic.id}
+                clinic={clinic}
+                annualPriceInr={annualPriceInr}
+                ownerEmail={ownerEmails[clinic.id]}
+              />
             ))}
           </div>
 
@@ -301,7 +354,12 @@ export default function ClinicsTable({ clinics, annualPriceInr }: { clinics: Cli
               </thead>
               <tbody>
                 {visible.map((clinic) => (
-                  <ClinicRow key={clinic.id} clinic={clinic} annualPriceInr={annualPriceInr} />
+                  <ClinicRow
+                    key={clinic.id}
+                    clinic={clinic}
+                    annualPriceInr={annualPriceInr}
+                    ownerEmail={ownerEmails[clinic.id]}
+                  />
                 ))}
               </tbody>
             </table>

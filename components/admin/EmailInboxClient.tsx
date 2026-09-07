@@ -28,9 +28,13 @@ interface ComposeState {
 export default function EmailInboxClient({
   initialThreads,
   gmailAccount,
+  initialCompose,
 }: {
   initialThreads: EmailThreadSummary[];
   gmailAccount: string;
+  // Set when arriving via the Clinics page's "Email" action — opens
+  // straight into a pre-filled compose form instead of the plain inbox.
+  initialCompose?: { to: string; subject: string };
 }) {
   const [threads, setThreads] = useState(initialThreads);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -39,7 +43,9 @@ export default function EmailInboxClient({
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [compose, setCompose] = useState<ComposeState | null>(null);
+  const [compose, setCompose] = useState<ComposeState | null>(
+    initialCompose ? { to: initialCompose.to, subject: initialCompose.subject, body: "" } : null
+  );
   const [disconnecting, setDisconnecting] = useState(false);
 
   const selectedThread = threads.find((t) => t.id === selectedId) || null;

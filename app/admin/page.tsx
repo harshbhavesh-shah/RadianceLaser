@@ -1,9 +1,11 @@
 import { getAllClinics } from "@/lib/db/clinics";
 import { getAnnualPriceInr } from "@/lib/db/platformSettings";
+import { getClinicOwnerEmails } from "@/lib/db/staff";
 import ClinicsTable from "@/components/admin/ClinicsTable";
 
 export default async function AdminClinicsPage() {
   const [clinics, annualPriceInr] = await Promise.all([getAllClinics(), getAnnualPriceInr()]);
+  const ownerEmails = await getClinicOwnerEmails(clinics.map((c) => c.id));
 
   return (
     <div>
@@ -13,7 +15,7 @@ export default async function AdminClinicsPage() {
       </p>
       <div className="mt-2 mb-6 h-[2px] w-8 bg-gold-500" />
 
-      <ClinicsTable clinics={clinics} annualPriceInr={annualPriceInr} />
+      <ClinicsTable clinics={clinics} annualPriceInr={annualPriceInr} ownerEmails={ownerEmails} />
     </div>
   );
 }

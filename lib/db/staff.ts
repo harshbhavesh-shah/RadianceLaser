@@ -32,6 +32,21 @@ export async function getClinicStaff(clinicId: string): Promise<StaffMember[]> {
   return rows.map(toStaffMember);
 }
 
+/** One query for every clinic's owner email, keyed by clinicId — backs the
+ * admin Clinics page's "Email" action (components/admin/ClinicsTable.tsx),
+ * which needs this for every row at once rather than one at a time. A
+ * clinic missing from the returned map has no "owner"-role staff row on
+ * record (shouldn't normally happen — every clinic gets one at signup, see
+ * app/signup/actions.ts — but a pre-migration or hand-edited clinic might). */
+export async function getClinicOwnerEmails(clinicIds: string[]): Promise<Record<string, string>> {
+  if (clinicIds.length === 0) return {};
+  const rows = await prisma.staffMember.findMany({
+    where: { clinicId: { in: clinicIds }, role: "owner" },
+    select: { clinicId: true, email: true },
+  });
+  return Object.fromEntries(rows.map((r) => [r.clinicId, r.email]));
+}
+
 /** One staff member by their Firebase Auth uid (== this row's id) — used
  * by the 2FA gate at login (app/login/actions.ts), which only has the uid
  * from the just-verified ID token, not a clinicId to scope by yet. */
