@@ -460,6 +460,21 @@ export interface AreaDef extends TenantScoped {
   createdAt: number;
 }
 
+// A clinic-defined, reusable named preset for creating a Package — "Bridal
+// Package", "Holiday Package", etc. (see app/dashboard/packages and
+// prisma/schema.prisma's PackageTypeDef comment for why this page exists
+// instead of the old clinic-wide purchased-packages list). Picking one in
+// PackageFormModal just pre-fills its fields; nothing references this row
+// by id afterward.
+export interface PackageTypeDef extends TenantScoped {
+  id: string;
+  sessionType: SessionType;
+  name: string;
+  totalSessions: number;
+  suggestedAmount: number;
+  createdAt: number;
+}
+
 // A single before/after (or progress) photo on a patient's record. Usually
 // tied to the specific Visit it was taken at (so it naturally inherits that
 // session's date/type/area), but visitId is optional — a photo can also be

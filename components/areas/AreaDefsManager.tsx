@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import AreaFormModal from "./AreaFormModal";
 import { useAreaDefs, useAreaDefsActions } from "@/lib/areaDefsContext";
-import { deleteAreaDefAction } from "@/app/dashboard/settings/areaDefActions";
+import { deleteAreaDefAction } from "@/app/dashboard/areas/actions";
 import type { AreaDef, SessionType } from "@/types";
 
 const SESSION_TYPES: { key: SessionType; label: string }[] = [
@@ -14,7 +14,7 @@ const SESSION_TYPES: { key: SessionType; label: string }[] = [
 
 type EditingState = { sessionType: SessionType; area: AreaDef | null } | null;
 
-export default function AreaDefsSection({ canEdit }: { canEdit: boolean }) {
+export default function AreaDefsManager({ canEdit }: { canEdit: boolean }) {
   const areaDefs = useAreaDefs();
   const { addAreaDef, updateAreaDefInList, removeAreaDef } = useAreaDefsActions();
   const [editing, setEditing] = useState<EditingState>(null);
@@ -41,15 +41,6 @@ export default function AreaDefsSection({ canEdit }: { canEdit: boolean }) {
 
   return (
     <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-      <div className="mb-4">
-        <h2 className="font-display text-lg font-medium text-brown-900">Treatment Areas</h2>
-        <p className="mt-0.5 text-xs text-brown-400">
-          The options staff pick from on the Area field when logging a Q-Switch or Laser Hair
-          Removal visit — add your own, or edit an existing one&apos;s name, typical duration, and
-          whether GST applies.
-        </p>
-      </div>
-
       <div className="space-y-6">
         {SESSION_TYPES.map(({ key, label }) => {
           const areas = areaDefs.filter((a) => a.sessionType === key);

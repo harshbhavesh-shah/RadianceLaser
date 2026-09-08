@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/db/patients";
 import { getPatientVisits } from "@/lib/db/visits";
 import { getPatientPackages } from "@/lib/db/packages";
+import { getClinicPackageTypeDefs } from "@/lib/db/packageTypeDefs";
 import { getClinicMachines } from "@/lib/db/machines";
 import { getClinicStaff } from "@/lib/db/staff";
 import { getPatientPhotos } from "@/lib/db/patientPhotos";
@@ -32,10 +33,11 @@ export default async function PatientDetailPage({
   const patient = await getPatient(session.clinicId, params.id);
   if (!patient) notFound();
 
-  const [visits, packages, machines, staff, photos, clinic, consentTemplates, consentForms, receipts] =
+  const [visits, packages, packageTypeDefs, machines, staff, photos, clinic, consentTemplates, consentForms, receipts] =
     await Promise.all([
       getPatientVisits(session.clinicId, patient.id),
       getPatientPackages(session.clinicId, patient.id),
+      getClinicPackageTypeDefs(session.clinicId),
       getClinicMachines(session.clinicId),
       getClinicStaff(session.clinicId),
       getPatientPhotos(session.clinicId, patient.id),
@@ -100,6 +102,7 @@ export default async function PatientDetailPage({
           patientId={patient.id}
           visits={visits}
           packages={packages}
+          packageTypeDefs={packageTypeDefs}
           machines={machines}
           staff={staff}
           initialActiveTab={searchParams.logVisit === "1" ? searchParams.sessionType : undefined}

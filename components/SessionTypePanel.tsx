@@ -7,7 +7,7 @@ import VisitTimeline from "@/components/VisitTimeline";
 import VisitFormModal from "@/components/VisitFormModal";
 import { computePackageLedger } from "@/lib/packages";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import type { Machine, Package, SessionType, StaffMember, Visit } from "@/types";
+import type { Machine, Package, PackageTypeDef, SessionType, StaffMember, Visit } from "@/types";
 
 type ModalState =
   | { mode: "closed" }
@@ -20,6 +20,7 @@ export default function SessionTypePanel({
   sessionType,
   initialVisits,
   initialPackages,
+  packageTypeDefs,
   machines,
   staff,
   autoOpenAppointmentId,
@@ -29,6 +30,9 @@ export default function SessionTypePanel({
   sessionType: SessionType;
   initialVisits: Visit[];
   initialPackages: Package[];
+  // This session type's package presets (see app/dashboard/packages) — the
+  // "New Package" form's optional shortcut picker.
+  packageTypeDefs: PackageTypeDef[];
   machines: Machine[];
   staff: StaffMember[];
   // Set only on the tab a "Log Visit" deep link targets — opens the visit
@@ -153,6 +157,7 @@ export default function SessionTypePanel({
           clinicId={clinicId}
           patientId={patientId}
           sessionType={sessionType}
+          packageTypeDefs={packageTypeDefs}
           onClose={() => setPackageModalOpen(false)}
           onCreated={handlePackageCreated}
         />

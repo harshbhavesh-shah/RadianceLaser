@@ -1,127 +1,34 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Package } from "lucide-react";
 import { getSession } from "@/lib/session";
-import { getPatientsByIds } from "@/lib/db/patients";
-import { getClinicPackages } from "@/lib/db/packages";
-import { getVisitsByPackageId } from "@/lib/db/visits";
-import { computePackageLedger } from "@/lib/packages";
+import { getClinicPackageTypeDefs } from "@/lib/db/packageTypeDefs";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
-import EmptyState from "@/components/ui/EmptyState";
-
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-gold-100 text-gold-600",
-  completed: "bg-beige-300 text-brown-600",
-  expired: "bg-red-50 text-red-700",
-};
-
-function formatCurrency(n: number): string {
-  return `₹${Math.round(n).toLocaleString("en-IN")}`;
-}
+import PackageTypesManager from "@/components/packages/PackageTypesManager";
 
 export default async function PackagesPage() {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
 
-  const [packages, sessionTypeDefs] = await Promise.all([
-    getClinicPackages(session.clinicId),
+  const [packageTypeDefs, sessionTypeDefs] = await Promise.all([
+    getClinicPackageTypeDefs(session.clinicId),
     getClinicSessionTypeDefs(session.clinicId),
   ]);
-  const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
-
-  // One targeted query per package (its own redeemed visits, not the whole
-  // clinic's visit history filtered down per package) plus one lookup for
-  // just the patients these packages actually belong to — not the entire
-  // roster. computePackageLedger only ever uses the visits matching this
-  // package's id anyway (see lib/packages.ts), so this is the same ledger
-  // result for a fraction of the reads.
-  const [packageVisitsByPackage, patients] = await Promise.all([
-    Promise.all(packages.map((pkg) => getVisitsByPackageId(session.clinicId, pkg.id))),
-    getPatientsByIds(packages.map((pkg) => pkg.patientId)),
-  ]);
-  const patientsById = new Map(patients.map((p) => [p.id, p]));
-
-  const rows = packages
-    .map((pkg, i) => ({
-      pkg,
-      patientName: patientsById.get(pkg.patientId)?.name || "Unknown patient",
-      ledger: computePackageLedger(pkg, packageVisitsByPackage[i]),
-    }))
-    .sort((a, b) => b.pkg.createdAt - a.pkg.createdAt);
+  const sessionTypeConfig = buildSessionTypeConfig(sessionTypeDefs);
 
   return (
     <div>
       <h1 className="font-display text-2xl font-medium text-brown-900">Packages</h1>
+      <p className="mt-1 text-sm text-brown-400">
+        Reusable package presets your clinic sells — Bridal Package, Holiday Package, and so on.
+        Selling one to a specific patient still happens from their own profile.
+      </p>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
 
-      {rows.length === 0 ? (
-        <EmptyState
-          icon={Package}
-          title="No packages purchased yet."
-          description="Packages are created from a patient's Visit History tab — find the patient first."
-          action={{ label: "Go to Patients", href: "/dashboard/patients" }}
-        />
-      ) : (
-        <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
-          <table className="w-full min-w-[700px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">
-                <th className="px-5 py-3 font-medium">Patient</th>
-                <th className="px-5 py-3 font-medium">Package</th>
-                <th className="px-5 py-3 font-medium">Sessions</th>
-                <th className="px-5 py-3 font-medium">Remaining</th>
-                <th className="px-5 py-3 font-medium">Purchased</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ pkg, patientName, ledger }) => {
-                const cfg = SESSION_TYPE_CONFIG[pkg.sessionType];
-                return (
-                  <tr
-                    key={pkg.id}
-                    className="border-b border-beige-300 last:border-0 hover:bg-gold-100/40"
-                  >
-                    <td className="px-5 py-3">
-                      <Link
-                        href={`/dashboard/patients/${pkg.patientId}`}
-                        className="font-medium text-brown-900 hover:text-gold-600"
-                      >
-                        {patientName}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="flex items-center gap-2">
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}
-                        >
-                          {cfg.badgeText}
-                        </span>
-                        <span className="text-brown-700">{pkg.label}</span>
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-brown-600">
-                      {ledger.sessionsUsed} / {pkg.totalSessions}
-                    </td>
-                    <td className="px-5 py-3 text-brown-600">
-                      {ledger.sessionsRemaining} sessions · {formatCurrency(ledger.amountRemaining)}
-                    </td>
-                    <td className="px-5 py-3 text-brown-600">{pkg.purchaseDate}</td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${STATUS_STYLES[ledger.status]}`}
-                      >
-                        {ledger.status}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <PackageTypesManager
+        initialPackageTypeDefs={packageTypeDefs}
+        sessionTypeConfig={sessionTypeConfig}
+        canEdit={session.role === "owner"}
+      />
     </div>
   );
 }

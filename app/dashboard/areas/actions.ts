@@ -5,7 +5,7 @@ import { createAreaDef, updateAreaDef, deleteAreaDef, type AreaDefInput } from "
 import type { AreaDef } from "@/types";
 
 // Server Actions backing AreaFormModal's save/delete — see
-// components/settings/AreaFormModal.tsx and AreaDefsSection.tsx.
+// components/areas/AreaFormModal.tsx and AreaDefsManager.tsx.
 
 async function requireOwner() {
   const session = await getSession();

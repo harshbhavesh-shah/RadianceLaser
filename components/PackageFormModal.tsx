@@ -4,24 +4,30 @@ import { useState } from "react";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { todayLocalStr } from "@/lib/packages";
 import { createPackageAction } from "@/app/dashboard/patients/[id]/packageActions";
-import type { Package, PaymentMethod, SessionType } from "@/types";
+import type { Package, PackageTypeDef, PaymentMethod, SessionType } from "@/types";
 
 export default function PackageFormModal({
   clinicId,
   patientId,
   sessionType,
+  packageTypeDefs,
   onClose,
   onCreated,
 }: {
   clinicId: string;
   patientId: string;
   sessionType: SessionType;
+  // This session type's presets from Packages → package type management
+  // (app/dashboard/packages) — picking one below just pre-fills the fields
+  // underneath, which stay fully editable either way.
+  packageTypeDefs: PackageTypeDef[];
   onClose: () => void;
   onCreated: (pkg: Package) => void;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
 
+  const [selectedTypeId, setSelectedTypeId] = useState("");
   const [label, setLabel] = useState(`${config.label} Package`);
   const [totalSessions, setTotalSessions] = useState("10");
   const [totalAmount, setTotalAmount] = useState("");
@@ -80,6 +86,38 @@ export default function PackageFormModal({
         <div className="mb-5 h-[2px] w-8 bg-gold-500" />
 
         <div className="space-y-4">
+          {packageTypeDefs.length > 0 && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-brown-700">
+                Package Type <span className="text-brown-400">(optional)</span>
+              </label>
+              <select
+                value={selectedTypeId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedTypeId(id);
+                  const def = packageTypeDefs.find((d) => d.id === id);
+                  if (def) {
+                    setLabel(def.name);
+                    setTotalSessions(String(def.totalSessions));
+                    setTotalAmount(String(def.suggestedAmount));
+                  }
+                }}
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              >
+                <option value="">Custom</option>
+                {packageTypeDefs.map((def) => (
+                  <option key={def.id} value={def.id}>
+                    {def.name} — {def.totalSessions} sessions, ₹{Math.round(def.suggestedAmount).toLocaleString("en-IN")}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-brown-400">
+                Fills in the fields below — still editable before saving. Manage these presets from Packages.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="mb-1.5 block text-sm font-medium text-brown-700">Package Name</label>
             <input

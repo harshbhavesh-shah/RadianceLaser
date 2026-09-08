@@ -11,7 +11,7 @@ import {
 import type { NoShowFollowUp } from "@/types";
 
 // Server Actions backing FollowUpFormModal's save/delete. Same
-// requireOwner() pattern as app/dashboard/settings/areaDefActions.ts.
+// requireOwner() pattern as app/dashboard/areas/actions.ts.
 
 async function requireOwner() {
   const session = await getSession();

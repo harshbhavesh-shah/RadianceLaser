@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createAreaDefAction, updateAreaDefAction } from "@/app/dashboard/settings/areaDefActions";
+import { createAreaDefAction, updateAreaDefAction } from "@/app/dashboard/areas/actions";
 import type { AreaDef, SessionType } from "@/types";
 
 const SESSION_TYPE_LABELS: Record<string, string> = { qs: "Q-Switch", lhr: "Laser Hair Removal" };

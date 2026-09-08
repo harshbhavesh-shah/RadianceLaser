@@ -3,13 +3,14 @@
 import { useState } from "react";
 import SessionTypePanel from "@/components/SessionTypePanel";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import type { Machine, Package, SessionType, StaffMember, Visit } from "@/types";
+import type { Machine, Package, PackageTypeDef, SessionType, StaffMember, Visit } from "@/types";
 
 export default function PatientVisitTabs({
   clinicId,
   patientId,
   visits,
   packages,
+  packageTypeDefs,
   machines,
   staff,
   initialActiveTab,
@@ -19,6 +20,7 @@ export default function PatientVisitTabs({
   patientId: string;
   visits: Visit[];
   packages: Package[];
+  packageTypeDefs: PackageTypeDef[];
   machines: Machine[];
   staff: StaffMember[];
   // Both set together when arriving via a "Log Visit" deep link from an
@@ -72,6 +74,7 @@ export default function PatientVisitTabs({
             sessionType={type}
             initialVisits={visits.filter((v) => v.sessionType === type)}
             initialPackages={packages.filter((p) => p.sessionType === type)}
+            packageTypeDefs={packageTypeDefs.filter((d) => d.sessionType === type)}
             machines={machines}
             staff={staff}
             autoOpenAppointmentId={type === initialActiveTab ? autoOpenVisitForAppointmentId : undefined}

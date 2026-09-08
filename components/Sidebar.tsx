@@ -22,7 +22,9 @@ import {
   Boxes,
   PhoneCall,
   Inbox,
-  ClipboardList,
+  UserCheck,
+  Layers,
+  MapPin,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
@@ -58,21 +60,48 @@ const NAV_ITEMS: NavItem[] = [
   // day from, so the label should say what it's for, not just where it is.
   { label: "Today", href: "/dashboard", icon: LayoutDashboard },
   { label: "Schedule", href: "/dashboard/appointments", icon: Calendar },
+  // Standalone, not grouped — in practice almost nobody navigates here
+  // directly. A patient's own page is reached from Schedule (a booking or
+  // walk-in gets routed there via buttons), so it doesn't need to sit
+  // inside a group the way the genuinely page-hopping sections below do.
   { label: "Patients", href: "/dashboard/patients", icon: Users },
-  { label: "Packages", href: "/dashboard/packages", icon: Package },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
   {
-    label: "Patient Management",
-    icon: ClipboardList,
+    label: "Patient Retention",
+    icon: UserCheck,
     children: [
       { label: "No Shows", href: "/dashboard/no-shows", icon: UserX },
       { label: "Follow-Ups", href: "/dashboard/follow-ups", icon: PhoneCall },
     ],
   },
+  // Clinic-defined customization for how patients are handled — presets
+  // and records staff set up once and rarely revisit, unlike the daily
+  // per-patient flow above. Not "Clinic Resources" (that name didn't
+  // survive contact with Inventory, which is its own domain — physical
+  // stock, not a patient-management preset — so it stands alone below).
+  {
+    label: "Patient Management",
+    icon: Layers,
+    children: [
+      { label: "Packages", href: "/dashboard/packages", icon: Package },
+      { label: "Areas", href: "/dashboard/areas", icon: MapPin },
+      { label: "Documents", href: "/dashboard/documents", icon: FileText },
+    ],
+  },
   { label: "Inventory", href: "/dashboard/inventory", icon: Boxes },
-  { label: "Documents", href: "/dashboard/documents", icon: FileText },
-  { label: "Communication", href: "/dashboard/communication", icon: MessageCircle },
-  { label: "Inbox", href: "/dashboard/inbox", icon: Inbox },
+  {
+    label: "Communication",
+    icon: MessageCircle,
+    children: [
+      // Labeled "WhatsApp" here (not "Communication", matching the page's
+      // own <h1>) — a group and its own child both saying "Communication"
+      // would read as a mistake, not a hierarchy. The page itself is
+      // WhatsApp connection + message templates + automation, so this is
+      // more specific anyway, not just a disambiguation hack.
+      { label: "WhatsApp", href: "/dashboard/communication", icon: MessageCircle },
+      { label: "Inbox", href: "/dashboard/inbox", icon: Inbox },
+    ],
+  },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

@@ -12,7 +12,6 @@ import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";
 import MachinesSection from "@/components/settings/MachinesSection";
 import MachineTypesSection from "@/components/settings/MachineTypesSection";
-import AreaDefsSection from "@/components/settings/AreaDefsSection";
 import PatientImportSection from "@/components/settings/PatientImportSection";
 import VisitImportSection from "@/components/settings/VisitImportSection";
 import BillingSection from "@/components/settings/BillingSection";
@@ -83,8 +82,6 @@ export default async function SettingsPage() {
             initialSessionTypeDefs={sessionTypeDefs}
             canEdit={isOwner}
           />
-
-          <AreaDefsSection canEdit={isOwner} />
 
           <MachinesSection clinicId={session.clinicId} initialMachines={machines} canEdit={isOwner} />
 
