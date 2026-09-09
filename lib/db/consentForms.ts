@@ -139,6 +139,32 @@ export async function getClinicConsentFormsPage(
   return { forms: rows.map(toConsentForm), nextCursor };
 }
 
+/**
+ * Clinic-wide consent form search by the linked patient's name or the
+ * template title — same "not scoped to whatever page happens to be
+ * loaded" gap as receipts (see searchClinicReceipts in lib/db/receipts.ts
+ * and README's "Pagination is partial"). ConsentForm has no patientName
+ * column of its own (unlike Receipt) — signedByName is who physically
+ * signed, not necessarily the patient — so this filters through the
+ * Patient relation directly instead of denormalizing a new column.
+ */
+export async function searchClinicConsentForms(clinicId: string, query: string, limit = 30): Promise<ConsentForm[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const rows = await prisma.consentForm.findMany({
+    where: {
+      clinicId,
+      OR: [
+        { patient: { name: { contains: q, mode: "insensitive" } } },
+        { templateTitle: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    orderBy: [{ signedAt: "desc" }],
+    take: limit,
+  });
+  return rows.map(toConsentForm);
+}
+
 export interface CreateConsentFormInput {
   clinicId: string;
   patientId: string;

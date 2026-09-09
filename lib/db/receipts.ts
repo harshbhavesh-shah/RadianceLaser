@@ -107,6 +107,33 @@ export async function getClinicReceiptsPage(
   return { receipts: rows.map(toReceipt), nextCursor };
 }
 
+/**
+ * Clinic-wide receipt search by patient name or receipt number — unlike
+ * getClinicReceiptsPage above, this isn't scoped to whatever page happens
+ * to be loaded (see README's "Pagination is partial"). No separate
+ * lowercased column needed the way Patient.nameLower exists for prefix
+ * search: patientName is already a plain column, and Postgres's
+ * case-insensitive `contains` doesn't need an index to be fast at one
+ * clinic's actual scale (a handful of thousand rows at most, always
+ * pre-filtered by the indexed clinicId first).
+ */
+export async function searchClinicReceipts(clinicId: string, query: string, limit = 30): Promise<Receipt[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const rows = await prisma.receipt.findMany({
+    where: {
+      clinicId,
+      OR: [
+        { patientName: { contains: q, mode: "insensitive" } },
+        { receiptNumber: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    orderBy: [{ createdAt: "desc" }],
+    take: limit,
+  });
+  return rows.map(toReceipt);
+}
+
 export interface CreateReceiptInput {
   clinicId: string;
   patientId: string;

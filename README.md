@@ -376,19 +376,31 @@ features built on top of them:
 - **Pagination is partial.** The Patients list and the Documents page's
   Receipts/Consent Forms lists are cursor-paginated (`getPatientsPage`,
   `getClinicReceiptsPage`, `getClinicConsentFormsPage` — "Load more", not
-  infinite scroll or numbered pages). The Patients list also has real
+  infinite scroll or numbered pages). The Patients list has real
   server-side search across the whole roster (name/phone/code *prefix*
-  match, not substring — see `searchPatients` in
-  `lib/firestore/patients.ts`); the Documents lists' search bars still only
-  search whatever page is currently loaded, not the whole clinic, since that
-  would need denormalizing a lowercased patient name onto `Receipt`/
-  `ConsentForm` the way `Patient.nameLower` already does. Visits, Analytics,
-  and Appointments still load a whole clinic's collection in one query —
-  fine today, will need the same treatment as clinics accumulate years of
+  match, not substring — see `searchPatients` in `lib/firestore/patients.ts`).
+  The Documents lists' search bars are now clinic-wide too
+  (`searchClinicReceipts`/`searchClinicConsentForms` in
+  `lib/db/receipts.ts`/`lib/db/consentForms.ts`, debounced from
+  `ReceiptsPanel`/`ConsentFormsPanel`) — substring, not prefix, and needed
+  no new denormalized column: `Receipt.patientName` is already a plain
+  column, and `ConsentForm` filters through its `Patient` relation directly
+  instead of duplicating the name onto it. Visits, Analytics, and
+  Appointments still load a whole clinic's collection in one query — fine
+  today, will need the same treatment as clinics accumulate years of
   history
-- **No automated tests** — worth adding around the receipt-number counter
-  transaction and the package ledger computation first, since bugs there
-  turn into billing disputes rather than just UI glitches
+- **Automated tests exist, but only around the two highest-stakes areas so
+  far** — `npm test` (Vitest) covers `computePackageLedger`/`perSessionValue`
+  (`lib/packages.test.ts`, pure unit tests) and `allocateReceiptNumber`
+  (`lib/db/receiptNumber.test.ts`, a real integration test against the dev
+  Postgres database — it fires 25 concurrent allocations and asserts none
+  collide, the actual race the atomic upsert exists to prevent). Chosen
+  first because bugs there turn into billing disputes, not just UI
+  glitches; most of the app still has no test coverage at all.
+  `vitest.config.mts` aliases the `server-only` package to a no-op (see
+  `test/emptyServerOnly.ts`) so `lib/db/*.ts` modules can be imported
+  directly in tests — that package otherwise throws unconditionally outside
+  Next's own bundler.
 - **Audit log has a viewer now, but partial coverage** — `lib/db/auditLog.ts`
   (CERT-In 2022 / DPDP-oriented) records patient create/update/erase, and
   Settings → Activity Log (owner-only) shows the history, but nothing else

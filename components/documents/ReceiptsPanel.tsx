@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Receipt as ReceiptIcon, Search } from "lucide-react";
 import PatientPicker from "./PatientPicker";
 import ReceiptFormModal from "./ReceiptFormModal";
 import ReceiptViewModal from "./ReceiptViewModal";
-import { loadMoreReceiptsAction } from "@/app/dashboard/documents/actions";
+import { loadMoreReceiptsAction, searchReceiptsAction } from "@/app/dashboard/documents/actions";
 import type { Package, Patient, Receipt, Visit } from "@/types";
 
 function formatCurrency(n: number): string {
@@ -63,21 +63,31 @@ export default function ReceiptsPanel({
   );
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
   const [search, setSearch] = useState("");
+  // null = not searching (show the loaded/paginated list below). Once
+  // there's a query, this holds the clinic-wide server search results
+  // instead — see searchReceiptsAction. Debounced so every keystroke
+  // doesn't fire its own request.
+  const [searchResults, setSearchResults] = useState<Receipt[] | null>(null);
+  const [searching, setSearching] = useState(false);
 
-  // Only searches receipts already loaded on screen, not the clinic's whole
-  // history — a clinic-wide search would need a server-side query, same as
-  // the Patients list, which hasn't been built for receipts (see
-  // getClinicReceiptsPage's doc comment). Fine for finding something from
-  // the last page or two; won't find an older receipt that hasn't been
-  // paged in yet.
-  const filteredReceipts = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const sorted = [...receipts].sort((a, b) => b.createdAt - a.createdAt);
-    if (!q) return sorted;
-    return sorted.filter(
-      (r) => r.patientName.toLowerCase().includes(q) || r.receiptNumber.toLowerCase().includes(q)
-    );
-  }, [receipts, search]);
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) {
+      setSearchResults(null);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const handle = setTimeout(async () => {
+      const results = await searchReceiptsAction(q);
+      setSearchResults(results);
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search]);
+
+  const sortedReceipts = useMemo(() => [...receipts].sort((a, b) => b.createdAt - a.createdAt), [receipts]);
+  const filteredReceipts = searchResults ?? sortedReceipts;
 
   function handleCreated(receipt: Receipt) {
     setReceipts((prev) => [receipt, ...prev]);
@@ -126,9 +136,10 @@ export default function ReceiptsPanel({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by patient or receipt number…"
+            placeholder="Search by patient or receipt number, across your whole clinic…"
             className="w-full bg-transparent text-sm text-brown-900 outline-none placeholder:text-brown-400"
           />
+          {searching && <span className="flex-shrink-0 text-xs text-brown-400">Searching…</span>}
         </div>
       )}
 
@@ -136,7 +147,11 @@ export default function ReceiptsPanel({
         <div className="flex flex-col items-center rounded-lg border border-dashed border-beige-300 py-8 text-center">
           <ReceiptIcon className="text-brown-400" size={26} />
           <p className="mt-2 text-sm text-brown-400">
-            {receipts.length === 0 ? "No receipts generated yet." : "No receipts match that search."}
+            {receipts.length === 0
+              ? "No receipts generated yet."
+              : searching
+                ? "Searching…"
+                : "No receipts match that search anywhere in your clinic."}
           </p>
         </div>
       ) : (

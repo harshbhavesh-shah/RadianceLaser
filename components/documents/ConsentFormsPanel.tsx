@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileSignature, Search } from "lucide-react";
 import ConsentTemplatesSection from "@/components/settings/ConsentTemplatesSection";
 import ConsentFormSignModal from "@/components/ConsentFormSignModal";
 import ConsentFormViewModal from "@/components/ConsentFormViewModal";
 import PatientPicker from "./PatientPicker";
-import { loadMoreConsentFormsAction } from "@/app/dashboard/documents/actions";
+import { loadMoreConsentFormsAction, searchConsentFormsAction } from "@/app/dashboard/documents/actions";
 import type { ConsentForm, ConsentFormTemplate, Patient, Visit } from "@/types";
 
 function formatDate(ms: number): string {
@@ -50,19 +50,31 @@ export default function ConsentFormsPanel({
 
   const patientById = useMemo(() => new Map(patients.map((p) => [p.id, p])), [patients]);
 
-  // Only searches forms already loaded on screen, not the clinic's whole
-  // signing history — same caveat as ReceiptsPanel (see
-  // getClinicConsentFormsPage's doc comment for why a clinic-wide search
-  // isn't wired up here).
-  const filteredForms = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const sorted = [...forms].sort((a, b) => b.signedAt - a.signedAt);
-    if (!q) return sorted;
-    return sorted.filter((f) => {
-      const name = patientById.get(f.patientId)?.name || "";
-      return name.toLowerCase().includes(q) || f.templateTitle.toLowerCase().includes(q);
-    });
-  }, [forms, search, patientById]);
+  // null = not searching (show the loaded/paginated list below). Once
+  // there's a query, this holds the clinic-wide server search results
+  // instead — see searchConsentFormsAction. Debounced so every keystroke
+  // doesn't fire its own request.
+  const [searchResults, setSearchResults] = useState<ConsentForm[] | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) {
+      setSearchResults(null);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const handle = setTimeout(async () => {
+      const results = await searchConsentFormsAction(q);
+      setSearchResults(results);
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search]);
+
+  const sortedForms = useMemo(() => [...forms].sort((a, b) => b.signedAt - a.signedAt), [forms]);
+  const filteredForms = searchResults ?? sortedForms;
 
   function handleSigned(form: ConsentForm) {
     setForms((prev) => [form, ...prev]);
@@ -111,9 +123,10 @@ export default function ConsentFormsPanel({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by patient or form title…"
+              placeholder="Search by patient or form title, across your whole clinic…"
               className="w-full bg-transparent text-sm text-brown-900 outline-none placeholder:text-brown-400"
             />
+            {searching && <span className="flex-shrink-0 text-xs text-brown-400">Searching…</span>}
           </div>
         )}
 
@@ -121,7 +134,11 @@ export default function ConsentFormsPanel({
           <div className="flex flex-col items-center rounded-lg border border-dashed border-beige-300 py-8 text-center">
             <FileSignature className="text-brown-400" size={26} />
             <p className="mt-2 text-sm text-brown-400">
-              {forms.length === 0 ? "No signed consent forms yet." : "No forms match that search."}
+              {forms.length === 0
+                ? "No signed consent forms yet."
+                : searching
+                  ? "Searching…"
+                  : "No forms match that search anywhere in your clinic."}
             </p>
           </div>
         ) : (
