@@ -25,6 +25,7 @@ import {
   UserCheck,
   Layers,
   MapPin,
+  ChevronDown,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
@@ -105,10 +106,39 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
+// Which of the collapsible groups above the user has manually closed —
+// persisted so the choice survives a reload. Group open/closed is keyed by
+// label rather than index since NAV_ITEMS order is safe to change later
+// without silently reinterpreting someone's stored preference as a
+// different group. Starts empty (everything open) on both server and first
+// client render to match; the real value is read from localStorage in an
+// effect, same hydration-safe pattern as SidebarContext's collapsed state.
+const GROUP_STORAGE_KEY = "sidebar-collapsed-groups";
+
 export default function Sidebar({ clinicName, session }: { clinicName: string; session: Session }) {
   const pathname = usePathname();
   const { collapsed, toggleUserPreference } = useSidebarCollapse();
   const [mobileOpen, setMobileOpen] = useState(false); // mobile off-canvas drawer
+  const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(GROUP_STORAGE_KEY);
+      if (stored) setClosedGroups(new Set(JSON.parse(stored)));
+    } catch {
+      // Malformed/inaccessible storage — just start with everything open.
+    }
+  }, []);
+
+  function toggleGroup(label: string) {
+    setClosedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  }
 
   // Close the mobile drawer automatically on navigation.
   useEffect(() => {
@@ -170,20 +200,46 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
         {visibleItems.map((item) => {
           if (isGroup(item)) {
             const GroupIcon = item.icon;
+            // A group containing the active page always renders open,
+            // regardless of the stored preference — collapsing away the
+            // page you're actually on would be confusing, not tidy.
+            const containsActive = item.children.some((child) => child.href === pathname);
+            const open = containsActive || !closedGroups.has(item.label);
             return (
               <div key={item.label}>
                 {/* Collapsed (icon-rail) mode skips the header entirely —
                     it has no href of its own, so there's nothing useful an
-                    icon-only row could do there; just the two children's
-                    own icons show, same as before this was grouped. */}
+                    icon-only row could do there; just the children's own
+                    icons show, same as before this was grouped. Since
+                    there's no header to click there, groups always render
+                    fully open in icon-rail mode. */}
                 {showLabels && (
-                  <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-sm text-beige-200/70">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(item.label)}
+                    aria-expanded={open}
+                    className="flex w-full items-center gap-3 rounded-md px-3 pt-3 pb-1 text-sm text-beige-200/70 transition-colors hover:text-beige-200"
+                  >
                     <GroupIcon size={18} className="flex-shrink-0" />
-                    <span>{item.label}</span>
-                  </div>
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <ChevronDown
+                      size={14}
+                      className={`flex-shrink-0 transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
+                    />
+                  </button>
                 )}
-                <div className={showLabels ? "ml-4 space-y-0.5 border-l border-brown-700/60 pl-2" : "space-y-0.5"}>
-                  {item.children.map((child) => renderLeaf(child, showLabels, 16))}
+                <div
+                  className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${
+                    showLabels && !open ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+                  }`}
+                >
+                  <div
+                    className={`overflow-hidden ${
+                      showLabels ? "ml-4 space-y-0.5 border-l border-brown-700/60 pl-2" : "space-y-0.5"
+                    }`}
+                  >
+                    {item.children.map((child) => renderLeaf(child, showLabels, 16))}
+                  </div>
                 </div>
               </div>
             );

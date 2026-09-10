@@ -1,7 +1,9 @@
 import "server-only";
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/db/client";
 import type { PatientPhoto as PrismaPatientPhotoRow } from "@prisma/client";
 import type { PatientPhoto, SessionType } from "@/types";
+import { decodeDataUrl, deleteFromR2, extensionFor, keyFromUrl, uploadToR2, urlForKey } from "@/lib/r2";
 
 // Postgres migration, chunk 10 — the PatientPhoto half of
 // prisma/schema.prisma. Function names/signatures intentionally match
@@ -49,15 +51,21 @@ export interface CreatePatientPhotoInput {
 }
 
 export async function createPatientPhoto(input: CreatePatientPhotoInput): Promise<PatientPhoto> {
+  const { buffer, contentType } = decodeDataUrl(input.dataUrl);
+  const id = randomUUID();
+  const key = `patients/${input.clinicId}/${input.patientId}/${id}.${extensionFor(contentType)}`;
+  await uploadToR2(key, buffer, contentType);
+
   const row = await prisma.patientPhoto.create({
     data: {
+      id,
       clinicId: input.clinicId,
       patientId: input.patientId,
       visitId: input.visitId ?? null,
       sessionType: input.sessionType ?? null,
       area: input.area ?? null,
       date: input.date ?? null,
-      dataUrl: input.dataUrl,
+      dataUrl: urlForKey(key),
       label: input.label ?? null,
       sensitive: input.sensitive,
       uploadedByUid: input.uploadedByUid,
@@ -69,9 +77,11 @@ export async function createPatientPhoto(input: CreatePatientPhotoInput): Promis
 }
 
 export async function deletePatientPhoto(clinicId: string, id: string): Promise<void> {
-  const existing = await prisma.patientPhoto.findUnique({ where: { id }, select: { clinicId: true } });
+  const existing = await prisma.patientPhoto.findUnique({ where: { id }, select: { clinicId: true, dataUrl: true } });
   if (!existing || existing.clinicId !== clinicId) {
     throw new Error("Photo not found.");
   }
   await prisma.patientPhoto.delete({ where: { id } });
+  const key = keyFromUrl(existing.dataUrl);
+  if (key) await deleteFromR2(key);
 }

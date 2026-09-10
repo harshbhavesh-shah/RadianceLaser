@@ -1,7 +1,9 @@
 import "server-only";
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/db/client";
 import type { ConsentForm as PrismaConsentFormRow, ConsentFormTemplate as PrismaConsentFormTemplateRow } from "@prisma/client";
 import type { ConsentForm, ConsentFormTemplate, SessionType } from "@/types";
+import { decodeDataUrl, deleteFromR2, extensionFor, keyFromUrl, uploadToR2, urlForKey } from "@/lib/r2";
 
 // Postgres migration, chunk 9 — the ConsentFormTemplate + ConsentForm half
 // of prisma/schema.prisma, migrated together for the same reason they were
@@ -179,16 +181,22 @@ export interface CreateConsentFormInput {
 }
 
 export async function createConsentForm(input: CreateConsentFormInput): Promise<ConsentForm> {
+  const { buffer, contentType } = decodeDataUrl(input.signatureDataUrl);
+  const id = randomUUID();
+  const key = `consent-forms/${input.clinicId}/${id}.${extensionFor(contentType)}`;
+  await uploadToR2(key, buffer, contentType);
+
   const now = BigInt(Date.now());
   const row = await prisma.consentForm.create({
     data: {
+      id,
       clinicId: input.clinicId,
       patientId: input.patientId,
       templateId: input.templateId,
       templateTitle: input.templateTitle,
       visitId: input.visitId ?? null,
       renderedBody: input.renderedBody,
-      signatureDataUrl: input.signatureDataUrl,
+      signatureDataUrl: urlForKey(key),
       signedByName: input.signedByName,
       witnessUid: input.witnessUid,
       witnessName: input.witnessName,
@@ -200,9 +208,14 @@ export async function createConsentForm(input: CreateConsentFormInput): Promise<
 }
 
 export async function deleteConsentForm(clinicId: string, id: string): Promise<void> {
-  const existing = await prisma.consentForm.findUnique({ where: { id }, select: { clinicId: true } });
+  const existing = await prisma.consentForm.findUnique({
+    where: { id },
+    select: { clinicId: true, signatureDataUrl: true },
+  });
   if (!existing || existing.clinicId !== clinicId) {
     throw new Error("Consent form not found.");
   }
   await prisma.consentForm.delete({ where: { id } });
+  const key = keyFromUrl(existing.signatureDataUrl);
+  if (key) await deleteFromR2(key);
 }

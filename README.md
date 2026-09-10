@@ -367,12 +367,19 @@ features built on top of them:
   click "Renew" every year; there's no auto-charging Razorpay Subscription,
   by design (see "Self-serve signup, trials, and billing" above), but it
   does mean a renewal can be missed with no nudge beyond the in-app banner
-- **Photos and signatures are stored as base64 inside Firestore documents**,
-  not Firebase Storage, because Storage needs the paid Blaze plan. Works
-  fine at small scale (images are compressed client-side to stay well under
-  the 1MiB/doc limit — see `lib/imageCompression.ts`), but is worth
-  migrating to Storage once clinics are paying, both for cost and to stop
-  every patient-record read from dragging image bytes along with it
+- **Patient photos and consent-form signatures live in Cloudflare R2**, not
+  Postgres. The client still compresses each image to a base64 data URL
+  first (`lib/imageCompression.ts`, `SignaturePad`'s canvas export) — that
+  part is unchanged from the original Firestore-era design — but
+  `createPatientPhoto`/`createConsentForm` (`lib/db/patientPhotos.ts`,
+  `lib/db/consentForms.ts`) now decode it, upload the bytes to R2, and store
+  a proxy URL in the same `dataUrl`/`signatureDataUrl` column instead of the
+  raw base64. R2 is fully private — every read goes through
+  `app/api/photos/[...key]/route.ts`, which checks the requesting session's
+  `clinicId` against the key before streaming anything back (see
+  `lib/r2.ts`). `scripts/migratePhotosToR2.mjs` was the one-time backfill
+  that moved every pre-existing base64 row over; safe to re-run (it only
+  touches rows still holding a raw `data:` URL).
 - **Pagination is partial.** The Patients list and the Documents page's
   Receipts/Consent Forms lists are cursor-paginated (`getPatientsPage`,
   `getClinicReceiptsPage`, `getClinicConsentFormsPage` — "Load more", not
