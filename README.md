@@ -418,3 +418,16 @@ features built on top of them:
 - Role-based UI is ad hoc per-page rather than one shared `can(action,
   role)` policy helper — fine for 3 roles, will get harder to keep
   consistent as it grows
+
+## Error monitoring
+
+Server, Edge, and browser errors all report to Sentry —
+`sentry.server.config.ts`/`sentry.edge.config.ts`/`sentry.client.config.ts`
+each call `Sentry.init` for their runtime, loaded via `instrumentation.ts`
+(server/edge) or auto-injected by `next.config.js`'s `withSentryConfig`
+(client). `app/global-error.tsx` is the root React error boundary — without
+it, a render error that escapes every page's own handling would show Next's
+default error screen and never reach Sentry. Needs `NEXT_PUBLIC_SENTRY_DSN`
+in `.env.local` (see `.env.local.example`); `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`
+are optional and only enable source-map upload at build time so stack
+traces show real file/line numbers instead of minified positions.
