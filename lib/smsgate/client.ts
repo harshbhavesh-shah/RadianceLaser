@@ -15,7 +15,7 @@ export async function sendSms(phone: string, message: string): Promise<{ raw: st
   const webhookUrl = process.env.SMS_GATE_WEBHOOK_URL;
   if (!webhookUrl) {
     throw new Error(
-      "SMS sending isn't set up yet — add SMS_GATE_WEBHOOK_URL in .env.local once the SMS Gateway " +
+      "SMS sending isn't set up yet. Add SMS_GATE_WEBHOOK_URL in .env.local once the SMS Gateway " +
         "Apps Script is deployed. See lib/smsgate/client.ts."
     );
   }
