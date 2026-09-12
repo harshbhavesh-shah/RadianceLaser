@@ -39,14 +39,14 @@ const SECTIONS: Section[] = [
   {
     heading: "5. User Generated Contributions",
     body: [
-      "The Services do not currently offer users the ability to submit or post content generally. Where we do provide such an opportunity — content and materials you create, submit, post, or transmit through the Services (“Contributions”) — those Contributions may be viewable by other users. By making any Contributions available, you represent and warrant your compliance with Sections 4 and 6 of these Legal Terms.",
+      "The Services do not currently offer users the ability to submit or post content generally. Where we do provide such an opportunity, content and materials you create, submit, post, or transmit through the Services (“Contributions”) may be viewable by other users. By making any Contributions available, you represent and warrant your compliance with Sections 4 and 6 of these Legal Terms.",
     ],
   },
   {
     heading: "6. Contribution License",
     body: [
       "You agree that we may access, store, process, and use any information and personal data you provide, consistent with your choices (including privacy settings). By submitting suggestions or feedback about the Services, you agree we may use and share it for any purpose without compensation to you.",
-      "We do not assert ownership over your Contributions — you retain full ownership of them and any associated intellectual property rights. We are not liable for statements you make in your Contributions. You're solely responsible for them, and agree to hold us harmless from any legal action arising from them.",
+      "We do not assert ownership over your Contributions. You retain full ownership of them and any associated intellectual property rights. We are not liable for statements you make in your Contributions. You're solely responsible for them, and agree to hold us harmless from any legal action arising from them.",
     ],
   },
   {
@@ -66,7 +66,7 @@ const SECTIONS: Section[] = [
     heading: "9. Modifications and Interruptions",
     body: [
       "We reserve the right to change, modify, or remove the contents of the Services at any time, at our sole discretion and without notice, and have no obligation to update any information on them. We're not liable to you or any third party for any modification, price change, suspension, or discontinuance of the Services.",
-      "We can't guarantee the Services will be available at all times — hardware, software, or maintenance issues may cause interruptions, delays, or errors. We have no liability for any loss or inconvenience caused by your inability to access the Services during downtime.",
+      "We can't guarantee the Services will be available at all times. Hardware, software, or maintenance issues may cause interruptions, delays, or errors. We have no liability for any loss or inconvenience caused by your inability to access the Services during downtime.",
     ],
   },
   {
@@ -80,7 +80,7 @@ const SECTIONS: Section[] = [
     body: [
       "Informal negotiations. To expedite resolution and control the cost of any dispute related to these Legal Terms (a “Dispute”), you and we agree to first attempt to negotiate any Dispute informally for at least thirty (30) days before initiating arbitration. Such informal negotiations begin upon written notice from one party to the other.",
       "Binding arbitration. If the parties can't resolve the Dispute through informal negotiation, it will be finally resolved by arbitration under the United Nations Commission on International Trade Law (UNCITRAL) Arbitration Rules in force at the time. There will be one arbitrator; the seat of arbitration will be Rajkot, Gujarat, India; the language of proceedings will be English; and the governing law will be the substantive law of India.",
-      "Restrictions. Any arbitration is limited to the Dispute between the parties individually — to the fullest extent permitted by law, no arbitration will be joined with any other proceeding, there is no right to arbitrate on a class-action basis, and no Dispute may be brought in a representative capacity on behalf of the general public or other persons.",
+      "Restrictions. Any arbitration is limited to the Dispute between the parties individually. To the fullest extent permitted by law, no arbitration will be joined with any other proceeding, there is no right to arbitrate on a class-action basis, and no Dispute may be brought in a representative capacity on behalf of the general public or other persons.",
       "Exceptions. Disputes seeking to enforce or protect intellectual property rights, disputes arising from theft, piracy, invasion of privacy, or unauthorized use, and any claim for injunctive relief are not subject to the above informal-negotiation/arbitration provisions, and will instead be decided by a court of competent jurisdiction as described in “Governing Law” above.",
     ],
   },
@@ -93,19 +93,19 @@ const SECTIONS: Section[] = [
   {
     heading: "13. Disclaimer",
     body: [
-      "The Services are provided on an as-is and as-available basis. Your use of the Services is at your sole risk. To the fullest extent permitted by law, we disclaim all warranties, express or implied, in connection with the Services, including the implied warranties of merchantability, fitness for a particular purpose, and non-infringement. We make no warranties about the accuracy or completeness of the Services' content, and assume no liability for errors or inaccuracies in it; personal injury or property damage resulting from your access to or use of the Services; unauthorized access to our secure servers or any personal or financial information stored there; any interruption of transmission to or from the Services; bugs or viruses transmitted through the Services by any third party; or any errors, omissions, or losses resulting from content posted or made available via the Services. We don't warrant or assume responsibility for any product or service advertised by a third party through the Services or any linked website — exercise your own judgment and caution.",
+      "The Services are provided on an as-is and as-available basis. Your use of the Services is at your sole risk. To the fullest extent permitted by law, we disclaim all warranties, express or implied, in connection with the Services, including the implied warranties of merchantability, fitness for a particular purpose, and non-infringement. We make no warranties about the accuracy or completeness of the Services' content, and assume no liability for errors or inaccuracies in it; personal injury or property damage resulting from your access to or use of the Services; unauthorized access to our secure servers or any personal or financial information stored there; any interruption of transmission to or from the Services; bugs or viruses transmitted through the Services by any third party; or any errors, omissions, or losses resulting from content posted or made available via the Services. We don't warrant or assume responsibility for any product or service advertised by a third party through the Services or any linked website, so exercise your own judgment and caution.",
     ],
   },
   {
     heading: "14. Limitations of Liability",
     body: [
-      "In no event will we or our directors, employees, or agents be liable to you or any third party for any direct, indirect, consequential, exemplary, incidental, special, or punitive damages — including lost profit, lost revenue, or loss of data — arising from your use of the Services, even if we've been advised of the possibility of such damages. Our liability to you for any cause, regardless of the form of action, will at all times be limited to the amount you paid us, if any, in the twelve (12) months before the claim arose. Some jurisdictions don't allow limitations on implied warranties or the exclusion of certain damages — if those laws apply to you, some or all of the above may not apply, and you may have additional rights.",
+      "In no event will we or our directors, employees, or agents be liable to you or any third party for any direct, indirect, consequential, exemplary, incidental, special, or punitive damages, including lost profit, lost revenue, or loss of data, arising from your use of the Services, even if we've been advised of the possibility of such damages. Our liability to you for any cause, regardless of the form of action, will at all times be limited to the amount you paid us, if any, in the twelve (12) months before the claim arose. Some jurisdictions don't allow limitations on implied warranties or the exclusion of certain damages; if those laws apply to you, some or all of the above may not apply, and you may have additional rights.",
     ],
   },
   {
     heading: "15. Indemnification",
     body: [
-      "You agree to defend, indemnify, and hold us harmless, including our subsidiaries, affiliates, officers, agents, partners, and employees, from any loss, damage, liability, claim, or demand — including reasonable attorneys' fees — made by any third party due to or arising from: your use of the Services; your breach of these Legal Terms; any breach of your representations and warranties in these Legal Terms; your violation of the rights of a third party (including intellectual property rights); or any harmful act toward another user of the Services you connected with through them. We reserve the right, at your expense, to assume exclusive defense of any matter you're required to indemnify us for, and you agree to cooperate with our defense.",
+      "You agree to defend, indemnify, and hold us harmless, including our subsidiaries, affiliates, officers, agents, partners, and employees, from any loss, damage, liability, claim, or demand (including reasonable attorneys' fees) made by any third party due to or arising from: your use of the Services; your breach of these Legal Terms; any breach of your representations and warranties in these Legal Terms; your violation of the rights of a third party (including intellectual property rights); or any harmful act toward another user of the Services you connected with through them. We reserve the right, at your expense, to assume exclusive defense of any matter you're required to indemnify us for, and you agree to cooperate with our defense.",
     ],
   },
   {

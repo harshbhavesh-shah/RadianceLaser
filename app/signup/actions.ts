@@ -73,7 +73,7 @@ export async function createTrialClinicAction(input: {
   } catch (err) {
     const code = (err as { code?: string })?.code;
     if (code === "auth/email-already-exists") {
-      return { error: "An account with this email already exists — sign in instead." };
+      return { error: "An account with this email already exists. Sign in instead." };
     }
     console.error("Signup: failed to create Auth user:", err);
     return { error: "Something went wrong creating your account. Please try again." };

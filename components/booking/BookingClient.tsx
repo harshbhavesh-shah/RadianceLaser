@@ -88,7 +88,7 @@ export default function BookingClient({ clinicId }: { clinicId: string }) {
         </div>
         <h1 className="mt-4 font-display text-xl font-medium text-brown-900">You&apos;re booked!</h1>
         <p className="mt-2 text-sm leading-relaxed text-brown-600">
-          Consultation on {formatVisitDate(date)} at {formatTimeLabel(time)}. We&apos;ll see you then — call the
+          Consultation on {formatVisitDate(date)} at {formatTimeLabel(time)}. We&apos;ll see you then. Call the
           clinic if you need to reschedule.
         </p>
         <button
@@ -126,7 +126,7 @@ export default function BookingClient({ clinicId }: { clinicId: string }) {
             <h1 className="mt-3 font-display text-lg font-medium text-brown-900">Book your consultation</h1>
             <p className="mt-1 text-sm text-brown-600">
               {checkedMatch
-                ? "We couldn't find you as an existing patient — no problem, book as a new patient below."
+                ? "We couldn't find you as an existing patient. No problem, book as a new patient below."
                 : "The doctor will assess you and recommend the right treatment, so there's nothing to choose here."}
             </p>
           </>

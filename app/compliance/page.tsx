@@ -7,42 +7,42 @@ const ROWS: { law: string; requires: string; whatWeDo: string }[] = [
     requires:
       "Consent before collecting a patient's personal data, and the right for them to later access, correct, or ask you to erase it.",
     whatWeDo:
-      "Every patient's consent to have their data processed is captured and timestamped at intake. An owner can look up, correct, or erase a patient's record at any time from that patient's page — erasure permanently deletes the record, it doesn't just hide it.",
+      "Every patient's consent to have their data processed is captured and timestamped at intake. An owner can look up, correct, or erase a patient's record at any time from that patient's page. Erasure permanently deletes the record; it doesn't just hide it.",
   },
   {
-    law: "IT Act, 2000 — Sensitive Personal Data or Information (SPDI) Rules, 2011",
+    law: "IT Act, 2000: Sensitive Personal Data or Information (SPDI) Rules, 2011",
     requires:
-      "\"Reasonable security practices\" for sensitive personal data — health information counts — plus consent for collecting and using it.",
+      "\"Reasonable security practices\" for sensitive personal data (health information counts), plus consent for collecting and using it.",
     whatWeDo:
-      "Data in transit to the database is encrypted. Every staff account can turn on two-factor sign-in. And every clinic's data is walled off from every other clinic's at the database level — there's no shared view, ever, by design.",
+      "Data in transit to the database is encrypted. Every staff account can turn on two-factor sign-in. And every clinic's data is walled off from every other clinic's at the database level, so there's no shared view, ever, by design.",
   },
   {
     law: "CERT-In Directions, 2022",
     requires:
       "Report security incidents to CERT-In within 6 hours of detecting them, and retain system logs for a minimum period.",
     whatWeDo:
-      "Every sensitive action — a record created, changed, or erased — is logged with who did it and when, kept indefinitely rather than just the minimum window. We follow a written incident-response process built specifically around that 6-hour clock.",
+      "Every sensitive action (a record created, changed, or erased) is logged with who did it and when, kept indefinitely rather than just the minimum window. We follow a written incident-response process built specifically around that 6-hour clock.",
   },
   {
     law: "Clinical Establishments (Registration and Regulation) Act, 2010, or your state's equivalent",
     requires:
       "A registered clinic must keep patient records in a proper, retrievable form and be able to produce them on request.",
     whatWeDo:
-      "Registering your clinic is still your own responsibility — that doesn't change. What we handle is the record-keeping itself: every patient's visits, consent forms, and receipts live in one searchable record you can pull up, or print, in seconds.",
+      "Registering your clinic is still your own responsibility; that doesn't change. What we handle is the record-keeping itself: every patient's visits, consent forms, and receipts live in one searchable record you can pull up, or print, in seconds.",
   },
   {
-    law: "Indian Medical Council (Professional Conduct, Etiquette and Ethics) Regulations, 2002 — Regulation 1.3.1",
+    law: "Indian Medical Council (Professional Conduct, Etiquette and Ethics) Regulations, 2002, Regulation 1.3.1",
     requires:
       "Indoor patient records must be kept for at least 3 years from a patient's last treatment (5 years for NABH-accredited clinics).",
     whatWeDo:
-      "We enforce this automatically. A patient's record can't be erased — even on request, even by an owner — until 3 years have passed since their last visit. The system tells you exactly what date that is.",
+      "We enforce this automatically. A patient's record can't be erased, even on request and even by an owner, until 3 years have passed since their last visit. The system tells you exactly what date that is.",
   },
   {
     law: "Electronic Health Record Standards / Ayushman Bharat Digital Mission (ABDM)",
     requires:
-      "Nothing mandatory yet — an ABHA-linked health ID under ABDM is currently voluntary for private clinics, not a legal requirement.",
+      "Nothing mandatory yet. An ABHA-linked health ID under ABDM is currently voluntary for private clinics, not a legal requirement.",
     whatWeDo:
-      "We don't integrate with ABDM today. It isn't required for your clinic to be compliant, and it isn't something we've built yet — we'd rather say that plainly than leave it vague.",
+      "We don't integrate with ABDM today. It isn't required for your clinic to be compliant, and it isn't something we've built yet, so we'd rather say that plainly than leave it vague.",
   },
 ];
 
@@ -60,7 +60,7 @@ export default function CompliancePage() {
         </h1>
         <p className="mt-4 max-w-2xl text-brown-600">
           This page describes how the software itself is built around the laws that govern patient
-          data in India, in plain language rather than legal drafting. It isn&apos;t legal advice —
+          data in India, in plain language rather than legal drafting. It isn&apos;t legal advice:
           how these obligations apply to your specific clinic is worth confirming with your own
           counsel, but this is exactly what the platform does today.
         </p>
@@ -94,7 +94,7 @@ export default function CompliancePage() {
             Your clinic&apos;s database runs on AWS, hosted in Mumbai. Patient data is never routed
             through, or stored in, a data center outside India. Connections to that database are
             encrypted end to end, and every request is checked against your clinic before anything
-            loads — even a shared or guessed link from another clinic&apos;s account won&apos;t open
+            loads, so even a shared or guessed link from another clinic&apos;s account won&apos;t open
             your records.
           </p>
         </section>
@@ -102,8 +102,8 @@ export default function CompliancePage() {
         <section className="mt-10">
           <h2 className="font-display text-xl font-medium text-brown-900">Questions</h2>
           <p className="mt-3 max-w-2xl text-brown-600">
-            If you need more detail than this page covers — for an inspection, an accreditation
-            application, or your own records — reach out and we&apos;ll walk through it directly.
+            If you need more detail than this page covers, for an inspection, an accreditation
+            application, or your own records, reach out and we&apos;ll walk through it directly.
           </p>
         </section>
 

@@ -16,7 +16,7 @@ import BookingClient from "@/components/booking/BookingClient";
 
 export async function generateMetadata({ params }: { params: { clinicId: string } }): Promise<Metadata> {
   const clinic = await getClinic(params.clinicId);
-  return { title: clinic ? `Book a Consultation — ${clinic.name}` : "Book a Consultation" };
+  return { title: clinic ? `Book a Consultation: ${clinic.name}` : "Book a Consultation" };
 }
 
 function ClinicBrandHeader({ clinicName }: { clinicName: string }) {
