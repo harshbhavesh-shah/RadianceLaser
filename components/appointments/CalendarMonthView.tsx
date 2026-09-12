@@ -93,7 +93,7 @@ export default function CalendarMonthView({
                         onEdit(appt);
                       }}
                       className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-gold-500 ${statusStyle.bg} ${statusStyle.text}`}
-                      title={`${formatTime12h(appt.time)} — ${appt.patientName}`}
+                      title={`${formatTime12h(appt.time)}: ${appt.patientName}`}
                     >
                       <span className={`mr-1 rounded px-1 text-[8px] font-bold ${cfg.badgeClassName}`}>
                         {cfg.badgeText}

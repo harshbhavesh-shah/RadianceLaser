@@ -116,18 +116,18 @@ function ErasePatientSection({ patient, retention }: { patient: Patient; retenti
     <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
       <h2 className="font-display text-lg font-medium text-red-900">Erase Patient Data</h2>
       <p className="mt-1.5 text-sm text-red-800">
-        Permanently deletes {patient.name}&apos;s record and everything tied to it — visits, packages,
+        Permanently deletes {patient.name}&apos;s record and everything tied to it: visits, packages,
         appointments, receipts, consent forms, and photos. This cannot be undone.
       </p>
 
       {retention.eligible ? (
         <p className="mt-2 text-xs text-red-700">
-          Eligible for erasure — the 3-year retention period required by Indian Medical Council Regulation 1.3.1
+          Eligible for erasure. The 3-year retention period required by Indian Medical Council Regulation 1.3.1
           has passed.
         </p>
       ) : (
         <p className="mt-2 text-xs text-red-700">
-          Not yet eligible — Indian Medical Council Regulation 1.3.1 requires patient records to be retained for
+          Not yet eligible. Indian Medical Council Regulation 1.3.1 requires patient records to be retained for
           3 years from the last visit. This record can be erased starting{" "}
           {new Date(retention.retentionFloorEndsAt).toLocaleDateString("en-IN")}.
         </p>

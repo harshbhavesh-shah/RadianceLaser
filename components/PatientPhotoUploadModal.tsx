@@ -206,7 +206,7 @@ export default function PatientPhotoUploadModal({
               Sensitive area
               <span className="block text-xs text-brown-400">
                 Blurred by default in the gallery until someone clicks to reveal it. Pre-checked
-                automatically for areas like underarms or bikini — adjust if needed.
+                automatically for areas like underarms or bikini, but you can adjust it if needed.
               </span>
             </span>
           </label>

@@ -70,7 +70,7 @@ export default function ReceiptFormModal({
   function addVisitLine(v: Visit) {
     const label = SESSION_TYPE_CONFIG[v.sessionType]?.label || v.sessionType;
     const area = typeof v.fields.area === "string" ? v.fields.area : undefined;
-    const desc = `${label}${area ? ` — ${area}` : ""} (${v.date || "undated"})`;
+    const desc = `${label}${area ? `, ${area}` : ""} (${v.date || "undated"})`;
     setItems((prev) => [...prev, { description: desc, amount: Number(v.fields.fee) || 0, discount: 0 }]);
     setSourceVisitId(v.id);
     setSourcePackageId(undefined);
@@ -156,7 +156,7 @@ export default function ReceiptFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
-        <h2 className="font-display text-lg font-medium text-brown-900">New Receipt — {patient.name}</h2>
+        <h2 className="font-display text-lg font-medium text-brown-900">New Receipt for {patient.name}</h2>
         <p className="mt-1 text-sm text-brown-400">
           Pick a session or package to auto-fill a line, or add a custom line for anything else.
         </p>

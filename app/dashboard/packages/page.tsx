@@ -19,7 +19,7 @@ export default async function PackagesPage() {
     <div>
       <h1 className="font-display text-2xl font-medium text-brown-900">Packages</h1>
       <p className="mt-1 text-sm text-brown-400">
-        Reusable package presets your clinic sells — Bridal Package, Holiday Package, and so on.
+        Reusable package presets your clinic sells, like a Bridal Package or Holiday Package.
         Selling one to a specific patient still happens from their own profile.
       </p>
       <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />

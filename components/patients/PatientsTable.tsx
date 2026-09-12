@@ -140,7 +140,7 @@ export default function PatientsTable({
               {isSearchPending
                 ? "Searching…"
                 : displayed.length === SEARCH_RESULT_LIMIT
-                  ? `Showing the first ${SEARCH_RESULT_LIMIT} matches — refine your search to narrow it down.`
+                  ? `Showing the first ${SEARCH_RESULT_LIMIT} matches. Refine your search to narrow it down.`
                   : `${displayed.length} match${displayed.length === 1 ? "" : "es"}.`}
             </p>
           ) : (

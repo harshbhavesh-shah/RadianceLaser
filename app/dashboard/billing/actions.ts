@@ -38,7 +38,7 @@ export async function createRenewalOrderAction(): Promise<CreateOrderResult> {
     const session = await requireOwner();
 
     const keyId = process.env.RAZORPAY_KEY_ID;
-    if (!keyId) return { error: "Billing isn't configured yet — contact support." };
+    if (!keyId) return { error: "Billing isn't configured yet. Contact support." };
 
     // Read fresh at checkout time, not cached at module load — a price
     // change from the admin panel should apply to the very next checkout,
@@ -126,7 +126,7 @@ export async function createAutoRenewSubscriptionAction(): Promise<CreateSubscri
     const session = await requireOwner();
 
     const keyId = process.env.RAZORPAY_KEY_ID;
-    if (!keyId) return { error: "Billing isn't configured yet — contact support." };
+    if (!keyId) return { error: "Billing isn't configured yet. Contact support." };
 
     const clinic = await getClinic(session.clinicId);
     if (!clinic) return { error: "Clinic not found." };

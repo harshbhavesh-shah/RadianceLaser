@@ -132,7 +132,7 @@ export default function PatientPhotoGallery({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Photos</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Before/after progress — linked to sessions where relevant. Sensitive-area photos stay
+            Before/after progress, linked to sessions where relevant. Sensitive-area photos stay
             blurred until clicked.
           </p>
         </div>
