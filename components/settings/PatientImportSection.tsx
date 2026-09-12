@@ -12,7 +12,7 @@ export default function PatientImportSection({ canEdit }: { canEdit: boolean }) 
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Import Patients</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Bring in your existing patient list from a CSV or Excel file — map the columns, preview,
+            Bring in your existing patient list from a CSV or Excel file. Map the columns, preview,
             and import in one go.
           </p>
         </div>

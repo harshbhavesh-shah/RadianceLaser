@@ -114,7 +114,7 @@ export default function ConsentTemplateFormModal({
           {isEditing ? "Edit Consent Form Template" : "New Consent Form Template"}
         </h2>
         <p className="mt-1 text-sm text-brown-400">
-          Write once, sign many times — variables like {"{{patientName}}"} get filled in
+          Write once, sign many times. Variables like {"{{patientName}}"} get filled in
           automatically for each patient when they sign.
         </p>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
@@ -135,7 +135,7 @@ export default function ConsentTemplateFormModal({
               ))}
             </div>
             <p className="mt-1.5 text-xs text-brown-400">
-              These are starting points, not legal advice — review and adjust before relying on
+              These are starting points, not legal advice. Review and adjust before relying on
               them.
             </p>
           </div>

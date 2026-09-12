@@ -18,7 +18,7 @@ export default function RevenueChart({ data }: { data: MonthlyRevenue }) {
       <div className="flex items-baseline justify-between">
         <div>
           <div className="text-xs font-medium uppercase tracking-wide text-brown-400">
-            Revenue — {data.monthLabel}
+            Revenue ({data.monthLabel})
           </div>
           <div className="mt-1 font-display text-3xl font-medium text-brown-900">
             {formatCurrency(data.total)}

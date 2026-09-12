@@ -61,7 +61,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
     try {
       const data = await parseSpreadsheetFile(file);
       if (data.rows.length === 0) {
-        setParseError("No rows found in that file — check it has a header row plus at least one session.");
+        setParseError("No rows found in that file. Check it has a header row plus at least one session.");
         return;
       }
       setParsed(data);
@@ -135,8 +135,8 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">Import Session History</h2>
         <p className="mt-1 text-sm text-brown-400">
-          Bring in past visits — last visit date, area, fee, and every other field for a session type,
-          including sessions that treated more than one area — from a CSV or Excel file. Each patient must
+          Bring in past visits: last visit date, area, fee, and every other field for a session type,
+          including sessions that treated more than one area, from a CSV or Excel file. Each patient must
           already exist in Patients.
         </p>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
@@ -223,7 +223,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
         {step === "map" && parsed && (
           <div>
             <p className="mb-3 text-sm text-brown-600">
-              <span className="font-medium text-brown-900">{fileName}</span> — {parsed.rows.length} row
+              <span className="font-medium text-brown-900">{fileName}</span>: {parsed.rows.length} row
               {parsed.rows.length === 1 ? "" : "s"} found. Match each field to a column from your file.
             </p>
 
@@ -267,10 +267,10 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
               </div>
               <p className="mt-1.5 text-xs text-brown-400">
                 {identifyBy === "patientCode"
-                  ? "Only the clinic's Patient ID is needed — no phone number required, useful when migrating from a system that never recorded one."
+                  ? "Only the clinic's Patient ID is needed. No phone number required, useful when migrating from a system that never recorded one."
                   : identifyBy === "phone"
                     ? "Only the phone number is used to match patients."
-                    : "Either field works — handy if your file has one but not consistently the other."}
+                    : "Either field works. Handy if your file has one but not consistently the other."}
               </p>
             </div>
 
@@ -341,7 +341,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
             </div>
             {partCount > 1 && (
               <p className="mb-2 mt-1 text-xs text-brown-400">
-                A row with more than one part logs several treated areas in the same visit — e.g. Chin and
+                A row with more than one part logs several treated areas in the same visit, like Chin and
                 Upper Lips together. Map each part&apos;s columns below (like &quot;Area 1&quot;, &quot;Area
                 2&quot;); an empty part for a given row is simply left out of that visit.
               </p>
@@ -461,7 +461,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
             )}
 
             <p className="mt-3 text-xs text-brown-400">
-              Rows won&apos;t import if their Patient Phone/ID doesn&apos;t match an existing patient — add
+              Rows won&apos;t import if their Patient Phone/ID doesn&apos;t match an existing patient. Add
               those patients first, then re-run this file. A duplicate is the same patient already having a{" "}
               {SESSION_TYPE_CONFIG[sessionType]?.label} visit logged on that same date.
             </p>

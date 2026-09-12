@@ -106,7 +106,7 @@ export default function AreaFormModal({
               className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
             />
             <p className="mt-1.5 text-xs text-brown-400">
-              Suggests a total session duration on the visit form when this area is picked — staff
+              Suggests a total session duration on the visit form when this area is picked, but staff
               can still edit it.
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function AreaFormModal({
               <span className="font-medium">GST applicable</span>
               <br />
               <span className="text-xs text-brown-400">
-                Whether this treatment is subject to GST — this is your clinic&apos;s own call, and
+                Whether this treatment is subject to GST. This is your clinic&apos;s own call, and
                 can vary area to area.
               </span>
             </span>

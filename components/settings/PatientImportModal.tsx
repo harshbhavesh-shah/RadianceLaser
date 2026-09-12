@@ -34,7 +34,7 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
     try {
       const data = await parseSpreadsheetFile(file);
       if (data.rows.length === 0) {
-        setParseError("No rows found in that file — check it has a header row plus at least one patient.");
+        setParseError("No rows found in that file. Check it has a header row plus at least one patient.");
         return;
       }
       setParsed(data);
@@ -81,7 +81,7 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">Import Patients</h2>
-        <p className="mt-1 text-sm text-brown-400">From a CSV or Excel file — matched to your patient fields.</p>
+        <p className="mt-1 text-sm text-brown-400">From a CSV or Excel file, matched to your patient fields.</p>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
 
         {step === "pick" && (
@@ -110,7 +110,7 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
         {step === "map" && parsed && (
           <div>
             <p className="mb-3 text-sm text-brown-600">
-              <span className="font-medium text-brown-900">{fileName}</span> — {parsed.rows.length} row
+              <span className="font-medium text-brown-900">{fileName}</span>: {parsed.rows.length} row
               {parsed.rows.length === 1 ? "" : "s"} found. Match each field to a column from your file.
             </p>
             <div className="space-y-2">
@@ -209,8 +209,8 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
             )}
 
             <p className="mt-3 text-xs text-brown-400">
-              Patients already in your clinic with a matching phone number — or the same Patient ID, if
-              mapped — are treated as duplicates. Rows without a Patient ID get one generated
+              Patients already in your clinic with a matching phone number, or the same Patient ID if
+              mapped, are treated as duplicates. Rows without a Patient ID get one generated
               automatically.
             </p>
 

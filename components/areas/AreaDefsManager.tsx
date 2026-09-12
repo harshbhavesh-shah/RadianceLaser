@@ -60,7 +60,7 @@ export default function AreaDefsManager({ canEdit }: { canEdit: boolean }) {
 
               {areas.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-beige-300 px-4 py-3 text-xs text-brown-400">
-                  No custom areas yet — the visit form falls back to a built-in default list.
+                  No custom areas yet, so the visit form falls back to a built-in default list.
                 </p>
               ) : (
                 <div className="space-y-2">

@@ -66,7 +66,7 @@ export default function MachineTypesSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Machine Types</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            A whole new treatment category — e.g. CO2 Laser — with its own patient tab and session
+            A whole new treatment category, like CO2 Laser, with its own patient tab and session
             fields. Click any type, including the built-ins, to edit its badge, color, or fields.
           </p>
         </div>

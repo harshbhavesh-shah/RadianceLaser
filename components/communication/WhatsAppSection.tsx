@@ -114,7 +114,7 @@ export default function WhatsAppSection({
           <div className="flex items-start gap-2 rounded-lg border border-beige-300 bg-canvas p-3">
             <MessageCircle className="mt-0.5 flex-shrink-0 text-gold-600" size={16} />
             <p className="text-xs text-brown-600">
-              From your own Meta Business Account — Phone Number ID and App Secret from the App Dashboard, and a
+              From your own Meta Business Account: Phone Number ID and App Secret from the App Dashboard, and a
               permanent access token from Business Settings &gt; System Users. See{" "}
               <a
                 href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
@@ -159,7 +159,7 @@ export default function WhatsAppSection({
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
             <p className="mt-1 text-xs text-brown-400">
-              Used to verify inbound messages actually came from Meta — never shared anywhere else.
+              Used to verify inbound messages actually came from Meta. Never shared anywhere else.
             </p>
           </div>
           <div>
@@ -183,7 +183,7 @@ export default function WhatsAppSection({
               placeholder="e.g. +919876543210"
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
-            <p className="mt-1 text-xs text-brown-400">Shown in the connection status above — for your reference only.</p>
+            <p className="mt-1 text-xs text-brown-400">Shown in the connection status above, for your reference only.</p>
           </div>
           <div className="flex items-center gap-2">
             <button

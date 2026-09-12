@@ -92,7 +92,7 @@ export default function TemplateFormModal({
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
             <p className="mt-1 text-xs text-brown-400">
-              The exact language code this template was approved under in Meta's Template Library — sends fail if
+              The exact language code this template was approved under in Meta's Template Library. Sends fail if
               this doesn't match.
             </p>
           </div>
@@ -134,7 +134,7 @@ export default function TemplateFormModal({
                 </button>
               </div>
               <p className="mt-1 text-xs text-brown-400">
-                Custom templates aren't sent automatically anywhere yet — this is just a record of what each
+                Custom templates aren't sent automatically anywhere yet. This is just a record of what each
                 placeholder means, for your own reference.
               </p>
               <div className="mt-2 space-y-2">
@@ -171,7 +171,7 @@ export default function TemplateFormModal({
               className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
             />
             <p className="mt-1 text-xs text-brown-400">
-              Not sent anywhere — just a note so staff can recognize which template this is. The real wording lives
+              Not sent anywhere. It's just a note so staff can recognize which template this is. The real wording lives
               in your Meta Template Library.
             </p>
           </div>

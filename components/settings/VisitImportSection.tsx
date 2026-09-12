@@ -12,8 +12,8 @@ export default function VisitImportSection({ canEdit }: { canEdit: boolean }) {
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Import Session History</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Bring in past visits for existing patients — last visit date, area, fee, and every other field
-            for a session type — from a CSV or Excel file, one session type per file.
+            Bring in past visits for existing patients: last visit date, area, fee, and every other field
+            for a session type, from a CSV or Excel file, one session type per file.
           </p>
         </div>
         {canEdit && (
