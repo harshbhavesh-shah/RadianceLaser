@@ -365,7 +365,7 @@ export default async function HomePage() {
           checkout for a specific tier is a later phase; a 30-day trial
           already grants full Pro-level access regardless of which card
           brought someone in, per lib/entitlements.ts). */}
-      <section id="pricing" className={`${CONTAINER} py-20`}>
+      <section id="pricing" className="mx-auto max-w-[100rem] px-6 py-20">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Pricing</p>
           <h2 className="mt-3 font-brand text-3xl font-extrabold text-brown-900 sm:text-4xl">
@@ -377,7 +377,7 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 lg:items-start">
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {PRICING_TIERS.map((tier) => (
             <div
               key={tier.name}
