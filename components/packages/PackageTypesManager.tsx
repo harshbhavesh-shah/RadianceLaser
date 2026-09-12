@@ -35,7 +35,7 @@ export default function PackageTypesManager({
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Remove "${name}"? Packages already sold from it are unaffected — this only removes the preset.`)) {
+    if (!confirm(`Remove "${name}"? Packages already sold from it are unaffected. This only removes the preset.`)) {
       return;
     }
     setDeletingId(id);

@@ -30,7 +30,7 @@ export async function quickCreatePatientAction(
   if (!trimmedName) return { error: "Name is required." };
   if (!trimmedPhone) return { error: "Contact number is required." };
   if (!isValidPhone(trimmedPhone)) {
-    return { error: "That doesn't look like a valid contact number — check the digits and try again." };
+    return { error: "That doesn't look like a valid contact number. Check the digits and try again." };
   }
 
   if (!confirmDuplicate) {

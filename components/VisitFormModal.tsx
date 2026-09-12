@@ -296,7 +296,7 @@ export default function VisitFormModal({
                 onChange={(e) => handlePackageChange(e.target.value)}
                 className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
               >
-                <option value="">None — pay per visit</option>
+                <option value="">None, pay per visit</option>
                 {activePackages.map((pkg) => (
                   <option key={pkg.id} value={pkg.id}>
                     {pkg.label}
@@ -305,7 +305,7 @@ export default function VisitFormModal({
               </select>
               {selectedPackage && (
                 <p className="mt-1.5 text-xs text-gold-600">
-                  Covered by {selectedPackage.label} — no separate fee for this visit.
+                  Covered by {selectedPackage.label}, no separate fee for this visit.
                 </p>
               )}
             </div>

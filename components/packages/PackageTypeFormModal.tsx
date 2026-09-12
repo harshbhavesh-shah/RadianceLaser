@@ -114,7 +114,7 @@ export default function PackageTypeFormModal({
             </div>
           </div>
           <p className="text-xs text-brown-400">
-            Staff can still change the sessions and price when they actually sell this to a patient — this
+            Staff can still change the sessions and price when they actually sell this to a patient. This
             just fills in a starting point.
           </p>
         </div>

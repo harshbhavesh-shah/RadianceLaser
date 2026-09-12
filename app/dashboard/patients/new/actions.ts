@@ -28,7 +28,7 @@ export async function createPatientAction(
   if (!name) return { error: "Name is required." };
   if (!phone) return { error: "Contact number is required." };
   if (!isValidPhone(phone)) {
-    return { error: "That doesn't look like a valid contact number — check the digits and try again." };
+    return { error: "That doesn't look like a valid contact number. Check the digits and try again." };
   }
   const dataConsent = formData.get("dataConsent") === "1";
   if (!dataConsent) {

@@ -108,12 +108,12 @@ export default function PackageFormModal({
                 <option value="">Custom</option>
                 {packageTypeDefs.map((def) => (
                   <option key={def.id} value={def.id}>
-                    {def.name} — {def.totalSessions} sessions, ₹{Math.round(def.suggestedAmount).toLocaleString("en-IN")}
+                    {def.name} ({def.totalSessions} sessions, ₹{Math.round(def.suggestedAmount).toLocaleString("en-IN")})
                   </option>
                 ))}
               </select>
               <p className="mt-1.5 text-xs text-brown-400">
-                Fills in the fields below — still editable before saving. Manage these presets from Packages.
+                Fills in the fields below, still editable before saving. Manage these presets from Packages.
               </p>
             </div>
           )}

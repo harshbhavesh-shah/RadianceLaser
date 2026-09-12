@@ -66,7 +66,7 @@ export default function PackageCard({
             {ledger.entries.map((entry) => (
               <div key={entry.visitId} className="flex justify-between text-sm">
                 <span className="text-brown-600">
-                  Session {entry.sessionNumber} — {entry.date || "No date"}
+                  Session {entry.sessionNumber} ({entry.date || "No date"})
                 </span>
                 <span className="text-brown-900">{formatCurrency(entry.amount)}</span>
               </div>
