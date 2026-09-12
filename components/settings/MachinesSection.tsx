@@ -54,7 +54,7 @@ export default function MachinesSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Treatment Machines</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            A physical unit at an existing machine type — e.g. a second Q-Switch. To add a whole
+            A physical unit at an existing machine type, like a second Q-Switch. To add a whole
             new major machine type, use &quot;Machine Types&quot; below.
           </p>
         </div>

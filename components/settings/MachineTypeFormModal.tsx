@@ -190,8 +190,8 @@ export default function MachineTypeFormModal({
         </h2>
         <p className="mt-1 text-sm text-brown-400">
           {isEditing
-            ? "Changes apply everywhere this machine type shows up — the patient tab, visit form, and Analytics."
-            : "For a whole new category of treatment — e.g. a CO2 laser — not another unit of an existing type. It gets its own tab on every patient page and its own session fields below."}
+            ? "Changes apply everywhere this machine type shows up: the patient tab, visit form, and Analytics."
+            : "For a whole new category of treatment, like a CO2 laser, not another unit of an existing type. It gets its own tab on every patient page and its own session fields below."}
         </p>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
 
@@ -256,7 +256,7 @@ export default function MachineTypeFormModal({
               These show up on the visit form every time a session of this type is logged. Include
               a numeric &quot;Fee&quot; field so this type&apos;s revenue shows up in Analytics.
               {isEditing &&
-                " Removing or renaming a field here won't touch data already logged on past visits — it only changes the form going forward."}
+                " Removing or renaming a field here won't touch data already logged on past visits. It only changes the form going forward."}
             </p>
 
             <div className="space-y-2">

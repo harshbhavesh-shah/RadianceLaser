@@ -47,7 +47,7 @@ export default function AddStaffModal({
             <h2 className="font-display text-lg font-medium text-brown-900">Staff Member Added</h2>
             <div className="mb-5 mt-1 h-[2px] w-8 bg-gold-500" />
             <p className="text-sm text-brown-600">
-              Share these sign-in details with <strong>{result.staff.name}</strong> — this
+              Share these sign-in details with <strong>{result.staff.name}</strong>. This
               password is shown only once, so make sure to copy it now. They can change it after
               logging in.
             </p>

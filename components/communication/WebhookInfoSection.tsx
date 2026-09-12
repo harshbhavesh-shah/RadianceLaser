@@ -74,14 +74,14 @@ export default function WebhookInfoSection({ verifyToken }: { verifyToken: strin
             </div>
           ) : (
             <p className="mt-1 rounded-md border border-gold-500/40 bg-gold-100/50 p-2 text-xs text-brown-700">
-              Not set up yet — add WHATSAPP_WEBHOOK_VERIFY_TOKEN to the server's environment first.
+              Not set up yet. Add WHATSAPP_WEBHOOK_VERIFY_TOKEN to the server's environment first.
             </p>
           )}
         </div>
       </div>
 
       <p className="mt-3 text-xs text-brown-400">
-        Same URL and token for every clinic — Meta only uses these once, to confirm the callback is really ours. The
+        Same URL and token for every clinic. Meta only uses these once, to confirm the callback is really ours. The
         real per-message authentication is each clinic's own App Secret, entered below.
       </p>
     </div>

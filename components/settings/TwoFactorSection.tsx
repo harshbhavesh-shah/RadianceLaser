@@ -59,7 +59,7 @@ export default function TwoFactorSection({
           />
         </span>
         <span className="text-sm font-medium text-brown-900">
-          {saving ? "Saving…" : enabled ? "On — email code required at sign-in" : "Off"}
+          {saving ? "Saving…" : enabled ? "On: email code required at sign-in" : "Off"}
         </span>
       </button>
 

@@ -48,7 +48,7 @@ export default function ConsentTemplatesSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Consent Forms</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Templates staff can have patients sign — with e-signature — right from the patient
+            Templates staff can have patients sign, with e-signature, right from the patient
             page.
           </p>
         </div>

@@ -102,7 +102,7 @@ export default function ScheduledMessagesSection({
     <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
       <h2 className="font-display text-lg font-medium text-brown-900">Automated Messages</h2>
       <p className="mt-0.5 text-xs text-brown-400">
-        Sent automatically over WhatsApp — no one has to remember to send these by hand.
+        Sent automatically over WhatsApp, so no one has to remember to send these by hand.
       </p>
 
       {!canEdit ? (
@@ -149,7 +149,7 @@ export default function ScheduledMessagesSection({
             <div className="min-w-0">
               <p className="text-sm font-medium text-brown-900">Post-visit feedback</p>
               <p className="mt-0.5 text-xs text-brown-400">
-                A short WhatsApp survey after each visit — see responses below once patients reply.
+                A short WhatsApp survey after each visit. See responses below once patients reply.
               </p>
               {feedbackSurveyEnabled && (
                 <div className="mt-2 flex items-center gap-2">

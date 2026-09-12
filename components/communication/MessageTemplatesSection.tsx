@@ -108,7 +108,7 @@ export default function MessageTemplatesSection({
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Message Templates</h2>
           <p className="mt-0.5 text-xs text-brown-400">
-            Templates approved in your Meta Template Library — this just tells the app the exact name, language, and
+            Templates approved in your Meta Template Library. This just tells the app the exact name, language, and
             variables to fill in.
           </p>
         </div>

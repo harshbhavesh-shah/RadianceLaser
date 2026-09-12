@@ -50,7 +50,7 @@ export default function ActivityLogSection({ entries }: { entries: AuditLogEntry
     <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
       <h2 className="font-display text-lg font-medium text-brown-900">Activity Log</h2>
       <p className="mt-1 text-sm text-brown-400">
-        Who touched patient records, and when — for CERT-In / DPDP compliance requests.
+        Who touched patient records, and when, for CERT-In / DPDP compliance requests.
       </p>
 
       {entries.length === 0 ? (

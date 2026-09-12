@@ -20,12 +20,12 @@ function buildSteps(role: UserRole): TourStep[] {
     {
       target: null,
       title: "Welcome to Radiance Laser",
-      body: "A 60-second look at where everything lives — you can skip this anytime and pick it up later from Settings.",
+      body: "A 60-second look at where everything lives. You can skip this anytime and pick it up later from Settings.",
     },
     {
       target: "nav-/dashboard",
       title: "Today",
-      body: "Your daily command center — today's appointments, anything that needs attention, and (for owners) a quick business snapshot.",
+      body: "Your daily command center: today's appointments, anything that needs attention, and (for owners) a quick business snapshot.",
     },
     {
       target: "nav-/dashboard/appointments",
@@ -35,19 +35,19 @@ function buildSteps(role: UserRole): TourStep[] {
     {
       target: "nav-/dashboard/patients",
       title: "Patients",
-      body: "Your full patient roster — search by name, phone, or patient ID, and open any record to see their whole history.",
+      body: "Your full patient roster. Search by name, phone, or patient ID, and open any record to see their whole history.",
     },
     {
       target: "nav-/dashboard/documents",
       title: "Documents",
-      body: "Consent forms and receipts, generated and signed digitally — no printer required.",
+      body: "Consent forms and receipts, generated and signed digitally, no printer required.",
     },
   ];
   if (role === "owner" || role === "doctor") {
     steps.push({
       target: "nav-/dashboard/analytics",
       title: "Analytics",
-      body: "Revenue trends, treatment-type breakdowns, and machine usage — computed live from actual visits, never a stale export.",
+      body: "Revenue trends, treatment-type breakdowns, and machine usage, computed live from actual visits, never a stale export.",
     });
   }
   steps.push({

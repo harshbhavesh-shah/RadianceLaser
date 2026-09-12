@@ -97,7 +97,7 @@ export default function BillingSection({
         amount,
         currency,
         name: "Radiance Laser",
-        description: `${clinicName} — annual subscription`,
+        description: `${clinicName}: annual subscription`,
         prefill: { email: ownerEmail },
         theme: { color: "#b45309" },
         handler: async (response: {
@@ -151,7 +151,7 @@ export default function BillingSection({
         key: keyId,
         subscription_id: subscriptionId,
         name: "Radiance Laser",
-        description: `${clinicName} — auto-renewing annual subscription`,
+        description: `${clinicName}: auto-renewing annual subscription`,
         prefill: { email: ownerEmail },
         theme: { color: "#b45309" },
         handler: async (response: {
@@ -184,7 +184,7 @@ export default function BillingSection({
   }
 
   async function handleCancelAutoRenew() {
-    if (!confirm("Turn off auto-renew? Your access isn't affected — you'll just need to renew manually going forward.")) {
+    if (!confirm("Turn off auto-renew? Your access isn't affected, but you'll just need to renew manually going forward.")) {
       return;
     }
     setIsAutoRenewProcessing(true);
@@ -210,20 +210,20 @@ export default function BillingSection({
       <div className="mt-4 rounded-lg border border-beige-300 bg-canvas p-4">
         {access.status === "trialing" && (
           <p className="text-sm text-brown-700">
-            Free trial —{" "}
+            Free trial:{" "}
             {access.daysRemaining <= 1 ? "ends tomorrow" : `${access.daysRemaining} days remaining`}.
           </p>
         )}
         {access.status === "active" && (
           <p className="text-sm text-brown-700">
             {access.renewsInDays !== undefined
-              ? `Subscription active — renew within ${access.renewsInDays} day${access.renewsInDays === 1 ? "" : "s"} to avoid interruption.`
+              ? `Subscription active. Renew within ${access.renewsInDays} day${access.renewsInDays === 1 ? "" : "s"} to avoid interruption.`
               : "Subscription active."}
           </p>
         )}
         {access.status === "locked" && (
           <p className="text-sm text-red-700">
-            Access is currently locked — renew to resume adding or changing anything.
+            Access is currently locked. Renew to resume adding or changing anything.
           </p>
         )}
 
@@ -235,7 +235,7 @@ export default function BillingSection({
               className="flex items-center gap-2 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
             >
               <CreditCard size={16} />
-              {isProcessing ? "Opening checkout…" : `Subscribe — ₹${annualPriceInr.toLocaleString("en-IN")}/year`}
+              {isProcessing ? "Opening checkout…" : `Subscribe: ₹${annualPriceInr.toLocaleString("en-IN")}/year`}
             </button>
             {error && <span className="text-sm text-red-700">{error}</span>}
           </div>
@@ -260,14 +260,14 @@ export default function BillingSection({
               {autoRenewEnabled ? (
                 <p className="mt-1 text-xs text-brown-400">
                   {razorpaySubscriptionStatus === "halted"
-                    ? "Payment retries failed — auto-renew has stopped. Update your payment method or renew manually."
+                    ? "Payment retries failed. Auto-renew has stopped. Update your payment method or renew manually."
                     : razorpaySubscriptionStatus === "pending"
-                      ? "A charge attempt failed — Razorpay is automatically retrying."
-                      : `On — ₹${(autoRenewPlanAmountInr ?? annualPriceInr).toLocaleString("en-IN")}/year, charged automatically.`}
+                      ? "A charge attempt failed. Razorpay is automatically retrying."
+                      : `On: ₹${(autoRenewPlanAmountInr ?? annualPriceInr).toLocaleString("en-IN")}/year, charged automatically.`}
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-brown-400">
-                  Off — renew manually each year using the button above, or turn this on to renew automatically.
+                  Off. Renew manually each year using the button above, or turn this on to renew automatically.
                 </p>
               )}
             </div>

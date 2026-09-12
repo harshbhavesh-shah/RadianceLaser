@@ -227,7 +227,7 @@ export async function sendReceiptMessageAction(
     const templates = await getClinicMessageTemplates(session.clinicId);
     const template = templates.find((t) => t.category === "receipt_sent");
     if (!template) {
-      return { error: "No \"Receipt Sent\" template set up yet — add one in Communication settings." };
+      return { error: "No \"Receipt Sent\" template set up yet. Add one in Communication settings." };
     }
 
     await activeProvider.sendTemplateMessage(

@@ -78,7 +78,7 @@ export default function InventoryItemFormModal({
         <p className="mt-1 text-sm text-brown-400">
           {isEditing
             ? "Quantity itself is changed from Restock / Use on the item's row, not here."
-            : "Set the starting quantity here — after that, use Restock / Use on the item's row."}
+            : "Set the starting quantity here. After that, use Restock / Use on the item's row."}
         </p>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
 

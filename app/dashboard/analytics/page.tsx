@@ -121,7 +121,7 @@ export default async function AnalyticsPage() {
         {/* Yearly trend chart */}
         <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300 lg:col-span-2">
           <h2 className="font-display text-lg font-medium text-brown-900">
-            Revenue Trend — {currentYear}
+            Revenue Trend ({currentYear})
           </h2>
           <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
           <YearlyRevenueChart data={yearlyTrend} />
@@ -145,14 +145,14 @@ export default async function AnalyticsPage() {
         {/* Cash flow — cash vs online, this year */}
         <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
           <h2 className="font-display text-lg font-medium text-brown-900">
-            Cash Flow — {currentYear}
+            Cash Flow ({currentYear})
           </h2>
           <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
 
           {cashFlow.total === 0 ? (
             <p className="text-sm text-brown-400">
               No revenue logged yet this year. Payment method is set on each visit or package
-              purchase — see the Payment Method field when logging a session or selling a
+              purchase. See the Payment Method field when logging a session or selling a
               package.
             </p>
           ) : (
@@ -189,7 +189,7 @@ export default async function AnalyticsPage() {
         {/* No-show / cancellation rate, this year */}
         <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
           <h2 className="font-display text-lg font-medium text-brown-900">
-            Appointment Reliability — {currentYear}
+            Appointment Reliability ({currentYear})
           </h2>
           <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
 
@@ -270,7 +270,7 @@ export default async function AnalyticsPage() {
 
           {staffMachineStats.length === 0 ? (
             <p className="text-sm text-brown-400">
-              No data yet — this fills in as visits get logged with a Machine, Performed By, and
+              No data yet. This fills in as visits get logged with a Machine, Performed By, and
               Duration set (added to the visit form on each patient&apos;s page). Visits logged
               before that won&apos;t retroactively show up here.
             </p>

@@ -37,7 +37,7 @@ export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
         <h2 className="font-display text-base font-medium text-brown-900">Patient Booking Link</h2>
       </div>
       <p className="mt-1.5 text-sm text-brown-600">
-        Share this so patients can book themselves — returning patients see their past sessions and can book the
+        Share this so patients can book themselves. Returning patients see their past sessions and can book the
         same treatment again; new patients book straight in.
       </p>
 
