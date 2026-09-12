@@ -11,7 +11,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value) throw new Error(`${name} is not set — Gmail isn't configured yet.`);
+  if (!value) throw new Error(`${name} is not set. Gmail isn't configured yet.`);
   return value;
 }
 
@@ -67,7 +67,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{ access
   const raw = await res.text();
   if (!res.ok) {
     throw new Error(
-      `Failed to refresh Google access token (${res.status}): ${raw} — the Gmail connection may need to be redone.`
+      `Failed to refresh Google access token (${res.status}): ${raw}. The Gmail connection may need to be reconnected.`
     );
   }
   const parsed = JSON.parse(raw) as TokenResponse;

@@ -52,7 +52,7 @@ function renewalReminderEmailHtml(input: { clinicName: string; daysRemaining: nu
           ${
             isTrial
               ? "Subscribe now to keep your patients, packages, and records accessible without interruption."
-              : "Renew now to avoid losing write access — your data stays safe either way, but nothing can be added or changed until you do."
+              : "Renew now to avoid losing write access. Your data stays safe either way, but nothing can be added or changed until you do."
           }
         </p>
         <a href="${billingUrl}" style="display:inline-block;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;color:#FBF8F3;background:#2C1D14;border-radius:8px;padding:12px 24px;text-decoration:none;">

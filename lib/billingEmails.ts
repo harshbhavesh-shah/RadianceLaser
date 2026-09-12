@@ -32,7 +32,7 @@ export function paymentRetryingEmailHtml(input: { clinicName: string; billingUrl
   return emailShell(
     paragraph(`We couldn't process ${input.clinicName}'s auto-renewal payment on the card/UPI mandate on file.`) +
       paragraph(
-        "This is often temporary — an expired card, insufficient balance, or a bank decline. Razorpay will automatically retry the charge over the next few days; no action is needed unless the retries keep failing."
+        "This is often temporary, like an expired card, insufficient balance, or a bank decline. Razorpay will automatically retry the charge over the next few days; no action is needed unless the retries keep failing."
       ) +
       paragraph("If you'd rather update your payment method now, you can do that from Billing:") +
       button("Go to Billing", input.billingUrl)
@@ -67,7 +67,7 @@ export function autoRenewCancelledEmailHtml(input: { clinicName: string; billing
   return emailShell(
     paragraph(`Auto-renewal has been turned off for ${input.clinicName}.`) +
       paragraph(
-        "Your subscription will need to be renewed manually from now on — the usual reminder emails as your renewal date approaches still apply."
+        "Your subscription will need to be renewed manually from now on, though the usual reminder emails as your renewal date approaches still apply."
       ) +
       button("Go to Billing", input.billingUrl)
   );

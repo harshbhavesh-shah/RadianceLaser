@@ -56,7 +56,7 @@ async function callMessagesApi(connection: WhatsAppConnectionCreds, body: Record
         const parts = [parsed.error.message, parsed.error.error_data?.details, parsed.error.error_user_msg].filter(
           Boolean
         );
-        message = parts.join(" — ");
+        message = parts.join(". ");
       }
     } catch {
       // raw wasn't JSON — fall back to the plain response text above.

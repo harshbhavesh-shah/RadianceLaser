@@ -28,7 +28,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
   if (!code) return errorRedirect("No authorization code came back from Google.");
   if (!state || !expectedState || state !== expectedState) {
-    return errorRedirect("This sign-in link expired or was tampered with — please try connecting again.");
+    return errorRedirect("This sign-in link expired or was tampered with. Please try connecting again.");
   }
 
   try {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // fail loudly rather than silently saving a connection with no way
       // to refresh its access token once it expires.
       return errorRedirect(
-        "Google didn't return a refresh token — try disconnecting this app's access in your Google Account's " +
+        "Google didn't return a refresh token. Try disconnecting this app's access in your Google Account's " +
           "security settings, then connect again."
       );
     }
