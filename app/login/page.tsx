@@ -358,7 +358,7 @@ function describeAuthError(err: unknown): string {
         "(Firebase Console → Authentication → Sign-in method).";
     case "auth/invalid-api-key":
     case "auth/api-key-not-valid":
-      return "Firebase client config looks wrong — double-check the NEXT_PUBLIC_FIREBASE_* " +
+      return "Firebase client config looks wrong. Double-check the NEXT_PUBLIC_FIREBASE_* " +
         "values in .env.local match your Firebase project.";
     default:
       return code

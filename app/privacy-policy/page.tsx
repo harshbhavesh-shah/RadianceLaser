@@ -15,7 +15,7 @@ const SECTIONS: Section[] = [
       "We collect personal information that you voluntarily provide to us when you register on the Services, express an interest in obtaining information about us or our products and Services, when you participate in activities on the Services, or otherwise when you contact us.",
       "The personal information we collect may include: names, phone numbers, and email addresses.",
       "Sensitive Information. We do not process sensitive information.",
-      "Payment Data. We may collect data necessary to process your payment if you choose to make purchases, such as your payment instrument number and its associated security code. All payment data is handled and stored by Razorpay — see their privacy notice at razorpay.com/privacy-policy.",
+      "Payment Data. We may collect data necessary to process your payment if you choose to make purchases, such as your payment instrument number and its associated security code. All payment data is handled and stored by Razorpay; see their privacy notice at razorpay.com/privacy-policy.",
       "Social Media Login Data. We may let you register using an existing social media account (e.g. Google). If you do, we collect certain profile information from that provider, as described in “How Do We Handle Your Social Logins?” below.",
       "All personal information you provide to us must be true, complete, and accurate, and you must notify us of any changes to it.",
       "Google API: our use of information received from Google APIs adheres to the Google API Services User Data Policy, including its Limited Use requirements.",
@@ -27,8 +27,8 @@ const SECTIONS: Section[] = [
       "We process your information to provide, improve, and administer our Services, communicate with you, for security and fraud prevention, and to comply with law.",
     body: [
       "We process your personal information for a variety of reasons, depending on how you interact with our Services, including:",
-      "To facilitate account creation and authentication and otherwise manage user accounts — so you can create and log in to your account, and keep it in working order.",
-      "To deliver and facilitate delivery of our Services — to provide you with our clinic management software, so you can schedule appointments, manage patients, and process payments.",
+      "To facilitate account creation and authentication and otherwise manage user accounts, so you can create and log in to your account and keep it in working order.",
+      "To deliver and facilitate delivery of our Services, to provide you with our clinic management software so you can schedule appointments, manage patients, and process payments.",
     ],
   },
   {
@@ -50,15 +50,15 @@ const SECTIONS: Section[] = [
     heading: "5. How Do We Handle Your Social Logins?",
     inShort: "If you register or log in using a social media account, we may have access to certain information about you.",
     body: [
-      "Where you choose to register using a third-party account (like Google), we receive certain profile information from that provider — often your name, email address, and profile picture, along with anything else you've made public on that platform.",
-      "We use that information only for the purposes described in this Privacy Notice. We don't control, and aren't responsible for, other uses of your personal information by your social media provider — we recommend reviewing their own privacy notice too.",
+      "Where you choose to register using a third-party account (like Google), we receive certain profile information from that provider: often your name, email address, and profile picture, along with anything else you've made public on that platform.",
+      "We use that information only for the purposes described in this Privacy Notice. We don't control, and aren't responsible for, other uses of your personal information by your social media provider. We recommend reviewing their own privacy notice too.",
     ],
   },
   {
     heading: "6. How Long Do We Keep Your Information?",
     inShort: "We keep your information for as long as necessary to fulfill the purposes outlined in this Privacy Notice, unless otherwise required by law.",
     body: [
-      "No purpose in this notice requires us to keep your personal information for longer than the period you have an account with us. When we have no ongoing legitimate business need to process it, we delete or anonymize it — or, where that isn't possible (e.g. data held in backup archives), we securely isolate it from further processing until deletion is possible.",
+      "No purpose in this notice requires us to keep your personal information for longer than the period you have an account with us. When we have no ongoing legitimate business need to process it, we delete or anonymize it, or, where that isn't possible (e.g. data held in backup archives), we securely isolate it from further processing until deletion is possible.",
     ],
   },
   {
@@ -109,7 +109,7 @@ const SECTIONS: Section[] = [
   {
     heading: "13. How Can You Review, Update, or Delete the Data We Collect From You?",
     body: [
-      "Depending on the laws that apply to you, you may have the right to request access to the personal information we've collected, details on how we've processed it, correction of inaccuracies, or deletion of your data — and you may have the right to withdraw your consent to our processing of it. To make such a request, email admin@radiancelaser.in.",
+      "Depending on the laws that apply to you, you may have the right to request access to the personal information we've collected, details on how we've processed it, correction of inaccuracies, or deletion of your data, and you may have the right to withdraw your consent to our processing of it. To make such a request, email admin@radiancelaser.in.",
     ],
   },
 ];

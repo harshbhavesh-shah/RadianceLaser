@@ -51,7 +51,7 @@ const PRICING_TIERS: PricingTier[] = [
       "Everything in Free",
       "Analytics dashboard",
       "Inventory management",
-      "WhatsApp — connect & send",
+      "WhatsApp, connect and send",
       "Before/after photo galleries",
       "Custom treatment types",
       "Unlimited patients",
@@ -94,7 +94,7 @@ const PRICING_TIERS: PricingTier[] = [
     name: "Enterprise",
     price: "From ₹50,000",
     cadence: "/year",
-    tagline: "For chains — 2 to 10 locations, one bill.",
+    tagline: "For chains with 2 to 10 locations, one bill.",
     features: [
       "Everything in Pro",
       "2–10 clinic locations",
@@ -372,7 +372,7 @@ export default async function HomePage() {
             Simple, transparent pricing
           </h2>
           <p className="mt-3 text-brown-600">
-            No per-seat pricing games. See the real number, every time — free for {trialLengthLabel}, no
+            No per-seat pricing games. See the real number every time: free for {trialLengthLabel}, no
             credit card needed to start.
           </p>
         </div>
