@@ -182,10 +182,21 @@ export async function createReceipt(input: CreateReceiptInput): Promise<string> 
   return row.id;
 }
 
-export async function deleteReceipt(clinicId: string, receiptId: string): Promise<void> {
-  const existing = await prisma.receipt.findUnique({ where: { id: receiptId }, select: { clinicId: true } });
+/** Returns the patient/receipt-number this receipt belonged to — the
+ * caller (receiptActions.ts) only ever has the receipt's own id, not the
+ * patient it's under, but needs the patientId to record an audit event
+ * against the right patient (see lib/db/auditLog.ts). */
+export async function deleteReceipt(
+  clinicId: string,
+  receiptId: string
+): Promise<{ patientId: string; receiptNumber: string; amount: number }> {
+  const existing = await prisma.receipt.findUnique({
+    where: { id: receiptId },
+    select: { clinicId: true, patientId: true, receiptNumber: true, amount: true },
+  });
   if (!existing || existing.clinicId !== clinicId) {
     throw new Error("Receipt not found.");
   }
   await prisma.receipt.delete({ where: { id: receiptId } });
+  return { patientId: existing.patientId, receiptNumber: existing.receiptNumber, amount: existing.amount };
 }

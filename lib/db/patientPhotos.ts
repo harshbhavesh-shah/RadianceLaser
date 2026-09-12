@@ -76,12 +76,20 @@ export async function createPatientPhoto(input: CreatePatientPhotoInput): Promis
   return toPatientPhoto(row);
 }
 
-export async function deletePatientPhoto(clinicId: string, id: string): Promise<void> {
-  const existing = await prisma.patientPhoto.findUnique({ where: { id }, select: { clinicId: true, dataUrl: true } });
+/** Returns the patient this photo belonged to — the caller
+ * (patientPhotoActions.ts) only ever has the photo's own id, not the
+ * patient it's under, but needs the patientId to record an audit event
+ * against the right patient (see lib/db/auditLog.ts). */
+export async function deletePatientPhoto(clinicId: string, id: string): Promise<{ patientId: string }> {
+  const existing = await prisma.patientPhoto.findUnique({
+    where: { id },
+    select: { clinicId: true, dataUrl: true, patientId: true },
+  });
   if (!existing || existing.clinicId !== clinicId) {
     throw new Error("Photo not found.");
   }
   await prisma.patientPhoto.delete({ where: { id } });
   const key = keyFromUrl(existing.dataUrl);
   if (key) await deleteFromR2(key);
+  return { patientId: existing.patientId };
 }

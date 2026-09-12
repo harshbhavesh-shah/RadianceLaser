@@ -509,6 +509,36 @@ model Clinic {
   // for the same one twice.
   renewalReminderSentForDeadline BigInt?
 
+  // Opt-in Razorpay Subscriptions auto-renewal (see lib/razorpay.ts,
+  // app/dashboard/billing/actions.ts) — separate from and alongside the
+  // manual one-time-order renewal flow above, never replacing it. A clinic
+  // with autoRenewEnabled false always falls back to the manual flow,
+  // regardless of what's in the other auto-renew fields below (they're
+  // simply stale/unused until re-enabled).
+  autoRenewEnabled       Boolean @default(false)
+  razorpayCustomerId     String?
+  razorpaySubscriptionId String?
+  // Mirrors Razorpay's own subscription status ("active" | "pending" |
+  // "halted" | "cancelled" | ...) — "pending" means a charge attempt failed
+  // and Razorpay is retrying on its own schedule; "halted" means it gave up
+  // retrying. Drives which dunning email fires, if any (see
+  // app/api/webhooks/razorpay/route.ts) — access itself is still governed
+  // purely by subscriptionStatus/subscriptionRenewsAt above via
+  // lib/subscription.ts, unchanged.
+  razorpaySubscriptionStatus String?
+  // The annual price in effect when this clinic subscribed — locked in for
+  // the life of this subscription so a later admin price change
+  // (lib/db/platformSettings.ts) never silently reprices an existing
+  // auto-renewing clinic.
+  autoRenewPlanAmountInr Int?
+  // Same dedupe reasoning as renewalReminderSentForDeadline above, but
+  // keyed on razorpaySubscriptionStatus instead of a deadline — so a
+  // repeated "pending" webhook (Razorpay retries several times before
+  // giving up) doesn't re-send the same email every time, while a genuine
+  // status change (pending -> halted, or back to active) always sends a
+  // fresh one.
+  dunningEmailSentForStatus String?
+
   @@map("clinics")
 }
 
@@ -618,6 +648,11 @@ model Payment {
   clinicId          String
   razorpayOrderId   String
   razorpayPaymentId String?
+  // Set only for a payment charged automatically by Razorpay Subscriptions
+  // (see recordSubscriptionCharge in lib/db/payments.ts) — null for the
+  // manual one-time-order flow above it. Purely informational/for support;
+  // nothing queries by it yet.
+  razorpaySubscriptionId String?
   amount            Int // smallest currency unit (paise for INR), matching Razorpay
   currency          String
   status            String // "created" | "paid" | "failed"

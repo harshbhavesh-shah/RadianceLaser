@@ -3,6 +3,7 @@
 import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/db/patients";
 import { createVisit, updateVisit, deleteVisit } from "@/lib/db/visits";
+import { recordAuditEvent } from "@/lib/db/auditLog";
 import type { PaymentMethod, SessionType, VisitAreaEntry } from "@/types";
 
 // Server Actions backing VisitFormModal's save/delete — replaces that
@@ -43,6 +44,12 @@ export async function createVisitAction(
       appointmentId,
       ...input,
     });
+    await recordAuditEvent(session, {
+      action: "visit.create",
+      targetType: "Patient",
+      targetId: patientId,
+      metadata: { visitId: id, sessionType },
+    });
     return { id };
   } catch (err) {
     console.error("Failed to create visit:", err);
@@ -58,7 +65,13 @@ export async function updateVisitAction(
   if (!session) return { error: "Not signed in." };
 
   try {
-    await updateVisit(session.clinicId, visitId, input);
+    const { patientId, sessionType } = await updateVisit(session.clinicId, visitId, input);
+    await recordAuditEvent(session, {
+      action: "visit.update",
+      targetType: "Patient",
+      targetId: patientId,
+      metadata: { visitId, sessionType },
+    });
     return { ok: true };
   } catch (err) {
     console.error("Failed to update visit:", err);
@@ -71,7 +84,13 @@ export async function deleteVisitAction(visitId: string): Promise<{ ok: true } |
   if (!session) return { error: "Not signed in." };
 
   try {
-    await deleteVisit(session.clinicId, visitId);
+    const { patientId, sessionType } = await deleteVisit(session.clinicId, visitId);
+    await recordAuditEvent(session, {
+      action: "visit.delete",
+      targetType: "Patient",
+      targetId: patientId,
+      metadata: { visitId, sessionType },
+    });
     return { ok: true };
   } catch (err) {
     console.error("Failed to delete visit:", err);

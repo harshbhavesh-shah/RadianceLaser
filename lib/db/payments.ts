@@ -21,6 +21,7 @@ function toPayment(row: PrismaPaymentRow): Payment {
     status: row.status as Payment["status"],
     createdAt: Number(row.createdAt),
     ...(row.razorpayPaymentId ? { razorpayPaymentId: row.razorpayPaymentId } : {}),
+    ...(row.razorpaySubscriptionId ? { razorpaySubscriptionId: row.razorpaySubscriptionId } : {}),
     ...(row.paidAt !== null ? { paidAt: Number(row.paidAt) } : {}),
   };
 }
@@ -125,4 +126,67 @@ export async function confirmPayment(input: {
   });
 
   return { clinicId: payment.clinicId };
+}
+
+/**
+ * The Razorpay-Subscriptions equivalent of confirmPayment above — called
+ * both from the client-side checkout callback (the subscription's first
+ * charge, verifySubscriptionAction) and the `subscription.charged` webhook
+ * (every renewal after that, and the authoritative fallback for the first
+ * one too if the browser closes right after paying). Unlike the manual
+ * flow, there's no pre-created "created" Payment row to update — a
+ * subscription charge just happens on Razorpay's own schedule — so this
+ * creates the Payment row itself, and extends subscriptionRenewsAt exactly
+ * like confirmPayment does (from the later of "now" or the current
+ * renewsAt, never forfeiting time already paid for).
+ *
+ * Idempotent on razorpayPaymentId (checked fresh inside the transaction,
+ * same race-guard reasoning as confirmPayment) — Razorpay webhooks are
+ * at-least-once delivery, and this can also race against the client-side
+ * callback confirming the very same first charge.
+ */
+export async function recordSubscriptionCharge(input: {
+  clinicId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySubscriptionId: string;
+  amount: number;
+  currency: string;
+}): Promise<{ alreadyRecorded: boolean }> {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.payment.findFirst({
+      where: { razorpayPaymentId: input.razorpayPaymentId },
+      select: { id: true },
+    });
+    if (existing) return { alreadyRecorded: true };
+
+    const now = BigInt(Date.now());
+    await tx.payment.create({
+      data: {
+        clinicId: input.clinicId,
+        razorpayOrderId: input.razorpayOrderId,
+        razorpayPaymentId: input.razorpayPaymentId,
+        razorpaySubscriptionId: input.razorpaySubscriptionId,
+        amount: input.amount,
+        currency: input.currency,
+        status: "paid",
+        createdAt: now,
+        paidAt: now,
+      },
+    });
+
+    const clinic = await tx.clinic.findUnique({
+      where: { id: input.clinicId },
+      select: { subscriptionRenewsAt: true },
+    });
+    const currentRenewsAt = Number(clinic?.subscriptionRenewsAt ?? 0);
+    const newRenewsAt = Math.max(Date.now(), currentRenewsAt) + SUBSCRIPTION_LENGTH_DAYS * DAY_MS;
+
+    await tx.clinic.update({
+      where: { id: input.clinicId },
+      data: { subscriptionStatus: "active", subscriptionRenewsAt: BigInt(newRenewsAt) },
+    });
+
+    return { alreadyRecorded: false };
+  });
 }

@@ -210,10 +210,15 @@ email/password you just created.
   then signs the new owner in through the exact same code path `/login`
   uses, so there's only one tested way a browser session actually gets
   established. Rate-limited by IP (`lib/db/signupAttempts.ts` — 5 attempts
-  per hour) since this is a genuinely public, unauthenticated endpoint that
-  creates real accounts; no visible CAPTCHA challenge yet, since the rate
-  limit alone closes off scripted mass-account-creation without adding
-  friction to real signups.
+  per hour) AND gated by a Cloudflare Turnstile challenge (`lib/turnstile.ts`,
+  rendered in `components/auth/SignUpForm.tsx`) since this is a genuinely
+  public, unauthenticated endpoint that creates real accounts — the rate
+  limit alone stops one IP hammering the endpoint, Turnstile stops a bot
+  rotating across many IPs from slipping through that. Turnstile requires
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY` (see
+  `.env.local.example`); until those are set, signup silently skips the
+  check and runs on the rate limit alone, so this never blocks local dev or
+  a fresh deploy that hasn't set up Turnstile yet.
 - **Every clinic starts on a free trial** (`lib/subscription.ts
   TRIAL_LENGTH_DAYS`, currently 365 days). `getClinicAccess()` there is the
   single source of truth for whether a clinic is `trialing`, `active`
@@ -363,10 +368,25 @@ features built on top of them:
   (`Clinic.renewalReminderSentForDeadline`), so it fires again if a later
   renewal deadline later comes due, but never repeats for the same one.
   No SMS/WhatsApp version yet, only email.
-- **Billing is manual-renewal only** — a customer has to come back and
-  click "Renew" every year; there's no auto-charging Razorpay Subscription,
-  by design (see "Self-serve signup, trials, and billing" above), but it
-  does mean a renewal can be missed with no nudge beyond the in-app banner
+- **Billing is manual-renewal by default, with opt-in auto-renew** — a
+  clinic owner can turn on auto-renew from Settings → Billing, which sets
+  up a Razorpay Subscription (a separate flow from the manual one-time
+  Order above — see `createAutoRenewSubscriptionAction`/
+  `verifySubscriptionAction` in `app/dashboard/billing/actions.ts`) locked
+  to the clinic's price *at the time they opt in*
+  (`Clinic.autoRenewPlanAmountInr`), so a later admin price change never
+  silently reprices an existing subscriber. `subscription.charged` (every
+  renewal), `subscription.pending` (a charge attempt failed and Razorpay is
+  auto-retrying), `subscription.halted` (retries exhausted), and
+  `subscription.cancelled` all land on the same
+  `app/api/webhooks/razorpay/route.ts` as `payment.captured` — each of the
+  three status ones sends a one-time dunning email
+  (`lib/billingEmails.ts`), deduped per status change via
+  `Clinic.dunningEmailSentForStatus` the same way renewal reminders dedupe
+  per deadline. Turning auto-renew off cancels future auto-charges
+  immediately but never touches already-paid-for access. All four
+  subscription events need enabling in the Razorpay dashboard's webhook
+  settings alongside the existing `payment.captured`.
 - **Patient photos and consent-form signatures live in Cloudflare R2**, not
   Postgres. The client still compresses each image to a base64 data URL
   first (`lib/imageCompression.ts`, `SignaturePad`'s canvas export) — that
@@ -408,13 +428,22 @@ features built on top of them:
   `test/emptyServerOnly.ts`) so `lib/db/*.ts` modules can be imported
   directly in tests — that package otherwise throws unconditionally outside
   Next's own bundler.
-- **Audit log has a viewer now, but partial coverage** — `lib/db/auditLog.ts`
-  (CERT-In 2022 / DPDP-oriented) records patient create/update/erase, and
-  Settings → Activity Log (owner-only) shows the history, but nothing else
-  writes to it yet — a visit, consent form, receipt, or photo touching the
-  same patient leaves no trace. Worth extending to those next, especially
-  consent form signing, before this holds real patient data for paying
-  customers
+- **Audit log now covers every patient-touching write**, not just the
+  patient record itself — `lib/db/auditLog.ts` (CERT-In 2022 / DPDP-
+  oriented) records patient create/update/erase, visit create/update/
+  delete, consent form sign/delete, receipt create/delete, and patient
+  photo upload/delete, all attributed to the patient they belong to
+  (`targetType: "Patient"`, `targetId: patientId` even for these sub-
+  entities, so "everything that touched patient X" is one query — see
+  `getAuditLogsForTarget`). Each sub-entity's own id and a bit of context
+  (session type, receipt number, template title) lives in `metadata` for
+  detail. The four `lib/db/*.ts` delete functions involved
+  (`deleteVisit`/`deleteConsentForm`/`deleteReceipt`/`deletePatientPhoto`)
+  now return the patient/context info the calling action needs to log
+  correctly, instead of `void` — the action layer only ever has the
+  sub-entity's own id, not which patient it belongs to. Settings → Activity
+  Log (owner-only) renders all of it with per-action labels
+  (`components/settings/ActivityLogSection.tsx`).
 - Role-based UI is ad hoc per-page rather than one shared `can(action,
   role)` policy helper — fine for 3 roles, will get harder to keep
   consistent as it grows

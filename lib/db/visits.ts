@@ -175,9 +175,21 @@ export interface UpdateVisitInput {
 /** Overwrites an existing visit in place. Every optional field explicitly
  * falls back to `null` when omitted, so clearing one (e.g. unassigning a
  * package) actually clears it instead of leaving the old value behind —
- * same reasoning as updatePatient in lib/db/patients.ts. */
-export async function updateVisit(clinicId: string, visitId: string, input: UpdateVisitInput): Promise<void> {
-  const existing = await prisma.visit.findUnique({ where: { id: visitId }, select: { clinicId: true } });
+ * same reasoning as updatePatient in lib/db/patients.ts.
+ *
+ * Returns the patient/session-type this visit belongs to — the caller
+ * (visitActions.ts) only ever has the visitId, not the patient it's under,
+ * but needs the patientId to record an audit event against the right
+ * patient (see lib/db/auditLog.ts). */
+export async function updateVisit(
+  clinicId: string,
+  visitId: string,
+  input: UpdateVisitInput
+): Promise<{ patientId: string; sessionType: string }> {
+  const existing = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { clinicId: true, patientId: true, sessionType: true },
+  });
   if (!existing || existing.clinicId !== clinicId) {
     throw new Error("Visit not found.");
   }
@@ -198,12 +210,23 @@ export async function updateVisit(clinicId: string, visitId: string, input: Upda
       durationMinutes: input.durationMinutes ?? null,
     },
   });
+
+  return { patientId: existing.patientId, sessionType: existing.sessionType };
 }
 
-export async function deleteVisit(clinicId: string, visitId: string): Promise<void> {
-  const existing = await prisma.visit.findUnique({ where: { id: visitId }, select: { clinicId: true } });
+/** Same "return what the caller needs to audit-log this" reasoning as
+ * updateVisit above. */
+export async function deleteVisit(
+  clinicId: string,
+  visitId: string
+): Promise<{ patientId: string; sessionType: string }> {
+  const existing = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { clinicId: true, patientId: true, sessionType: true },
+  });
   if (!existing || existing.clinicId !== clinicId) {
     throw new Error("Visit not found.");
   }
   await prisma.visit.delete({ where: { id: visitId } });
+  return { patientId: existing.patientId, sessionType: existing.sessionType };
 }

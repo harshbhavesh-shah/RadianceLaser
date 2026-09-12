@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard } from "lucide-react";
-import { createRenewalOrderAction, verifyPaymentAction } from "@/app/dashboard/billing/actions";
+import { CreditCard, RefreshCw } from "lucide-react";
+import {
+  cancelAutoRenewAction,
+  createAutoRenewSubscriptionAction,
+  createRenewalOrderAction,
+  verifyPaymentAction,
+  verifySubscriptionAction,
+} from "@/app/dashboard/billing/actions";
 import type { ClinicAccess } from "@/lib/subscription";
 import type { Payment } from "@/types";
 
@@ -47,6 +53,9 @@ export default function BillingSection({
   ownerEmail,
   payments,
   annualPriceInr,
+  autoRenewEnabled,
+  razorpaySubscriptionStatus,
+  autoRenewPlanAmountInr,
 }: {
   access: ClinicAccess;
   isOwner: boolean;
@@ -54,10 +63,15 @@ export default function BillingSection({
   ownerEmail: string;
   payments: Payment[];
   annualPriceInr: number;
+  autoRenewEnabled: boolean;
+  razorpaySubscriptionStatus?: string;
+  autoRenewPlanAmountInr?: number;
 }) {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAutoRenewProcessing, setIsAutoRenewProcessing] = useState(false);
+  const [autoRenewError, setAutoRenewError] = useState<string | null>(null);
 
   async function handleSubscribe() {
     setIsProcessing(true);
@@ -115,6 +129,80 @@ export default function BillingSection({
     }
   }
 
+  async function handleEnableAutoRenew() {
+    setIsAutoRenewProcessing(true);
+    setAutoRenewError(null);
+
+    try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setAutoRenewError("Couldn't load the payment form. Check your connection and try again.");
+        return;
+      }
+
+      const result = await createAutoRenewSubscriptionAction();
+      if (result.error || !result.subscription) {
+        setAutoRenewError(result.error || "Couldn't set up auto-renew.");
+        return;
+      }
+      const { subscriptionId, keyId } = result.subscription;
+
+      const razorpay = new window.Razorpay({
+        key: keyId,
+        subscription_id: subscriptionId,
+        name: "Radiance Laser",
+        description: `${clinicName} — auto-renewing annual subscription`,
+        prefill: { email: ownerEmail },
+        theme: { color: "#b45309" },
+        handler: async (response: {
+          razorpay_subscription_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          const verifyResult = await verifySubscriptionAction({
+            subscriptionId: response.razorpay_subscription_id,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          });
+          if (verifyResult.error) {
+            setAutoRenewError(verifyResult.error);
+          } else {
+            router.refresh();
+          }
+        },
+        modal: {
+          ondismiss: () => setIsAutoRenewProcessing(false),
+        },
+      });
+      razorpay.open();
+    } catch (err) {
+      console.error("Auto-renew setup failed:", err);
+      setAutoRenewError("Something went wrong setting up auto-renew. Please try again.");
+    } finally {
+      setIsAutoRenewProcessing(false);
+    }
+  }
+
+  async function handleCancelAutoRenew() {
+    if (!confirm("Turn off auto-renew? Your access isn't affected — you'll just need to renew manually going forward.")) {
+      return;
+    }
+    setIsAutoRenewProcessing(true);
+    setAutoRenewError(null);
+    try {
+      const result = await cancelAutoRenewAction();
+      if (result.error) {
+        setAutoRenewError(result.error);
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setIsAutoRenewProcessing(false);
+    }
+  }
+
+  const autoRenewNeedsAttention = razorpaySubscriptionStatus === "pending" || razorpaySubscriptionStatus === "halted";
+
   return (
     <div id="billing" className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
       <h2 className="font-display text-lg font-medium text-brown-900">Billing</h2>
@@ -156,6 +244,48 @@ export default function BillingSection({
           <p className="mt-2 text-xs text-brown-400">Only the clinic owner can manage billing.</p>
         )}
       </div>
+
+      {isOwner && (
+        <div
+          className={`mt-3 rounded-lg border p-4 ${
+            autoRenewNeedsAttention ? "border-red-300 bg-red-50" : "border-beige-300 bg-canvas"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium text-brown-900">
+                <RefreshCw size={15} className="flex-shrink-0" />
+                Auto-renew
+              </div>
+              {autoRenewEnabled ? (
+                <p className="mt-1 text-xs text-brown-400">
+                  {razorpaySubscriptionStatus === "halted"
+                    ? "Payment retries failed — auto-renew has stopped. Update your payment method or renew manually."
+                    : razorpaySubscriptionStatus === "pending"
+                      ? "A charge attempt failed — Razorpay is automatically retrying."
+                      : `On — ₹${(autoRenewPlanAmountInr ?? annualPriceInr).toLocaleString("en-IN")}/year, charged automatically.`}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-brown-400">
+                  Off — renew manually each year using the button above, or turn this on to renew automatically.
+                </p>
+              )}
+            </div>
+            <button
+              onClick={autoRenewEnabled ? handleCancelAutoRenew : handleEnableAutoRenew}
+              disabled={isAutoRenewProcessing}
+              className={`flex-shrink-0 rounded-md px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                autoRenewEnabled
+                  ? "border border-beige-300 text-brown-700 hover:bg-beige-100"
+                  : "bg-brown-900 text-beige-200 hover:bg-gold-600"
+              }`}
+            >
+              {isAutoRenewProcessing ? "Working…" : autoRenewEnabled ? "Turn off" : "Turn on"}
+            </button>
+          </div>
+          {autoRenewError && <p className="mt-2 text-xs text-red-700">{autoRenewError}</p>}
+        </div>
+      )}
 
       {payments.length > 0 && (
         <div className="mt-4">

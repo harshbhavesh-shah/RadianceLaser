@@ -3,6 +3,7 @@
 import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/db/patients";
 import { createPatientPhoto, deletePatientPhoto, type CreatePatientPhotoInput } from "@/lib/db/patientPhotos";
+import { recordAuditEvent } from "@/lib/db/auditLog";
 import type { PatientPhoto } from "@/types";
 
 // Server Actions backing PatientPhotoUploadModal/PatientPhotoGallery —
@@ -30,6 +31,12 @@ export async function createPatientPhotoAction(
       uploadedByUid: session.uid,
       ...input,
     });
+    await recordAuditEvent(session, {
+      action: "patientPhoto.create",
+      targetType: "Patient",
+      targetId: input.patientId,
+      metadata: { photoId: photo.id, sensitive: input.sensitive },
+    });
     return { photo };
   } catch (err) {
     console.error("Failed to upload photo:", err);
@@ -42,7 +49,13 @@ export async function deletePatientPhotoAction(id: string): Promise<{ ok: true }
   if (!session) return { error: "Not signed in." };
 
   try {
-    await deletePatientPhoto(session.clinicId, id);
+    const { patientId } = await deletePatientPhoto(session.clinicId, id);
+    await recordAuditEvent(session, {
+      action: "patientPhoto.delete",
+      targetType: "Patient",
+      targetId: patientId,
+      metadata: { photoId: id },
+    });
     return { ok: true };
   } catch (err) {
     console.error("Failed to delete photo:", err);

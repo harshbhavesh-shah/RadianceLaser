@@ -53,6 +53,19 @@ export interface Clinic {
   reminderHoursBefore: number;
   feedbackSurveyEnabled: boolean;
   feedbackSurveyDelayHours: number;
+  // Opt-in Razorpay Subscriptions auto-renewal — alongside, not instead of,
+  // the manual one-time-order flow above. See lib/subscription.ts and
+  // app/dashboard/billing/actions.ts.
+  autoRenewEnabled: boolean;
+  razorpaySubscriptionId?: string;
+  // Mirrors Razorpay's own subscription status ("active" | "pending" |
+  // "halted" | "cancelled") — drives the billing UI's status text and
+  // which dunning email fires, if any. Access itself is still governed
+  // purely by subscriptionStatus/subscriptionRenewsAt above.
+  razorpaySubscriptionStatus?: string;
+  // The annual price locked in when this clinic subscribed, so a later
+  // admin price change never silently reprices an existing subscriber.
+  autoRenewPlanAmountInr?: number;
 }
 
 // One Razorpay payment attempt for a clinic's annual subscription — created
@@ -66,6 +79,7 @@ export interface Payment extends TenantScoped {
   id: string;
   razorpayOrderId: string;
   razorpayPaymentId?: string; // set once a payment is actually made against the order
+  razorpaySubscriptionId?: string; // set only for a Razorpay Subscriptions auto-charge, not the manual flow
   amount: number; // in the smallest currency unit (paise for INR), matching what Razorpay uses
   currency: string; // e.g. "INR"
   status: "created" | "paid" | "failed";

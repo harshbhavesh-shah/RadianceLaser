@@ -11,6 +11,7 @@ import { provisionGoogleClinicAction } from "@/app/login/actions";
 import { proceedAfterPrimaryAuth, finishAfterOtp, signInWithGoogle } from "@/lib/authFlow";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import AuthShell from "@/components/marketing/AuthShell";
+import TurnstileWidget from "@/components/auth/TurnstileWidget";
 
 // form: the normal clinic-name/owner-name/email/password form (or "click
 //   Google").
@@ -35,6 +36,12 @@ export default function SignUpForm({ annualPriceInr }: { annualPriceInr: number 
   const [stage, setStage] = useState<Stage>({ name: "form" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Only actually required once NEXT_PUBLIC_TURNSTILE_SITE_KEY is set —
+  // TurnstileWidget renders nothing without it, and the server-side check
+  // (lib/turnstile.ts) is a no-op too, so an unconfigured deploy isn't
+  // blocked waiting on a token that will never arrive.
+  const turnstileRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   async function afterPrimaryAuth(idToken: string) {
     const outcome = await proceedAfterPrimaryAuth(idToken, router, null);
@@ -57,7 +64,13 @@ export default function SignUpForm({ annualPriceInr }: { annualPriceInr: number 
     try {
       // Step 1: create the clinic + owner account server-side (needs the
       // Admin SDK to set custom claims — see app/signup/actions.ts).
-      const result = await createTrialClinicAction({ clinicName, ownerName, email, password });
+      const result = await createTrialClinicAction({
+        clinicName,
+        ownerName,
+        email,
+        password,
+        turnstileToken: turnstileToken ?? "",
+      });
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -237,11 +250,13 @@ export default function SignUpForm({ annualPriceInr }: { annualPriceInr: number 
                   <p className="mt-1 text-xs text-brown-400">At least 8 characters.</p>
                 </div>
 
+                <TurnstileWidget onVerify={setTurnstileToken} />
+
                 {error && <p className="text-sm text-red-700">{error}</p>}
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (turnstileRequired && !turnstileToken)}
                   className="w-full rounded-md bg-brown-900 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
                 >
                   {loading ? "Setting up your clinic…" : "Start Free Trial"}

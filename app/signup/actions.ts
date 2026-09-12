@@ -4,6 +4,7 @@ import { adminAuth } from "@/lib/firebase/admin";
 import { createClinic } from "@/lib/db/clinics";
 import { createStaffMember } from "@/lib/db/staff";
 import { checkAndRecordSignupAttempt } from "@/lib/db/signupAttempts";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 import { getClientIp } from "@/lib/request";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 
@@ -26,23 +27,31 @@ export interface SignUpResult {
  * exchange for a session cookie — so there's exactly one code path that
  * turns "signed in" into a session cookie, not two.
  *
- * Rate-limited by IP (see lib/db/signupAttempts.ts) — a genuinely public,
- * unauthenticated endpoint that creates real accounts, previously with no
- * abuse protection at all (see README). No CAPTCHA yet — the rate limit
- * alone closes off scripted mass-account-creation, which was the actual
- * risk; a visible CAPTCHA challenge adds friction for every real signup
- * and needs a Cloudflare Turnstile (or similar) site key to be set up, so
- * it's left for later if the rate limit alone turns out not to be enough.
+ * Rate-limited by IP (see lib/db/signupAttempts.ts) AND gated by a
+ * Cloudflare Turnstile challenge (lib/turnstile.ts) — a genuinely public,
+ * unauthenticated endpoint that creates real accounts. The rate limit alone
+ * closes off scripted abuse from one IP; Turnstile closes the gap a bot
+ * rotating across many IPs would otherwise slip through, since it never
+ * trips a per-IP counter. Turnstile verification is skipped entirely (not
+ * required) until TURNSTILE_SECRET_KEY is actually configured — see
+ * lib/turnstile.ts.
  */
 export async function createTrialClinicAction(input: {
   clinicName: string;
   ownerName: string;
   email: string;
   password: string;
+  turnstileToken: string;
 }): Promise<SignUpResult> {
-  const { allowed } = await checkAndRecordSignupAttempt(getClientIp());
+  const clientIp = getClientIp();
+
+  const { allowed } = await checkAndRecordSignupAttempt(clientIp);
   if (!allowed) {
     return { error: "Too many signup attempts from this network. Please try again in a bit." };
+  }
+
+  if (!(await verifyTurnstileToken(input.turnstileToken, clientIp))) {
+    return { error: "Verification failed. Please try again." };
   }
 
   const clinicName = input.clinicName.trim();

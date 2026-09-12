@@ -31,6 +31,10 @@ function toClinic(row: PrismaClinicRow): Clinic {
     reminderHoursBefore: row.reminderHoursBefore,
     feedbackSurveyEnabled: row.feedbackSurveyEnabled,
     feedbackSurveyDelayHours: row.feedbackSurveyDelayHours,
+    autoRenewEnabled: row.autoRenewEnabled,
+    ...(row.razorpaySubscriptionId ? { razorpaySubscriptionId: row.razorpaySubscriptionId } : {}),
+    ...(row.razorpaySubscriptionStatus ? { razorpaySubscriptionStatus: row.razorpaySubscriptionStatus } : {}),
+    ...(row.autoRenewPlanAmountInr !== null ? { autoRenewPlanAmountInr: row.autoRenewPlanAmountInr } : {}),
   };
 }
 
@@ -132,6 +136,65 @@ export async function updateMessagingSettings(clinicId: string, input: Messaging
       feedbackSurveyDelayHours: input.feedbackSurveyDelayHours,
     },
   });
+}
+
+/** Raw fields billing actions need that aren't on the public Clinic type
+ * (razorpayCustomerId is purely internal — never rendered anywhere) — reads
+ * straight from Prisma rather than the cached getClinic(), since billing
+ * actions need the current, uncached truth. */
+export async function getClinicAutoRenewInfo(clinicId: string): Promise<{
+  razorpayCustomerId: string | null;
+  razorpaySubscriptionId: string | null;
+  autoRenewEnabled: boolean;
+} | null> {
+  return prisma.clinic.findUnique({
+    where: { id: clinicId },
+    select: { razorpayCustomerId: true, razorpaySubscriptionId: true, autoRenewEnabled: true },
+  });
+}
+
+/** The one function every auto-renew-changing write path shares —
+ * app/dashboard/billing/actions.ts (enable/cancel) and the Razorpay webhook
+ * (status transitions + dunning dedupe). Only the fields actually passed
+ * get touched, same pattern as updateClinicSubscription above. */
+export interface UpdateAutoRenewInput {
+  autoRenewEnabled?: boolean;
+  razorpayCustomerId?: string;
+  razorpaySubscriptionId?: string | null;
+  razorpaySubscriptionStatus?: string | null;
+  autoRenewPlanAmountInr?: number;
+  dunningEmailSentForStatus?: string | null;
+}
+
+export async function updateClinicAutoRenew(clinicId: string, input: UpdateAutoRenewInput): Promise<void> {
+  await prisma.clinic.update({
+    where: { id: clinicId },
+    data: {
+      ...(input.autoRenewEnabled !== undefined ? { autoRenewEnabled: input.autoRenewEnabled } : {}),
+      ...(input.razorpayCustomerId !== undefined ? { razorpayCustomerId: input.razorpayCustomerId } : {}),
+      ...(input.razorpaySubscriptionId !== undefined ? { razorpaySubscriptionId: input.razorpaySubscriptionId } : {}),
+      ...(input.razorpaySubscriptionStatus !== undefined
+        ? { razorpaySubscriptionStatus: input.razorpaySubscriptionStatus }
+        : {}),
+      ...(input.autoRenewPlanAmountInr !== undefined ? { autoRenewPlanAmountInr: input.autoRenewPlanAmountInr } : {}),
+      ...(input.dunningEmailSentForStatus !== undefined
+        ? { dunningEmailSentForStatus: input.dunningEmailSentForStatus }
+        : {}),
+    },
+  });
+}
+
+/** Webhook events only carry Razorpay's own subscription id, not our
+ * clinicId — this is the (indexed via the unique-ish lookup pattern below)
+ * reverse lookup used to find which clinic a subscription event belongs to,
+ * trusting our own database rather than the webhook payload's `notes`
+ * field. */
+export async function getClinicIdByRazorpaySubscriptionId(subscriptionId: string): Promise<string | null> {
+  const row = await prisma.clinic.findFirst({
+    where: { razorpaySubscriptionId: subscriptionId },
+    select: { id: true },
+  });
+  return row?.id ?? null;
 }
 
 /** Used by app/admin/actions.ts deleteClinicAction. */

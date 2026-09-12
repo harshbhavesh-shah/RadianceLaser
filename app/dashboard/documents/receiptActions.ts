@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/db/patients";
 import { createReceipt, deleteReceipt } from "@/lib/db/receipts";
 import { allocateReceiptNumber } from "@/lib/db/receiptNumber";
+import { recordAuditEvent } from "@/lib/db/auditLog";
 import type { Receipt, ReceiptItem } from "@/types";
 
 // Server Action backing ReceiptFormModal's save — replaces that component's
@@ -87,6 +88,12 @@ export async function createReceiptAction(
       ...(input.appointmentId ? { appointmentId: input.appointmentId } : {}),
       ...(input.notes ? { notes: input.notes } : {}),
     };
+    await recordAuditEvent(session, {
+      action: "receipt.create",
+      targetType: "Patient",
+      targetId: patient.id,
+      metadata: { receiptId: id, receiptNumber, amount: input.amount },
+    });
     return { receipt };
   } catch (err) {
     console.error("Failed to create receipt:", err);
@@ -99,7 +106,13 @@ export async function deleteReceiptAction(receiptId: string): Promise<{ ok: true
   if (!session) return { error: "Not signed in." };
 
   try {
-    await deleteReceipt(session.clinicId, receiptId);
+    const { patientId, receiptNumber, amount } = await deleteReceipt(session.clinicId, receiptId);
+    await recordAuditEvent(session, {
+      action: "receipt.delete",
+      targetType: "Patient",
+      targetId: patientId,
+      metadata: { receiptId, receiptNumber, amount },
+    });
     return { ok: true };
   } catch (err) {
     console.error("Failed to delete receipt:", err);

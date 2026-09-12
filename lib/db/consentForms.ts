@@ -207,10 +207,17 @@ export async function createConsentForm(input: CreateConsentFormInput): Promise<
   return toConsentForm(row);
 }
 
-export async function deleteConsentForm(clinicId: string, id: string): Promise<void> {
+/** Returns the patient/template this form belonged to — the caller
+ * (consentFormActions.ts) only ever has the form's own id, not the patient
+ * it's under, but needs the patientId to record an audit event against the
+ * right patient (see lib/db/auditLog.ts). */
+export async function deleteConsentForm(
+  clinicId: string,
+  id: string
+): Promise<{ patientId: string; templateTitle: string }> {
   const existing = await prisma.consentForm.findUnique({
     where: { id },
-    select: { clinicId: true, signatureDataUrl: true },
+    select: { clinicId: true, signatureDataUrl: true, patientId: true, templateTitle: true },
   });
   if (!existing || existing.clinicId !== clinicId) {
     throw new Error("Consent form not found.");
@@ -218,4 +225,5 @@ export async function deleteConsentForm(clinicId: string, id: string): Promise<v
   await prisma.consentForm.delete({ where: { id } });
   const key = keyFromUrl(existing.signatureDataUrl);
   if (key) await deleteFromR2(key);
+  return { patientId: existing.patientId, templateTitle: existing.templateTitle };
 }

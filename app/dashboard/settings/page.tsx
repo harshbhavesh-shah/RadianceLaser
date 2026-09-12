@@ -62,6 +62,9 @@ export default async function SettingsPage() {
             ownerEmail={session.email || ""}
             payments={payments}
             annualPriceInr={annualPriceInr}
+            autoRenewEnabled={clinic?.autoRenewEnabled ?? false}
+            razorpaySubscriptionStatus={clinic?.razorpaySubscriptionStatus}
+            autoRenewPlanAmountInr={clinic?.autoRenewPlanAmountInr}
           />
 
           <StaffSection initialStaff={staff} currentUid={session.uid} isOwner={isOwner} />

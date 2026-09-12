@@ -10,6 +10,7 @@ import {
   deleteConsentForm,
   type ConsentFormTemplateInput,
 } from "@/lib/db/consentForms";
+import { recordAuditEvent } from "@/lib/db/auditLog";
 import type { ConsentForm, ConsentFormTemplate } from "@/types";
 
 // Server Actions backing ConsentTemplateFormModal, ConsentFormSignModal,
@@ -91,6 +92,12 @@ export async function createConsentFormAction(
       ...input,
       witnessUid: session.uid,
     });
+    await recordAuditEvent(session, {
+      action: "consentForm.sign",
+      targetType: "Patient",
+      targetId: input.patientId,
+      metadata: { consentFormId: form.id, templateTitle: input.templateTitle },
+    });
     return { form };
   } catch (err) {
     console.error("Failed to save consent form:", err);
@@ -103,7 +110,13 @@ export async function deleteConsentFormAction(id: string): Promise<{ ok: true } 
   if (!session) return { error: "Not signed in." };
 
   try {
-    await deleteConsentForm(session.clinicId, id);
+    const { patientId, templateTitle } = await deleteConsentForm(session.clinicId, id);
+    await recordAuditEvent(session, {
+      action: "consentForm.delete",
+      targetType: "Patient",
+      targetId: patientId,
+      metadata: { consentFormId: id, templateTitle },
+    });
     return { ok: true };
   } catch (err) {
     console.error("Failed to delete consent form:", err);
