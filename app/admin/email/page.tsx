@@ -53,7 +53,7 @@ async function EmailInboxClientLoader({
     console.error("Failed to load initial email threads:", err);
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-        Couldn&apos;t load the inbox — the Gmail connection may have expired or been revoked.{" "}
+        Couldn&apos;t load the inbox. The Gmail connection may have expired or been revoked.{" "}
         <a href="/api/oauth/google/start" className="font-medium underline">
           Reconnect Gmail
         </a>

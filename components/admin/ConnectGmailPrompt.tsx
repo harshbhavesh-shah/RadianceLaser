@@ -8,7 +8,7 @@ export default function ConnectGmailPrompt() {
       </div>
       <h2 className="mt-4 font-display text-lg font-medium text-brown-900">Connect Gmail</h2>
       <p className="mt-2 max-w-sm text-sm text-brown-600">
-        admin@radiancelaser.in forwards into a Gmail inbox — connect it once so you can read, send, and reply to
+        admin@radiancelaser.in forwards into a Gmail inbox. Connect it once so you can read, send, and reply to
         that address right here.
       </p>
       <a

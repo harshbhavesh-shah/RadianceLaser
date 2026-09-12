@@ -79,7 +79,7 @@ export default function PricingForm({ initialSettings }: { initialSettings: Plat
       </form>
 
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-      {saved && <p className="mt-3 text-sm text-green-700">Saved — live everywhere now.</p>}
+      {saved && <p className="mt-3 text-sm text-green-700">Saved. It's live everywhere now.</p>}
     </div>
   );
 }

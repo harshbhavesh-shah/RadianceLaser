@@ -165,11 +165,11 @@ function ClinicActions({
   // "OK" is easy, retyping a specific name isn't.
   async function handleDelete() {
     const typed = prompt(
-      `This permanently deletes "${clinic.name}" — every patient, visit, package, appointment, receipt, ` +
+      `This permanently deletes "${clinic.name}": every patient, visit, package, appointment, receipt, ` +
         `staff login, and document. There is no undo.\n\nType the clinic's exact name to confirm:`
     );
     if (typed !== clinic.name) {
-      if (typed !== null) alert("Name didn't match — nothing was deleted.");
+      if (typed !== null) alert("Name didn't match, so nothing was deleted.");
       return;
     }
     setIsPending(true);

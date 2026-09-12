@@ -142,7 +142,7 @@ export async function activateAccountAction(clinicId: string): Promise<AdminActi
     await createLedgerEntry({
       type: "profit",
       amountInr: annualPriceInr,
-      description: `Manual activation — ${clinic.name} (1 year)`,
+      description: `Manual activation for ${clinic.name} (1 year)`,
       date: new Date().toISOString().slice(0, 10),
       createdByEmail: session.email || undefined,
     });
