@@ -8,6 +8,8 @@ import {
   deleteNoShowFollowUp,
   type NoShowFollowUpInput,
 } from "@/lib/db/noShowFollowUps";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import type { NoShowFollowUp } from "@/types";
 
 // Server Actions backing FollowUpFormModal's save/delete. Same
@@ -17,6 +19,15 @@ async function requireOwner() {
   const session = await getSession();
   if (!session) throw new Error("Not signed in.");
   if (session.role !== "owner") throw new Error("Only the clinic owner can do this.");
+
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).patientRetention) {
+    throw new Error("Patient Retention is available on the Standard plan and above.");
+  }
+
   return session;
 }
 

@@ -10,11 +10,22 @@ import {
   markConversationRead,
 } from "@/lib/db/whatsappConversations";
 import { activeProvider } from "@/lib/whatsapp/activeProvider";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import type { WhatsAppMessage } from "@/types";
 
 async function requireSession() {
   const session = await getSession();
   if (!session) throw new Error("Not signed in.");
+
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).whatsappAutomation) {
+    throw new Error("The Inbox is available on the Pro plan and above.");
+  }
+
   return session;
 }
 

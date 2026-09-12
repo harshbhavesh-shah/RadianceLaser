@@ -5,6 +5,7 @@ import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { getClinicAreaDefs } from "@/lib/db/areaDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import { getClinicAccess } from "@/lib/subscription";
+import { getClinicTier } from "@/lib/entitlements";
 import { SessionTypeConfigProvider } from "@/lib/sessionTypeConfigContext";
 import { AreaDefsProvider } from "@/lib/areaDefsContext";
 import Sidebar from "@/components/Sidebar";
@@ -32,6 +33,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // happen outside a broken account) rather than locking someone out of a
   // dashboard that can't even render its own clinic name yet.
   const access = clinic ? getClinicAccess(clinic) : { status: "active" as const };
+  const tier = clinic ? getClinicTier(clinic) : "free";
 
   return (
     <SidebarProvider>
@@ -41,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {session.impersonating && <ImpersonationBanner clinicName={session.impersonating.clinicName} />}
             <TrialBanner access={access} role={session.role} />
             <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-              <Sidebar clinicName={clinicName} session={session} />
+              <Sidebar clinicName={clinicName} session={session} tier={tier} />
               <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</main>
             </div>
           </div>

@@ -9,9 +9,13 @@ import {
   extendAccessAction,
   startImpersonationAction,
   terminateAccessAction,
+  updateClinicPlanTierAction,
 } from "@/app/admin/actions";
 import { getClinicAccess, getClinicDeadline, type ClinicAccess } from "@/lib/subscription";
+import type { PlanTier } from "@/lib/entitlements";
 import type { Clinic } from "@/types";
+
+const PLAN_TIERS: PlanTier[] = ["free", "basic", "standard", "pro", "enterprise"];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DUE_SOON_WINDOW_DAYS = 30;
@@ -57,6 +61,13 @@ function StatusBadge({ access }: { access: ClinicAccess }) {
   );
 }
 
+/** Plain text, not a colored badge like StatusBadge — this is Phase A's
+ * manual tier assignment (see lib/entitlements.ts), not an access-status
+ * signal, so it shouldn't visually compete with the real status badge. */
+function PlanTierLabel({ tier }: { tier: PlanTier }) {
+  return <span className="text-xs font-medium capitalize text-brown-500">Plan: {tier}</span>;
+}
+
 function deadlineLabel(clinic: Clinic): string {
   if (clinic.subscriptionStatus === "trialing") return `Trial ends ${formatDate(clinic.trialEndsAt)}`;
   if (clinic.subscriptionRenewsAt !== undefined) return `Renews ${formatDate(clinic.subscriptionRenewsAt)}`;
@@ -78,8 +89,23 @@ function ClinicActions({
 }) {
   const router = useRouter();
   const [days, setDays] = useState(30);
+  const [planTier, setPlanTier] = useState<PlanTier>((clinic.planTier as PlanTier) ?? "free");
+  const [enterpriseCenters, setEnterpriseCenters] = useState(clinic.enterpriseCenters ?? 2);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function handleSetTier() {
+    setIsPending(true);
+    setError(null);
+    const result = await updateClinicPlanTierAction(
+      clinic.id,
+      planTier,
+      planTier === "enterprise" ? enterpriseCenters : undefined
+    );
+    setIsPending(false);
+    if (result.error) setError(result.error);
+    else router.refresh();
+  }
 
   async function handleExtend() {
     setIsPending(true);
@@ -216,6 +242,37 @@ function ClinicActions({
           Delete
         </button>
       </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <select
+          value={planTier}
+          onChange={(e) => setPlanTier(e.target.value as PlanTier)}
+          className="rounded-md border border-beige-300 bg-canvas px-2 py-1.5 text-xs text-brown-900 outline-none focus:border-gold-500"
+        >
+          {PLAN_TIERS.map((t) => (
+            <option key={t} value={t} className="capitalize">
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </option>
+          ))}
+        </select>
+        {planTier === "enterprise" && (
+          <input
+            type="number"
+            min={2}
+            max={10}
+            value={enterpriseCenters}
+            onChange={(e) => setEnterpriseCenters(Number(e.target.value))}
+            title="Number of centers"
+            className="w-16 rounded-md border border-beige-300 bg-canvas px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
+          />
+        )}
+        <button
+          onClick={handleSetTier}
+          disabled={isPending}
+          className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600 disabled:opacity-50"
+        >
+          Set tier
+        </button>
+      </div>
       {error && <div className="mt-1 text-xs text-red-700">{error}</div>}
     </div>
   );
@@ -238,7 +295,10 @@ function ClinicRow({
         <div className="text-xs text-brown-400">{clinic.id}</div>
       </td>
       <td className="px-4 py-3">
-        <StatusBadge access={access} />
+        <div className="flex flex-col gap-1">
+          <StatusBadge access={access} />
+          <PlanTierLabel tier={(clinic.planTier as PlanTier) ?? "free"} />
+        </div>
       </td>
       <td className="px-4 py-3 text-sm text-brown-600">{deadlineLabel(clinic)}</td>
       <td className="px-4 py-3">
@@ -268,7 +328,10 @@ function ClinicCard({
           <div className="truncate font-medium text-brown-900">{clinic.name}</div>
           <div className="truncate text-xs text-brown-400">{clinic.id}</div>
         </div>
-        <StatusBadge access={access} />
+        <div className="flex flex-col items-end gap-1">
+          <StatusBadge access={access} />
+          <PlanTierLabel tier={(clinic.planTier as PlanTier) ?? "free"} />
+        </div>
       </div>
       <div className="mt-2 text-sm text-brown-600">{deadlineLabel(clinic)}</div>
       <div className="mt-3 border-t border-beige-300 pt-3">

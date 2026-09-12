@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { createPatient, findPatientByPhone } from "@/lib/db/patients";
+import { createPatient, findPatientByPhone, getClinicPatientCount } from "@/lib/db/patients";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import { recordAuditEvent } from "@/lib/db/auditLog";
 import { isValidPhone } from "@/lib/phone";
 import type { SkinType } from "@/types";
@@ -37,6 +39,18 @@ export async function createPatientAction(
     const existing = await findPatientByPhone(session.clinicId, phone);
     if (existing) {
       return { duplicate: { id: existing.id, name: existing.name, phone: existing.phone } };
+    }
+  }
+
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  const { maxPatients } = getEntitlements(tier);
+  if (maxPatients !== null) {
+    const count = await getClinicPatientCount(session.clinicId);
+    if (count >= maxPatients) {
+      return { error: `You've reached the ${maxPatients}-patient limit on the Free plan. Upgrade to add more.` };
     }
   }
 

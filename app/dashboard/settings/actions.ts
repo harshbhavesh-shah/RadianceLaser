@@ -5,10 +5,18 @@ import { getSession } from "@/lib/session";
 import { adminAuth } from "@/lib/firebase/admin";
 import {
   clinicCacheTag,
+  getClinic,
   updateClinicName as updateClinicNameInDb,
   updateClinicAddress as updateClinicAddressInDb,
 } from "@/lib/db/clinics";
-import { createStaffMember, updateStaffRole as updateStaffRoleInDb, removeStaffMember as removeStaffMemberInDb, updateStaffFlags } from "@/lib/db/staff";
+import {
+  createStaffMember,
+  getClinicStaffCount,
+  updateStaffRole as updateStaffRoleInDb,
+  removeStaffMember as removeStaffMemberInDb,
+  updateStaffFlags,
+} from "@/lib/db/staff";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import type { StaffMember, UserRole } from "@/types";
 
 async function requireOwner() {
@@ -42,6 +50,21 @@ export async function addStaffMember(
 
     if (!name.trim()) return { error: "Name is required." };
     if (!email.trim()) return { error: "Email is required." };
+
+    // Checked before creating the Firebase Auth user below, not after — an
+    // orphaned Auth account with no matching StaffMember row is worse than
+    // a rejected request, and there'd be no clean way to roll it back here.
+    const clinic = await getClinic(session.clinicId);
+    const tier = getClinicTier(
+      clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+    );
+    const { maxStaff } = getEntitlements(tier);
+    if (maxStaff !== null) {
+      const count = await getClinicStaffCount(session.clinicId);
+      if (count >= maxStaff) {
+        return { error: `You've reached the ${maxStaff}-staff-login limit on your plan. Upgrade to add more.` };
+      }
+    }
 
     const tempPassword = generateTempPassword();
 

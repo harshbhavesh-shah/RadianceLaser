@@ -1,3 +1,5 @@
+import type { PlanTier } from "@/lib/entitlements";
+
 // Every clinic's data documents (appointments, patients, etc.) should carry
 // a clinicId field, matching this shape. Firestore security rules enforce
 // that a user can only read/write documents where clinicId matches their
@@ -66,6 +68,12 @@ export interface Clinic {
   // The annual price locked in when this clinic subscribed, so a later
   // admin price change never silently reprices an existing subscriber.
   autoRenewPlanAmountInr?: number;
+  // Manually assigned from the super-admin panel until real per-tier
+  // checkout exists — see lib/entitlements.ts. Undefined means "free" at
+  // the code level (every read goes through getClinicTier()), not "unset".
+  planTier?: PlanTier;
+  // Only meaningful when planTier is "enterprise" — see lib/entitlements.ts.
+  enterpriseCenters?: number;
 }
 
 // One Razorpay payment attempt for a clinic's annual subscription — created
@@ -102,7 +110,14 @@ export interface LedgerEntry {
   createdByEmail?: string;
 }
 
-export type AdminAuditAction = "extend" | "activate" | "terminate" | "delete" | "price_change" | "impersonate";
+export type AdminAuditAction =
+  | "extend"
+  | "activate"
+  | "terminate"
+  | "delete"
+  | "price_change"
+  | "impersonate"
+  | "plan_tier_change";
 
 // One row per manual super-admin override — see prisma/schema.prisma's
 // AdminAuditLog comment for why this exists separately from LedgerEntry.

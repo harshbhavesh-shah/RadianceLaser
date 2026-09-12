@@ -539,6 +539,17 @@ model Clinic {
   // fresh one.
   dunningEmailSentForStatus String?
 
+  // Manual Phase-A tier assignment (see lib/entitlements.ts) — set from the
+  // super-admin panel until real per-tier checkout exists. Null means
+  // "free" at the code level, not "not yet decided" — every read goes
+  // through getClinicTier(), so no backfill of existing rows is needed.
+  planTier String?
+  // Only meaningful when planTier is "enterprise" — the number of centers
+  // this clinic is billed for. Not used by any gating logic in this phase
+  // (entitlements-wise "enterprise" == "pro"); exists now purely so a
+  // future billing phase doesn't need its own migration.
+  enterpriseCenters Int?
+
   @@map("clinics")
 }
 

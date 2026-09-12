@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
+import { tierAtLeast, type PlanTier } from "@/lib/entitlements";
 import type { Session, UserRole } from "@/types";
 
 interface LeafNavItem {
@@ -37,6 +38,7 @@ interface LeafNavItem {
   icon: typeof LayoutDashboard;
   soon?: boolean;
   roles?: UserRole[]; // omit = visible to everyone
+  minTier?: PlanTier; // omit = visible on every tier
 }
 
 // A non-clickable header (icon + label, no href) whose children render
@@ -66,13 +68,19 @@ const NAV_ITEMS: NavItem[] = [
   // walk-in gets routed there via buttons), so it doesn't need to sit
   // inside a group the way the genuinely page-hopping sections below do.
   { label: "Patients", href: "/dashboard/patients", icon: Users },
-  { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3, roles: ["owner", "doctor"] },
+  {
+    label: "Analytics",
+    href: "/dashboard/analytics",
+    icon: BarChart3,
+    roles: ["owner", "doctor"],
+    minTier: "basic",
+  },
   {
     label: "Patient Retention",
     icon: UserCheck,
     children: [
-      { label: "No Shows", href: "/dashboard/no-shows", icon: UserX },
-      { label: "Follow-Ups", href: "/dashboard/follow-ups", icon: PhoneCall },
+      { label: "No Shows", href: "/dashboard/no-shows", icon: UserX, minTier: "standard" },
+      { label: "Follow-Ups", href: "/dashboard/follow-ups", icon: PhoneCall, minTier: "standard" },
     ],
   },
   // Clinic-defined customization for how patients are handled — presets
@@ -89,7 +97,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Documents", href: "/dashboard/documents", icon: FileText },
     ],
   },
-  { label: "Inventory", href: "/dashboard/inventory", icon: Boxes },
+  { label: "Inventory", href: "/dashboard/inventory", icon: Boxes, minTier: "basic" },
   {
     label: "Communication",
     icon: MessageCircle,
@@ -99,8 +107,8 @@ const NAV_ITEMS: NavItem[] = [
       // would read as a mistake, not a hierarchy. The page itself is
       // WhatsApp connection + message templates + automation, so this is
       // more specific anyway, not just a disambiguation hack.
-      { label: "WhatsApp", href: "/dashboard/communication", icon: MessageCircle },
-      { label: "Inbox", href: "/dashboard/inbox", icon: Inbox },
+      { label: "WhatsApp", href: "/dashboard/communication", icon: MessageCircle, minTier: "basic" },
+      { label: "Inbox", href: "/dashboard/inbox", icon: Inbox, minTier: "pro" },
     ],
   },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
@@ -115,7 +123,15 @@ const NAV_ITEMS: NavItem[] = [
 // effect, same hydration-safe pattern as SidebarContext's collapsed state.
 const GROUP_STORAGE_KEY = "sidebar-collapsed-groups";
 
-export default function Sidebar({ clinicName, session }: { clinicName: string; session: Session }) {
+export default function Sidebar({
+  clinicName,
+  session,
+  tier,
+}: {
+  clinicName: string;
+  session: Session;
+  tier: PlanTier;
+}) {
   const pathname = usePathname();
   const { collapsed, toggleUserPreference } = useSidebarCollapse();
   const [mobileOpen, setMobileOpen] = useState(false); // mobile off-canvas drawer
@@ -193,8 +209,21 @@ export default function Sidebar({ clinicName, session }: { clinicName: string; s
     );
   }
 
+  function leafVisible(item: LeafNavItem): boolean {
+    if (item.roles && !item.roles.includes(session.role)) return false;
+    if (item.minTier && !tierAtLeast(tier, item.minTier)) return false;
+    return true;
+  }
+
   function NavLinks({ showLabels }: { showLabels: boolean }) {
-    const visibleItems = NAV_ITEMS.filter((item) => !("roles" in item) || !item.roles || item.roles.includes(session.role));
+    // Two levels: a group's own children are filtered first (role AND
+    // tier), then the group itself is dropped entirely once nothing in it
+    // is left visible — e.g. "Patient Retention" disappears for a Free/
+    // Basic clinic, while "Communication" survives showing only "WhatsApp"
+    // for a Basic clinic (Inbox stays hidden until Pro).
+    const visibleItems = NAV_ITEMS.map((item) =>
+      isGroup(item) ? { ...item, children: item.children.filter(leafVisible) } : item
+    ).filter((item) => (isGroup(item) ? item.children.length > 0 : leafVisible(item)));
     return (
       <nav className="flex-1 space-y-0.5 px-3">
         {visibleItems.map((item) => {

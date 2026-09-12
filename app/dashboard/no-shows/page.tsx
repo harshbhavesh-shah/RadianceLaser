@@ -7,6 +7,8 @@ import { getClinicNoShowSurveyResponses } from "@/lib/db/noShowSurvey";
 import { getClinicMessageTemplates } from "@/lib/db/messageTemplates";
 import { getWhatsAppConnection } from "@/lib/db/whatsapp";
 import { computeNoShowStats, computeNoShowTrend } from "@/lib/analyticsPage";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import NoShowStatsStrip from "@/components/no-shows/NoShowStatsStrip";
 import NoShowList from "@/components/no-shows/NoShowList";
 import FollowUpsSection from "@/components/no-shows/FollowUpsSection";
@@ -14,6 +16,12 @@ import FollowUpsSection from "@/components/no-shows/FollowUpsSection";
 export default async function NoShowsPage() {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
+
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).patientRetention) redirect("/dashboard");
 
   const [allAppointments, recentNoShows, followUps, messageLog, surveyResponses, templates, connection] =
     await Promise.all([

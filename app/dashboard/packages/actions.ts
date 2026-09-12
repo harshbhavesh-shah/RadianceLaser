@@ -7,6 +7,8 @@ import {
   deletePackageTypeDef,
   type PackageTypeDefInput,
 } from "@/lib/db/packageTypeDefs";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import type { PackageTypeDef } from "@/types";
 
 // Server Actions backing PackageTypeFormModal's save/delete — see
@@ -24,6 +26,15 @@ export async function createPackageTypeDefAction(
 ): Promise<{ def: PackageTypeDef } | { error: string }> {
   try {
     const session = await requireOwner();
+
+    const clinic = await getClinic(session.clinicId);
+    const tier = getClinicTier(
+      clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+    );
+    if (!getEntitlements(tier).customPackageTypes) {
+      return { error: "Custom package types are available on the Standard plan and above." };
+    }
+
     if (!input.name.trim()) return { error: "Package name is required." };
     if (!input.totalSessions || input.totalSessions <= 0) return { error: "Enter a valid number of sessions." };
     if (!input.suggestedAmount || input.suggestedAmount <= 0) return { error: "Enter a valid suggested price." };

@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import type { Clinic as PrismaClinicRow } from "@prisma/client";
 import type { Clinic, StatsWindow, SubscriptionStatus } from "@/types";
+import type { PlanTier } from "@/lib/entitlements";
 
 // Postgres migration, chunk 11 originally — Clinic. Revised in chunk 15
 // (going Firestore-free): this used to also mirror subscriptionStatus/
@@ -35,6 +36,8 @@ function toClinic(row: PrismaClinicRow): Clinic {
     ...(row.razorpaySubscriptionId ? { razorpaySubscriptionId: row.razorpaySubscriptionId } : {}),
     ...(row.razorpaySubscriptionStatus ? { razorpaySubscriptionStatus: row.razorpaySubscriptionStatus } : {}),
     ...(row.autoRenewPlanAmountInr !== null ? { autoRenewPlanAmountInr: row.autoRenewPlanAmountInr } : {}),
+    ...(row.planTier ? { planTier: row.planTier as PlanTier } : {}),
+    ...(row.enterpriseCenters !== null ? { enterpriseCenters: row.enterpriseCenters } : {}),
   };
 }
 
@@ -195,6 +198,28 @@ export async function getClinicIdByRazorpaySubscriptionId(subscriptionId: string
     select: { id: true },
   });
   return row?.id ?? null;
+}
+
+/**
+ * The only way a clinic's tier is set in Phase A — there's no real
+ * checkout for tiers yet (see lib/entitlements.ts), so this is called
+ * exclusively from the super-admin panel (app/admin/actions.ts
+ * updateClinicPlanTierAction). enterpriseCenters is only meaningful
+ * alongside planTier "enterprise"; passed through as-is otherwise so
+ * clearing it (undefined) leaves whatever was there, matching every other
+ * partial-update function in this file.
+ */
+export async function updateClinicPlanTier(
+  clinicId: string,
+  input: { planTier: PlanTier; enterpriseCenters?: number }
+): Promise<void> {
+  await prisma.clinic.update({
+    where: { id: clinicId },
+    data: {
+      planTier: input.planTier,
+      ...(input.enterpriseCenters !== undefined ? { enterpriseCenters: input.enterpriseCenters } : {}),
+    },
+  });
 }
 
 /** Used by app/admin/actions.ts deleteClinicAction. */

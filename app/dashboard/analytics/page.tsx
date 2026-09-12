@@ -16,6 +16,8 @@ import {
 } from "@/lib/analyticsPage";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import PieChart from "@/components/analytics/PieChart";
 import YearlyRevenueChart from "@/components/analytics/YearlyRevenueChart";
 
@@ -44,6 +46,12 @@ function StatInline({ label, value }: { label: string; value: string }) {
 export default async function AnalyticsPage() {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
+
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).analytics) redirect("/dashboard");
 
   if (session.role !== "owner" && session.role !== "doctor") {
     return (

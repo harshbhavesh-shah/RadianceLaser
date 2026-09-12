@@ -5,6 +5,8 @@ import { getPatientsByIds } from "@/lib/db/patients";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import { todayLocalStr, toDateStr, addDays, parseDateStr } from "@/lib/calendar";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import FollowUpList, { type FollowUpRow } from "@/components/follow-ups/FollowUpList";
 import type { Visit } from "@/types";
 
@@ -20,6 +22,12 @@ function formatDayLabel(dateStr: string): string {
 export default async function FollowUpsPage() {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
+
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).patientRetention) redirect("/dashboard");
 
   const today = todayLocalStr();
   const tomorrow = toDateStr(addDays(new Date(), 1));

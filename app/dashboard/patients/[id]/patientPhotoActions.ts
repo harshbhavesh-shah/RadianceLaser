@@ -3,6 +3,8 @@
 import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/db/patients";
 import { createPatientPhoto, deletePatientPhoto, type CreatePatientPhotoInput } from "@/lib/db/patientPhotos";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import { recordAuditEvent } from "@/lib/db/auditLog";
 import type { PatientPhoto } from "@/types";
 
@@ -24,6 +26,14 @@ export async function createPatientPhotoAction(
 
   const patient = await getPatient(session.clinicId, input.patientId);
   if (!patient) return { error: "Patient not found." };
+
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).photos) {
+    return { error: "Photo galleries are available on the Basic plan and above." };
+  }
 
   try {
     const photo = await createPatientPhoto({

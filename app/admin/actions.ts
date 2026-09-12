@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { getAdminSession, startImpersonation, stopImpersonation, peekImpersonation } from "@/lib/session";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/db/client";
-import { clinicCacheTag, updateClinicSubscription, deleteClinic } from "@/lib/db/clinics";
+import { clinicCacheTag, updateClinicSubscription, updateClinicPlanTier, deleteClinic } from "@/lib/db/clinics";
+import type { PlanTier } from "@/lib/entitlements";
 import { updatePlatformPricing, PLATFORM_SETTINGS_CACHE_TAG, getAnnualPriceInr } from "@/lib/db/platformSettings";
 import { createLedgerEntry } from "@/lib/db/ledger";
 import { createAdminAuditLogEntry } from "@/lib/db/adminAuditLog";
@@ -160,6 +161,52 @@ export async function activateAccountAction(clinicId: string): Promise<AdminActi
   } catch (err) {
     console.error("Failed to activate clinic:", err);
     return { error: "Couldn't activate this clinic. Please try again." };
+  }
+}
+
+const VALID_TIERS: PlanTier[] = ["free", "basic", "standard", "pro", "enterprise"];
+
+/**
+ * Manually sets a clinic's plan tier — the only way to assign a tier while
+ * there's no real per-tier checkout yet (see lib/entitlements.ts).
+ * enterpriseCenters only applies when planTier is "enterprise"; omitted
+ * otherwise so it doesn't overwrite a previously-set value with nothing
+ * meaningful.
+ */
+export async function updateClinicPlanTierAction(
+  clinicId: string,
+  planTier: PlanTier,
+  enterpriseCenters?: number
+): Promise<AdminActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+
+    if (!VALID_TIERS.includes(planTier)) {
+      return { error: "Invalid plan tier." };
+    }
+
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { id: true, name: true } });
+    if (!clinic) return { error: "Clinic not found." };
+
+    await updateClinicPlanTier(clinicId, {
+      planTier,
+      ...(planTier === "enterprise" && enterpriseCenters ? { enterpriseCenters } : {}),
+    });
+
+    await createAdminAuditLogEntry({
+      clinicId,
+      clinicName: clinic.name,
+      action: "plan_tier_change",
+      detail: `Set to ${planTier}${planTier === "enterprise" && enterpriseCenters ? ` (${enterpriseCenters} centers)` : ""}`,
+      performedBy: session.email || "unknown",
+    });
+
+    revalidateTag(clinicCacheTag(clinicId));
+    revalidatePath("/admin");
+    return {};
+  } catch (err) {
+    console.error("Failed to update plan tier:", err);
+    return { error: "Couldn't update this clinic's plan tier. Please try again." };
   }
 }
 

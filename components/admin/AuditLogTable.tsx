@@ -11,6 +11,7 @@ const ACTION_LABELS: Record<AdminAuditAction, string> = {
   delete: "Deleted",
   price_change: "Price changed",
   impersonate: "Viewed as",
+  plan_tier_change: "Plan tier changed",
 };
 
 const ACTION_STYLES: Record<AdminAuditAction, string> = {
@@ -20,6 +21,7 @@ const ACTION_STYLES: Record<AdminAuditAction, string> = {
   delete: "bg-red-100 text-red-800",
   price_change: "bg-gold-100 text-brown-800",
   impersonate: "bg-blue-100 text-blue-800",
+  plan_tier_change: "bg-beige-200 text-brown-800",
 };
 
 function ActionBadge({ action }: { action: AdminAuditAction }) {

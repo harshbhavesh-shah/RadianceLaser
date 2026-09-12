@@ -24,6 +24,13 @@ function toStaffMember(row: PrismaStaffRow): StaffMember {
   };
 }
 
+/** Backs the Free/Basic staff-login cap (see lib/entitlements.ts) — a
+ * plain count rather than reusing getClinicStaff().length so callers that
+ * only need the number don't pay for fetching every row's full shape. */
+export async function getClinicStaffCount(clinicId: string): Promise<number> {
+  return prisma.staffMember.count({ where: { clinicId } });
+}
+
 export async function getClinicStaff(clinicId: string): Promise<StaffMember[]> {
   const rows = await prisma.staffMember.findMany({
     where: { clinicId },

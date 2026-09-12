@@ -8,14 +8,33 @@ import { getWhatsAppConnection, upsertWhatsAppConnection, deleteWhatsAppConnecti
 import { getClinicMessageTemplates, createMessageTemplate, deleteMessageTemplate } from "@/lib/db/messageTemplates";
 import { getReceipt } from "@/lib/db/receipts";
 import { getClinic, updateMessagingSettings, clinicCacheTag, type MessagingSettingsInput } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import { normalizePhone } from "@/lib/phone";
 import { TEMPLATE_VARIABLE_LABELS } from "@/types";
 import type { MessageTemplate, MessageTemplateCategory } from "@/types";
+
+/** WhatsApp connect/manual-send is Basic+ (see lib/entitlements.ts) —
+ * checked inside requireOwner below so every owner-only action in this
+ * file involving the connection/templates is covered without a separate
+ * check in each one. sendReceiptMessageAction deliberately isn't gated
+ * this way: a Free clinic can never have a WhatsApp connection to send
+ * through in the first place (since connecting is gated here), so it
+ * already degrades to its own existing "connect WhatsApp first" message. */
+async function requireWhatsAppConnect(session: { clinicId: string }) {
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).whatsappConnect) {
+    throw new Error("WhatsApp is available on the Basic plan and above.");
+  }
+}
 
 async function requireOwner() {
   const session = await getSession();
   if (!session) throw new Error("Not signed in.");
   if (session.role !== "owner") throw new Error("Only the clinic owner can do this.");
+  await requireWhatsAppConnect(session);
   return session;
 }
 
@@ -231,6 +250,14 @@ export async function sendReceiptMessageAction(
 export async function updateMessagingSettingsAction(input: MessagingSettingsInput): Promise<{ error?: string }> {
   try {
     const session = await requireOwner();
+
+    const clinic = await getClinic(session.clinicId);
+    const tier = getClinicTier(
+      clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+    );
+    if (!getEntitlements(tier).whatsappAutomation) {
+      return { error: "Automated WhatsApp reminders are available on the Pro plan and above." };
+    }
 
     if (input.reminderHoursBefore < 1 || input.reminderHoursBefore > 168) {
       return { error: "Reminder timing must be between 1 hour and 7 days." };

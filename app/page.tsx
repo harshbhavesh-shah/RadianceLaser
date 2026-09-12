@@ -1,11 +1,110 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
-import { getAnnualPriceInr } from "@/lib/db/platformSettings";
 import SiteHeader from "@/components/marketing/SiteHeader";
+
+// The five-tier ladder — see lib/entitlements.ts for the actual gating
+// logic these mirror, and the pricing playbook for the reasoning behind
+// the specific numbers (Apple-style: big jumps carry big justification,
+// small jumps are frictionless "why not"s). Kept as plain marketing copy
+// here rather than derived from TIER_ENTITLEMENTS, since a feature list
+// meant to persuade a prospect reads differently than one meant to gate
+// code — e.g. "Everything in Basic" is clearer to a buyer than repeating
+// every line item four times.
+interface PricingTier {
+  name: string;
+  price: string;
+  cadence?: string;
+  tagline: string;
+  features: string[];
+  cta: string;
+  href: string;
+  highlight?: boolean;
+  badge?: string;
+}
+
+const PRICING_TIERS: PricingTier[] = [
+  {
+    name: "Free",
+    price: "₹0",
+    tagline: "Get a real clinic running, no card required.",
+    features: [
+      "Scheduling & appointments",
+      "Patient records & visit logging",
+      "Receipts & billing",
+      "E-signature consent forms",
+      "Up to 500 patients",
+      "2 staff logins",
+    ],
+    cta: "Start free",
+    href: "/signup",
+  },
+  {
+    name: "Basic",
+    price: "₹15,000",
+    cadence: "/year",
+    tagline: "For a clinic ready to run on more than the basics.",
+    features: [
+      "Everything in Free",
+      "Analytics dashboard",
+      "Inventory management",
+      "WhatsApp — connect & send",
+      "Before/after photo galleries",
+      "Custom treatment types",
+      "Unlimited patients",
+    ],
+    cta: "Start free trial",
+    href: "/signup",
+  },
+  {
+    name: "Standard",
+    price: "₹25,000",
+    cadence: "/year",
+    tagline: "Remove the staff ceiling and get organized.",
+    features: [
+      "Everything in Basic",
+      "No-show & follow-up tracking",
+      "Custom package types",
+      "Unlimited staff",
+    ],
+    cta: "Start free trial",
+    href: "/signup",
+  },
+  {
+    name: "Pro",
+    price: "₹30,000",
+    cadence: "/year",
+    tagline: "Put your reminders and follow-ups on autopilot.",
+    features: [
+      "Everything in Standard",
+      "Two-way WhatsApp Inbox",
+      "Automated reminders & feedback surveys",
+      "Priority support",
+      "White-glove setup & data migration",
+    ],
+    cta: "Start free trial",
+    href: "/signup",
+    highlight: true,
+    badge: "Most popular",
+  },
+  {
+    name: "Enterprise",
+    price: "From ₹50,000",
+    cadence: "/year",
+    tagline: "For chains — 2 to 10 locations, one bill.",
+    features: [
+      "Everything in Pro",
+      "2–10 clinic locations",
+      "Per-center price drops as you add locations",
+      "Dedicated support",
+    ],
+    cta: "Talk to us",
+    href: "/contact",
+  },
+];
 
 // Written after an actual line-by-line compliance review (see
 // docs/incident-response-runbook.md and the AuditLog/erasure work it
@@ -52,7 +151,6 @@ export default async function HomePage() {
   const session = await getSession();
   if (session) redirect("/dashboard");
 
-  const annualPriceInr = await getAnnualPriceInr();
   const trialMonths = Math.round(TRIAL_LENGTH_DAYS / 30);
   const trialLengthLabel = `${trialMonths} month${trialMonths === 1 ? "" : "s"}`;
 
@@ -262,33 +360,83 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Pricing. Two columns, same as everything above it, instead of a
-          narrow centered card floating on its own. */}
+      {/* Pricing. Five cards, Pro raised and recolored to draw the eye —
+          every card links to the same /signup trial for now (self-serve
+          checkout for a specific tier is a later phase; a 30-day trial
+          already grants full Pro-level access regardless of which card
+          brought someone in, per lib/entitlements.ts). */}
       <section id="pricing" className={`${CONTAINER} py-20`}>
-        <div className="grid grid-cols-1 gap-10 rounded-2xl border border-beige-300 bg-surface p-8 shadow-card sm:p-12 lg:grid-cols-2 lg:items-center lg:gap-14">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Annual plan</p>
-            <div className="mt-3 font-brand text-4xl font-extrabold text-brown-900 sm:text-5xl lg:text-6xl">
-              ₹{annualPriceInr.toLocaleString("en-IN")}
-              <span className="text-lg font-medium text-brown-400">/year</span>
-            </div>
-          </div>
-          <div>
-            <p className="text-lg leading-relaxed text-brown-600">
-              That covers one clinic with unlimited staff accounts, every role included.
-              There&apos;s no per-seat pricing and no separate tier for automation, analytics, or
-              WhatsApp reminders. Import your existing patients, invite your team, and everything
-              above is already part of the plan.
-            </p>
-            <Link
-              href="/signup"
-              className="mt-6 inline-flex items-center gap-2 rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-100 transition-colors hover:bg-gold-600"
+        <div className="text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Pricing</p>
+          <h2 className="mt-3 font-brand text-3xl font-extrabold text-brown-900 sm:text-4xl">
+            Simple, transparent pricing
+          </h2>
+          <p className="mt-3 text-brown-600">
+            No per-seat pricing games. See the real number, every time — free for {trialLengthLabel}, no
+            credit card needed to start.
+          </p>
+        </div>
+
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 lg:items-start">
+          {PRICING_TIERS.map((tier) => (
+            <div
+              key={tier.name}
+              className={
+                tier.highlight
+                  ? "relative flex flex-col rounded-2xl bg-brown-900 p-8 shadow-2xl ring-1 ring-gold-500 lg:-mt-6 lg:mb-6 lg:scale-[1.04]"
+                  : "relative flex flex-col rounded-2xl border border-beige-300 bg-surface p-8 shadow-card"
+              }
             >
-              Start your free trial
-              <ArrowRight size={16} />
-            </Link>
-            <p className="mt-3 text-sm text-brown-400">Free for {trialLengthLabel}. No credit card needed to start.</p>
-          </div>
+              {tier.badge && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gold-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-brown-900">
+                  {tier.badge}
+                </span>
+              )}
+
+              <div
+                className={`font-brand text-3xl font-extrabold ${tier.highlight ? "text-beige-100" : "text-brown-900"}`}
+              >
+                {tier.price}
+                {tier.cadence && (
+                  <span className={`text-sm font-medium ${tier.highlight ? "text-beige-300" : "text-brown-400"}`}>
+                    {" "}
+                    {tier.cadence}
+                  </span>
+                )}
+              </div>
+
+              <div className={`mt-4 font-brand text-lg font-bold ${tier.highlight ? "text-beige-100" : "text-brown-900"}`}>
+                {tier.name}
+              </div>
+              <p className={`mt-1 text-sm leading-relaxed ${tier.highlight ? "text-beige-300" : "text-brown-500"}`}>
+                {tier.tagline}
+              </p>
+
+              <ul className="mt-6 flex-1 space-y-3">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm">
+                    <Check
+                      size={16}
+                      className={`mt-0.5 flex-shrink-0 ${tier.highlight ? "text-gold-400" : "text-gold-600"}`}
+                    />
+                    <span className={tier.highlight ? "text-beige-200" : "text-brown-600"}>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href={tier.href}
+                className={
+                  tier.highlight
+                    ? "mt-8 inline-flex items-center justify-center gap-2 rounded-md bg-gold-500 px-5 py-3 text-sm font-semibold text-brown-900 transition-colors hover:bg-gold-400"
+                    : "mt-8 inline-flex items-center justify-center gap-2 rounded-md border border-beige-300 px-5 py-3 text-sm font-semibold text-brown-900 transition-colors hover:border-gold-500 hover:text-gold-600"
+                }
+              >
+                {tier.cta}
+                <ArrowRight size={15} />
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
 

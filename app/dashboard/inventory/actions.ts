@@ -8,22 +8,40 @@ import {
   adjustInventoryStock,
   type InventoryItemInput,
 } from "@/lib/db/inventory";
+import { getClinic } from "@/lib/db/clinics";
+import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import type { InventoryItem, InventoryLogType } from "@/types";
 
 // Server Actions backing InventoryItemFormModal (add/edit/delete an item
 // definition, owner-only) and AdjustStockModal (restock/use, any signed-in
 // staff — see components/inventory/ for both).
 
+// Inventory itself is a Basic+ feature (see lib/entitlements.ts) — checked
+// inside both helpers below rather than once at the top of each exported
+// action, so every action in this file is covered without touching each
+// one individually.
+async function requireEntitlement(session: { clinicId: string }) {
+  const clinic = await getClinic(session.clinicId);
+  const tier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
+  if (!getEntitlements(tier).inventory) {
+    throw new Error("Inventory is available on the Basic plan and above.");
+  }
+}
+
 async function requireOwner() {
   const session = await getSession();
   if (!session) throw new Error("Not signed in.");
   if (session.role !== "owner") throw new Error("Only the clinic owner can do this.");
+  await requireEntitlement(session);
   return session;
 }
 
 async function requireSession() {
   const session = await getSession();
   if (!session) throw new Error("Not signed in.");
+  await requireEntitlement(session);
   return session;
 }
 
