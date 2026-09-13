@@ -572,7 +572,19 @@ model ReceiptCounter {
 model PlatformSettings {
   id             String  @id
   annualPriceInr Int
-  updatedAt      BigInt
+  // The public 5-tier ladder's advertised prices (see lib/entitlements.ts
+  // for the gating those tiers unlock) — shown on the landing page's
+  // pricing section. Separate from annualPriceInr above, which is what
+  // self-serve checkout actually charges today: real per-tier billing
+  // hasn't shipped yet, so these can be edited independently of it.
+  // Nullable so an old row (saved before this field existed) still reads
+  // fine, falling back to the same defaults the landing page always used.
+  basicPriceInr         Int?
+  standardPriceInr      Int?
+  proPriceInr           Int?
+  enterpriseMinPriceInr Int?
+  enterpriseMaxPriceInr Int?
+  updatedAt             BigInt
   // Who last changed it, for the "last updated by" line in the admin UI —
   // not an audit trail, just a courtesy note for whoever looks at this next.
   updatedByEmail String?

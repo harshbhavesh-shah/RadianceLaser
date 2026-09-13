@@ -36,7 +36,7 @@ export default function PricingForm({ initialSettings }: { initialSettings: Plat
       setError(result.error);
       return;
     }
-    setSettings({ annualPriceInr: parsed, updatedAt: Date.now(), updatedByEmail: settings.updatedByEmail });
+    setSettings({ ...settings, annualPriceInr: parsed, updatedAt: Date.now(), updatedByEmail: settings.updatedByEmail });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
@@ -45,10 +45,11 @@ export default function PricingForm({ initialSettings }: { initialSettings: Plat
     <div className="max-w-md rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
       <div className="flex items-center gap-2">
         <IndianRupee size={16} className="text-gold-600" />
-        <h2 className="font-display text-base font-medium text-brown-900">Annual Price</h2>
+        <h2 className="font-display text-base font-medium text-brown-900">Checkout Price</h2>
       </div>
       <p className="mt-1.5 text-sm text-brown-600">
-        Currently ₹{settings.annualPriceInr.toLocaleString("en-IN")}/year.
+        Currently ₹{settings.annualPriceInr.toLocaleString("en-IN")}/year. What signup, dashboard billing, and
+        Razorpay actually charge, regardless of which tier a clinic is on.
       </p>
       {settings.updatedAt && (
         <p className="mt-0.5 text-xs text-brown-400">

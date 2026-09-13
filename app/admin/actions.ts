@@ -7,7 +7,14 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/db/client";
 import { clinicCacheTag, updateClinicSubscription, updateClinicPlanTier, deleteClinic } from "@/lib/db/clinics";
 import type { PlanTier } from "@/lib/entitlements";
-import { updatePlatformPricing, PLATFORM_SETTINGS_CACHE_TAG, getAnnualPriceInr } from "@/lib/db/platformSettings";
+import {
+  updatePlatformPricing,
+  PLATFORM_SETTINGS_CACHE_TAG,
+  getAnnualPriceInr,
+  updateTierPricing,
+  getTierPricing,
+  type TierPricing,
+} from "@/lib/db/platformSettings";
 import { createLedgerEntry } from "@/lib/db/ledger";
 import { createAdminAuditLogEntry } from "@/lib/db/adminAuditLog";
 import { SUBSCRIPTION_LENGTH_DAYS } from "@/lib/subscription";
@@ -58,6 +65,50 @@ export async function updatePlatformPriceAction(annualPriceInr: number): Promise
   } catch (err) {
     console.error("Failed to update platform pricing:", err);
     return { error: "Couldn't save this price. Please try again." };
+  }
+}
+
+/**
+ * The public pricing page's advertised Basic/Standard/Pro/Enterprise
+ * prices — separate from updatePlatformPriceAction above, which is what
+ * self-serve checkout actually charges today (real per-tier billing
+ * hasn't shipped yet, see lib/entitlements.ts). Free is always ₹0 and
+ * isn't editable here.
+ */
+export async function updateTierPricingAction(pricing: TierPricing): Promise<AdminActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+
+    const values = Object.values(pricing);
+    if (values.some((value) => !Number.isFinite(value) || value <= 0)) {
+      return { error: "Every price must be a positive number." };
+    }
+    if (values.some((value) => !Number.isInteger(value))) {
+      return { error: "Enter whole numbers of rupees." };
+    }
+    if (pricing.enterpriseMinPriceInr > pricing.enterpriseMaxPriceInr) {
+      return { error: "Enterprise's 2-center price can't be higher than its 10-center price." };
+    }
+
+    const oldPricing = await getTierPricing();
+    await updateTierPricing(pricing, session.email || "unknown");
+    await createAdminAuditLogEntry({
+      action: "price_change",
+      detail:
+        `Basic ₹${oldPricing.basicPriceInr.toLocaleString("en-IN")}→₹${pricing.basicPriceInr.toLocaleString("en-IN")}, ` +
+        `Standard ₹${oldPricing.standardPriceInr.toLocaleString("en-IN")}→₹${pricing.standardPriceInr.toLocaleString("en-IN")}, ` +
+        `Pro ₹${oldPricing.proPriceInr.toLocaleString("en-IN")}→₹${pricing.proPriceInr.toLocaleString("en-IN")}, ` +
+        `Enterprise ₹${oldPricing.enterpriseMinPriceInr.toLocaleString("en-IN")}–₹${oldPricing.enterpriseMaxPriceInr.toLocaleString("en-IN")}` +
+        `→₹${pricing.enterpriseMinPriceInr.toLocaleString("en-IN")}–₹${pricing.enterpriseMaxPriceInr.toLocaleString("en-IN")}`,
+      performedBy: session.email || "unknown",
+    });
+    revalidateTag(PLATFORM_SETTINGS_CACHE_TAG);
+    revalidatePath("/admin/pricing");
+    revalidatePath("/");
+    return {};
+  } catch (err) {
+    console.error("Failed to update tier pricing:", err);
+    return { error: "Couldn't save tier pricing. Please try again." };
   }
 }
 

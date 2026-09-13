@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowRight, Check } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
+import { getTierPricing, type TierPricing } from "@/lib/db/platformSettings";
 import SiteHeader from "@/components/marketing/SiteHeader";
 
 // The five-tier ladder — see lib/entitlements.ts for the actual gating
@@ -26,85 +27,93 @@ interface PricingTier {
   badge?: string;
 }
 
-const PRICING_TIERS: PricingTier[] = [
-  {
-    name: "Free",
-    price: "₹0",
-    tagline: "Get a real clinic running, no card required.",
-    features: [
-      "Scheduling & appointments",
-      "Patient records & visit logging",
-      "Receipts & billing",
-      "E-signature consent forms",
-      "Up to 500 patients",
-      "2 staff logins",
-    ],
-    cta: "Start free",
-    href: "/signup",
-  },
-  {
-    name: "Basic",
-    price: "₹15,000",
-    cadence: "/year",
-    tagline: "For a clinic ready to run on more than the basics.",
-    features: [
-      "Everything in Free",
-      "Analytics dashboard",
-      "Inventory management",
-      "WhatsApp, connect and send",
-      "Before/after photo galleries",
-      "Custom treatment types",
-      "Unlimited patients",
-    ],
-    cta: "Start free trial",
-    href: "/signup",
-  },
-  {
-    name: "Standard",
-    price: "₹25,000",
-    cadence: "/year",
-    tagline: "Remove the staff ceiling and get organized.",
-    features: [
-      "Everything in Basic",
-      "No-show & follow-up tracking",
-      "Custom package types",
-      "Unlimited staff",
-    ],
-    cta: "Start free trial",
-    href: "/signup",
-  },
-  {
-    name: "Pro",
-    price: "₹30,000",
-    cadence: "/year",
-    tagline: "Put your reminders and follow-ups on autopilot.",
-    features: [
-      "Everything in Standard",
-      "Two-way WhatsApp Inbox",
-      "Automated reminders & feedback surveys",
-      "Priority support",
-      "White-glove setup & data migration",
-    ],
-    cta: "Start free trial",
-    href: "/signup",
-    highlight: true,
-    badge: "Most popular",
-  },
-  {
-    name: "Enterprise",
-    price: "From ₹50,000",
-    cadence: "/year",
-    tagline: "For chains with 2 to 10 locations, one bill.",
-    features: [
-      "Everything in Pro",
-      "2–10 clinic locations",
-      "Per-center price drops as you add locations",
-      "Dedicated support",
-    ],
-    cta: "Talk to us",
-    href: "/contact",
-  },
-];
+// Basic/Standard/Pro/Enterprise's prices come from the admin-editable
+// platform settings (see app/admin/pricing) rather than being hardcoded
+// here, so a super admin can actually change what this page advertises.
+// Free is always ₹0, that one's fixed.
+function buildPricingTiers(pricing: TierPricing): PricingTier[] {
+  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+  return [
+    {
+      name: "Free",
+      price: "₹0",
+      tagline: "Get a real clinic running, no card required.",
+      features: [
+        "Scheduling & appointments",
+        "Patient records & visit logging",
+        "Receipts & billing",
+        "E-signature consent forms",
+        "Up to 500 patients",
+        "2 staff logins",
+      ],
+      cta: "Start free",
+      href: "/signup",
+    },
+    {
+      name: "Basic",
+      price: inr(pricing.basicPriceInr),
+      cadence: "/year",
+      tagline: "For a clinic ready to run on more than the basics.",
+      features: [
+        "Everything in Free",
+        "Analytics dashboard",
+        "Inventory management",
+        "WhatsApp, connect and send",
+        "Before/after photo galleries",
+        "Custom treatment types",
+        "Unlimited patients",
+      ],
+      cta: "Start free trial",
+      href: "/signup",
+    },
+    {
+      name: "Standard",
+      price: inr(pricing.standardPriceInr),
+      cadence: "/year",
+      tagline: "Remove the staff ceiling and get organized.",
+      features: [
+        "Everything in Basic",
+        "No-show & follow-up tracking",
+        "Custom package types",
+        "Unlimited staff",
+      ],
+      cta: "Start free trial",
+      href: "/signup",
+    },
+    {
+      name: "Pro",
+      price: inr(pricing.proPriceInr),
+      cadence: "/year",
+      tagline: "Put your reminders and follow-ups on autopilot.",
+      features: [
+        "Everything in Standard",
+        "Two-way WhatsApp Inbox",
+        "Automated reminders & feedback surveys",
+        "Priority support",
+        "White-glove setup & data migration",
+      ],
+      cta: "Start free trial",
+      href: "/signup",
+      highlight: true,
+      badge: "Most popular",
+    },
+    {
+      name: "Enterprise",
+      price: `From ${inr(pricing.enterpriseMinPriceInr)}`,
+      cadence: "/year",
+      tagline: "For chains with 2 to 10 locations, one bill.",
+      features: [
+        "Everything in Pro",
+        "2–10 clinic locations",
+        "Per-center price drops as you add locations",
+        "Dedicated support",
+      ],
+      cta: "Talk to us",
+      href: "/contact",
+    },
+  ];
+}
 
 // Written after an actual line-by-line compliance review (see
 // docs/incident-response-runbook.md and the AuditLog/erasure work it
@@ -153,6 +162,7 @@ export default async function HomePage() {
 
   const trialMonths = Math.round(TRIAL_LENGTH_DAYS / 30);
   const trialLengthLabel = `${trialMonths} month${trialMonths === 1 ? "" : "s"}`;
+  const pricingTiers = buildPricingTiers(await getTierPricing());
 
   return (
     <div className="bg-canvas">
@@ -378,7 +388,7 @@ export default async function HomePage() {
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-          {PRICING_TIERS.map((tier) => (
+          {pricingTiers.map((tier) => (
             <div
               key={tier.name}
               className={
