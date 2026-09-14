@@ -14,7 +14,7 @@ import {
 } from "@/lib/razorpay";
 import { createPendingPayment, confirmPayment, recordSubscriptionCharge } from "@/lib/db/payments";
 import { clinicCacheTag, getClinic, getClinicAutoRenewInfo, updateClinicAutoRenew } from "@/lib/db/clinics";
-import { getAnnualPriceInr, getTierPricing } from "@/lib/db/platformSettings";
+import { getTierPricing } from "@/lib/db/platformSettings";
 import { PURCHASABLE_TIERS, ENTERPRISE_MIN_CENTERS, ENTERPRISE_MAX_CENTERS, getPurchaseTierPriceInr, type PurchasableTier } from "@/lib/pricing";
 import type { Session } from "@/types";
 

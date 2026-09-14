@@ -1,19 +1,44 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Tag } from "lucide-react";
 import { updateTierPricingAction } from "@/app/admin/actions";
-import type { TierPricing } from "@/lib/db/platformSettings";
+import { computeEnterprisePriceInr, ENTERPRISE_MIN_CENTERS, ENTERPRISE_MAX_CENTERS } from "@/lib/pricing";
+import type { PlatformSettingsInfo } from "@/lib/db/platformSettings";
 
-export default function TierPricingForm({ initialPricing }: { initialPricing: TierPricing }) {
-  const [basic, setBasic] = useState(String(initialPricing.basicPriceInr));
-  const [standard, setStandard] = useState(String(initialPricing.standardPriceInr));
-  const [pro, setPro] = useState(String(initialPricing.proPriceInr));
-  const [enterpriseMin, setEnterpriseMin] = useState(String(initialPricing.enterpriseMinPriceInr));
-  const [enterpriseMax, setEnterpriseMax] = useState(String(initialPricing.enterpriseMaxPriceInr));
+function formatUpdatedAt(ms: number): string {
+  return new Date(ms).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+// A representative middle point, not just the two endpoints already
+// spelled out in the min/max inputs — makes the volume-discount curve
+// tangible before saving, rather than something you'd have to do the
+// interpolation math on yourself to sanity-check.
+const PREVIEW_CENTERS = 6;
+
+export default function TierPricingForm({ initialSettings }: { initialSettings: PlatformSettingsInfo }) {
+  const [settings, setSettings] = useState(initialSettings);
+  const [basic, setBasic] = useState(String(initialSettings.basicPriceInr));
+  const [standard, setStandard] = useState(String(initialSettings.standardPriceInr));
+  const [pro, setPro] = useState(String(initialSettings.proPriceInr));
+  const [enterpriseMin, setEnterpriseMin] = useState(String(initialSettings.enterpriseMinPriceInr));
+  const [enterpriseMax, setEnterpriseMax] = useState(String(initialSettings.enterpriseMaxPriceInr));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const previewPriceInr = useMemo(() => {
+    const min = Number(enterpriseMin);
+    const max = Number(enterpriseMax);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min <= 0 || max <= 0) return null;
+    return computeEnterprisePriceInr(PREVIEW_CENTERS, min, max);
+  }, [enterpriseMin, enterpriseMax]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -21,7 +46,7 @@ export default function TierPricingForm({ initialPricing }: { initialPricing: Ti
     setError(null);
     setSaved(false);
 
-    const pricing: TierPricing = {
+    const pricing = {
       basicPriceInr: Number(basic),
       standardPriceInr: Number(standard),
       proPriceInr: Number(pro),
@@ -35,20 +60,27 @@ export default function TierPricingForm({ initialPricing }: { initialPricing: Ti
       setError(result.error);
       return;
     }
+    setSettings({ ...settings, ...pricing, updatedAt: Date.now() });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
 
   return (
-    <div className="mt-6 max-w-2xl rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="h-fit rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
       <div className="flex items-center gap-2">
         <Tag size={16} className="text-gold-600" />
         <h2 className="font-display text-base font-medium text-brown-900">Tier Pricing</h2>
       </div>
       <p className="mt-1.5 text-sm text-brown-600">
-        What the pricing section on the landing page advertises for each paid tier. Free is
-        always ₹0 and isn't shown here.
+        What the pricing section on the landing page advertises, and what real checkout now
+        actually charges. Free is always ₹0 and isn't shown here.
       </p>
+      {settings.updatedAt && (
+        <p className="mt-0.5 text-xs text-brown-400">
+          Last changed {formatUpdatedAt(settings.updatedAt)}
+          {settings.updatedByEmail ? ` by ${settings.updatedByEmail}` : ""}.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -89,7 +121,7 @@ export default function TierPricingForm({ initialPricing }: { initialPricing: Ti
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-brown-700">
-            Enterprise (₹/year, 2 centers → 10 centers)
+            Enterprise (₹/year, {ENTERPRISE_MIN_CENTERS} centers → {ENTERPRISE_MAX_CENTERS} centers)
           </label>
           <div className="flex items-center gap-3">
             <input
@@ -110,6 +142,12 @@ export default function TierPricingForm({ initialPricing }: { initialPricing: Ti
               className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
             />
           </div>
+          {previewPriceInr !== null && (
+            <p className="mt-1.5 text-xs text-brown-400">
+              At {PREVIEW_CENTERS} centers, that's ₹{previewPriceInr.toLocaleString("en-IN")}/year — the
+              curve between your two numbers above, not a straight split.
+            </p>
+          )}
         </div>
 
         <button

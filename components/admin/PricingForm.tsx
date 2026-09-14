@@ -42,14 +42,15 @@ export default function PricingForm({ initialSettings }: { initialSettings: Plat
   }
 
   return (
-    <div className="max-w-md rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="h-fit rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
       <div className="flex items-center gap-2">
         <IndianRupee size={16} className="text-gold-600" />
-        <h2 className="font-display text-base font-medium text-brown-900">Checkout Price</h2>
+        <h2 className="font-display text-base font-medium text-brown-900">Manual Activation Price</h2>
       </div>
       <p className="mt-1.5 text-sm text-brown-600">
-        Currently ₹{settings.annualPriceInr.toLocaleString("en-IN")}/year. What signup, dashboard billing, and
-        Razorpay actually charge, regardless of which tier a clinic is on.
+        Currently ₹{settings.annualPriceInr.toLocaleString("en-IN")}/year. Real checkout now charges each
+        clinic's actual tier price (see Tier Pricing) — this flat number only drives the &quot;Activate
+        (1yr)&quot; button on the Clinics page, for a clinic that paid outside the app.
       </p>
       {settings.updatedAt && (
         <p className="mt-0.5 text-xs text-brown-400">
