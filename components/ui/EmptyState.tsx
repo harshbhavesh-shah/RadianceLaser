@@ -23,17 +23,17 @@ export default function EmptyState({
 }) {
   return (
     <div
-      className={`flex flex-col items-center rounded-xl bg-surface text-center shadow-soft ring-1 ring-beige-300 ${
+      className={`flex flex-col items-center rounded-2xl border border-beige-300 bg-surface text-center shadow-soft ${
         compact ? "p-6" : "p-10"
       }`}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-100">
-        <Icon className="text-gold-600" size={20} />
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-rust-100">
+        <Icon className="text-rust-700" size={20} />
       </div>
       <p className="mt-3 text-sm font-medium text-brown-700">{title}</p>
       {description && <p className="mt-1 max-w-sm text-sm text-brown-400">{description}</p>}
       {action && (
-        <Link href={action.href} className="mt-3 text-sm font-medium text-gold-600 hover:underline">
+        <Link href={action.href} className="mt-3 text-sm font-semibold text-rust-700 hover:underline">
           {action.label}
         </Link>
       )}

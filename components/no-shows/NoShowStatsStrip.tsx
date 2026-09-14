@@ -6,7 +6,7 @@ export default function NoShowStatsStrip({ stats, trend }: { stats: NoShowStats;
   const maxCount = Math.max(...trend.map((w) => w.count), 1);
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         <div>
           <div className="font-display text-3xl font-medium text-brown-900">{stats.thisWeek}</div>
@@ -30,7 +30,7 @@ export default function NoShowStatsStrip({ stats, trend }: { stats: NoShowStats;
           {trend.map((w, i) => (
             <div key={w.weekLabel} title={`Week of ${w.weekLabel}: ${w.count}`} className="group relative min-w-0 flex-1">
               <div
-                className="animate-grow-y w-full rounded-t-sm bg-gold-500 transition-colors group-hover:bg-gold-600"
+                className="animate-grow-y w-full rounded-t-sm bg-rust-600 transition-colors group-hover:bg-rust-700"
                 style={{
                   height: `${Math.max((w.count / maxCount) * 100, w.count > 0 ? 4 : 1)}px`,
                   animationDelay: `${i * 20}ms`,

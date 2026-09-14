@@ -81,13 +81,13 @@ export default function InboxClient({ initialConversations }: { initialConversat
             key={c.id}
             onClick={() => handleSelect(c)}
             className={`flex w-full flex-col gap-0.5 border-b border-beige-300 px-4 py-3 text-left transition-colors last:border-0 ${
-              selected?.id === c.id ? "bg-gold-100/50" : "hover:bg-beige-100/60"
+              selected?.id === c.id ? "bg-rust-100/50" : "hover:bg-beige-100/60"
             }`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="truncate text-sm font-medium text-brown-900">{c.patientName || c.phoneNumber}</span>
               {c.unreadCount > 0 && (
-                <span className="flex-shrink-0 rounded-full bg-gold-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                <span className="flex-shrink-0 rounded-full bg-rust-700 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                   {c.unreadCount}
                 </span>
               )}
@@ -112,7 +112,7 @@ export default function InboxClient({ initialConversations }: { initialConversat
               {selected.patientId && (
                 <Link
                   href={`/dashboard/patients/${selected.patientId}`}
-                  className="flex-shrink-0 text-xs font-medium text-gold-600 hover:underline"
+                  className="flex-shrink-0 text-xs font-medium text-rust-700 hover:underline"
                 >
                   View patient
                 </Link>
@@ -127,7 +127,7 @@ export default function InboxClient({ initialConversations }: { initialConversat
                   <div key={m.id} className={`flex ${m.direction === "outbound" ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-[75%] rounded-xl px-3.5 py-2 text-sm ${
-                        m.direction === "outbound" ? "bg-brown-900 text-beige-100" : "bg-beige-200 text-brown-900"
+                        m.direction === "outbound" ? "bg-rust-600 text-white" : "bg-beige-200 text-brown-900"
                       }`}
                     >
                       <p>{m.body}</p>
@@ -154,12 +154,12 @@ export default function InboxClient({ initialConversations }: { initialConversat
                   }}
                   placeholder="Type a reply…"
                   rows={1}
-                  className="flex-1 resize-none rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="flex-1 resize-none rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
                 <button
                   onClick={handleSend}
                   disabled={sending || !replyText.trim()}
-                  className="flex-shrink-0 rounded-md bg-brown-900 p-2.5 text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+                  className="flex-shrink-0 rounded-md bg-rust-600 p-2.5 text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
                   aria-label="Send reply"
                 >
                   <Send size={16} />

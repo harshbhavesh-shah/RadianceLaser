@@ -83,7 +83,7 @@ export default function FollowUpFormModal({
         <p className="mt-1 text-sm text-brown-400">
           Sent automatically over WhatsApp once a patient is marked (or auto-detected as) no show.
         </p>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         {templates.length === 0 ? (
           <p className="rounded-md border border-dashed border-beige-300 px-3 py-4 text-center text-sm text-brown-400">
@@ -98,7 +98,7 @@ export default function FollowUpFormModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Ask why they missed it"
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
 
@@ -107,7 +107,7 @@ export default function FollowUpFormModal({
               <select
                 value={kind}
                 onChange={(e) => setKind(e.target.value as NoShowFollowUpKind)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 {KIND_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -125,7 +125,7 @@ export default function FollowUpFormModal({
               <select
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -146,7 +146,7 @@ export default function FollowUpFormModal({
                   value={offerText}
                   onChange={(e) => setOfferText(e.target.value)}
                   placeholder={kind === "incentive" ? "e.g. 15% off your next visit" : ""}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
               </div>
             )}
@@ -156,7 +156,7 @@ export default function FollowUpFormModal({
               <select
                 value={delayHours}
                 onChange={(e) => setDelayHours(Number(e.target.value))}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 {DELAY_OPTIONS.map((h) => (
                   <option key={h} value={h}>
@@ -172,7 +172,7 @@ export default function FollowUpFormModal({
                 type="checkbox"
                 checked={enabled}
                 onChange={(e) => setEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-beige-400 text-gold-600 focus:ring-gold-500"
+                className="h-4 w-4 rounded border-beige-400 text-rust-700 focus:ring-rust-600"
               />
               <span className="text-sm text-brown-800">Active</span>
             </label>
@@ -192,7 +192,7 @@ export default function FollowUpFormModal({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+              className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
             >
               {saving ? "Saving…" : isEditing ? "Save Changes" : "Create Follow-Up"}
             </button>

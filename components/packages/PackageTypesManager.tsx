@@ -49,7 +49,7 @@ export default function PackageTypesManager({
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="space-y-6">
         {Object.entries(sessionTypeConfig).map(([key, config]) => {
           const sessionType = key as SessionType;
@@ -66,7 +66,7 @@ export default function PackageTypesManager({
                 {canEdit && (
                   <button
                     onClick={() => setEditing({ sessionType, def: null })}
-                    className="text-xs font-medium text-gold-600 hover:underline"
+                    className="text-xs font-semibold text-rust-700 hover:underline"
                   >
                     + Add Package Type
                   </button>

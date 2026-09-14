@@ -5,7 +5,7 @@ function StarRow({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
-        <Star key={n} size={14} className={rating >= n ? "fill-gold-500 text-gold-500" : "text-beige-300"} />
+        <Star key={n} size={14} className={rating >= n ? "fill-rust-600 text-rust-600" : "text-beige-300"} />
       ))}
     </div>
   );
@@ -22,15 +22,15 @@ export default function FeedbackResultsSection({ feedback }: { feedback: VisitFe
       : null;
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Patient Feedback</h2>
           <p className="mt-0.5 text-xs text-brown-400">Responses to the post-visit survey, newest first.</p>
         </div>
         {average && (
-          <span className="flex items-center gap-1.5 rounded-full bg-gold-100 px-3 py-1 text-xs font-semibold text-gold-600">
-            <Star size={12} className="fill-gold-600" />
+          <span className="flex items-center gap-1.5 rounded-full bg-rust-100 px-3 py-1 text-xs font-semibold text-rust-700">
+            <Star size={12} className="fill-rust-700" />
             {average} average · {feedback.length} response{feedback.length === 1 ? "" : "s"}
           </span>
         )}

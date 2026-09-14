@@ -117,7 +117,7 @@ export default function ConsentTemplateFormModal({
           Write once, sign many times. Variables like {"{{patientName}}"} get filled in
           automatically for each patient when they sign.
         </p>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         {!isEditing && (
           <div className="mb-5">
@@ -128,7 +128,7 @@ export default function ConsentTemplateFormModal({
                   key={starter.title}
                   type="button"
                   onClick={() => applyStarter(starter)}
-                  className="rounded-md border border-beige-300 px-3 py-1.5 text-xs font-medium text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600"
+                  className="rounded-md border border-beige-300 px-3 py-1.5 text-xs font-medium text-brown-700 transition-colors hover:border-rust-600 hover:text-rust-700"
                 >
                   {starter.title}
                 </button>
@@ -150,7 +150,7 @@ export default function ConsentTemplateFormModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Laser Hair Removal Consent"
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
             <div>
@@ -160,7 +160,7 @@ export default function ConsentTemplateFormModal({
               <select
                 value={sessionType}
                 onChange={(e) => setSessionType(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 <option value="">General / Any treatment</option>
                 {Object.keys(SESSION_TYPE_CONFIG).map((type) => (
@@ -183,7 +183,7 @@ export default function ConsentTemplateFormModal({
                   type="button"
                   onClick={() => insertVariable(v.token)}
                   title={v.description}
-                  className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium text-brown-600 transition-colors hover:bg-gold-100 hover:text-gold-600"
+                  className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium text-brown-600 transition-colors hover:bg-rust-100 hover:text-rust-700"
                 >
                   + {v.label}
                 </button>
@@ -195,7 +195,7 @@ export default function ConsentTemplateFormModal({
               onChange={(e) => setBody(e.target.value)}
               rows={12}
               placeholder="Write the consent form text here. Click a variable above to insert it at the cursor."
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2.5 font-mono text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2.5 font-mono text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
         </div>
@@ -224,7 +224,7 @@ export default function ConsentTemplateFormModal({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+              className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
             >
               {saving ? "Saving…" : isEditing ? "Save Changes" : "Create Template"}
             </button>

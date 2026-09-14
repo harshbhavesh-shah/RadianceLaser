@@ -79,7 +79,7 @@ export default function AreaFormModal({
         <p className="mt-1 text-sm text-brown-400">
           For the {SESSION_TYPE_LABELS[sessionType] || sessionType} visit form&apos;s Area dropdown.
         </p>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         <div className="space-y-4">
           <div>
@@ -89,7 +89,7 @@ export default function AreaFormModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Full Face"
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
 
@@ -103,7 +103,7 @@ export default function AreaFormModal({
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
               placeholder="e.g. 20"
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
             <p className="mt-1.5 text-xs text-brown-400">
               Suggests a total session duration on the visit form when this area is picked, but staff
@@ -116,7 +116,7 @@ export default function AreaFormModal({
               type="checkbox"
               checked={gstApplicable}
               onChange={(e) => setGstApplicable(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-beige-400 text-gold-600 focus:ring-gold-500"
+              className="mt-0.5 h-4 w-4 rounded border-beige-400 text-rust-600 focus:ring-rust-600"
             />
             <span className="text-sm text-brown-800">
               <span className="font-medium">GST applicable</span>
@@ -141,7 +141,7 @@ export default function AreaFormModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+            className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
           >
             {saving ? "Saving…" : isEditing ? "Save Changes" : "Add Area"}
           </button>

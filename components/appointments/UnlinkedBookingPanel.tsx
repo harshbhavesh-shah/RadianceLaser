@@ -115,13 +115,13 @@ export default function UnlinkedBookingPanel({
             <button
               onClick={handleLink}
               disabled={linking}
-              className="w-full rounded-md bg-brown-900 py-1.5 text-xs font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+              className="w-full rounded-md bg-rust-600 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
             >
               {linking ? "Linking…" : "Create / Link Patient Record"}
             </button>
             <button
               onClick={onEditAppointment}
-              className="w-full rounded-md border border-gold-500 py-1.5 text-xs font-medium text-gold-600 transition-colors hover:bg-gold-100"
+              className="w-full rounded-md border border-rust-600 py-1.5 text-xs font-medium text-rust-700 transition-colors hover:bg-rust-100"
             >
               Edit This Appointment
             </button>

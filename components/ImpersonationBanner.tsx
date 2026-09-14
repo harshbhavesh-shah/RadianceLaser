@@ -11,7 +11,7 @@ export default function ImpersonationBanner({ clinicName }: { clinicName: string
         Viewing as <span className="font-semibold text-white">{clinicName}</span>. Changes made here are real.
       </span>
       <form action={stopImpersonationAction}>
-        <button type="submit" className="font-medium text-gold-400 underline hover:text-gold-300">
+        <button type="submit" className="font-medium text-rust-100 underline hover:text-white">
           Return to admin
         </button>
       </form>

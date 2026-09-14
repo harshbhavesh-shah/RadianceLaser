@@ -7,7 +7,7 @@ import type { Machine, MachineStatus } from "@/types";
 
 const STATUS_STYLES: Record<MachineStatus, string> = {
   active: "bg-green-50 text-green-700",
-  maintenance: "bg-gold-100 text-gold-600",
+  maintenance: "bg-rust-100 text-rust-700",
   retired: "bg-beige-300 text-brown-500",
 };
 
@@ -49,7 +49,7 @@ export default function MachinesSection({
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Treatment Machines</h2>
@@ -61,7 +61,7 @@ export default function MachinesSection({
         {canEdit && (
           <button
             onClick={openCreate}
-            className="flex-shrink-0 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="flex-shrink-0 rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
           >
             + Add Machine
           </button>
@@ -82,7 +82,7 @@ export default function MachinesSection({
                 key={machine.id}
                 onClick={() => canEdit && openEdit(machine)}
                 disabled={!canEdit}
-                className="flex w-full flex-wrap items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-gold-100/40 disabled:cursor-default"
+                className="flex w-full flex-wrap items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-rust-100/40 disabled:cursor-default"
               >
                 <div className="flex items-center gap-3">
                   <span

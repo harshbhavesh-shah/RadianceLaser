@@ -17,7 +17,7 @@ export default function DashboardLoading() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Skeleton className="h-5 w-36" />
-          <div className="mt-2 mb-3 h-[2px] w-8 bg-gold-500" />
+          <div className="mt-2 mb-3 h-[2px] w-8 bg-rust-600" />
           <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className={`px-5 py-4 ${i !== 3 ? "border-b border-beige-300" : ""}`}>
@@ -28,14 +28,14 @@ export default function DashboardLoading() {
         </div>
         <div>
           <Skeleton className="h-5 w-32" />
-          <div className="mt-2 mb-3 h-[2px] w-8 bg-gold-500" />
+          <div className="mt-2 mb-3 h-[2px] w-8 bg-rust-600" />
           <Skeleton className="h-32 w-full rounded-xl" />
         </div>
       </div>
 
       <div>
         <Skeleton className="h-5 w-44" />
-        <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
+        <div className="mt-2 mb-4 h-[2px] w-8 bg-rust-600" />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-20 w-full rounded-xl" />

@@ -38,9 +38,9 @@ function buildSteps(role: UserRole): TourStep[] {
       body: "Your full patient roster. Search by name, phone, or patient ID, and open any record to see their whole history.",
     },
     {
-      target: "nav-/dashboard/documents",
-      title: "Documents",
-      body: "Consent forms and receipts, generated and signed digitally, no printer required.",
+      target: "nav-/dashboard/packages",
+      title: "Patient Management",
+      body: "Package presets, treatment areas, consent forms, and receipts — generated and signed digitally, no printer required.",
     },
   ];
   if (role === "owner" || role === "doctor") {

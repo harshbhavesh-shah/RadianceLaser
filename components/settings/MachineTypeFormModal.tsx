@@ -8,7 +8,7 @@ import type { SessionColumnDef, SessionFieldType, SessionTypeDef } from "@/types
 
 const COLOR_PRESETS = [
   { name: "Brown", badgeClassName: "bg-brown-900 text-beige-200", chartColor: "#2C1D14" },
-  { name: "Gold", badgeClassName: "bg-gold-600 text-white", chartColor: "#A9812F" },
+  { name: "Gold", badgeClassName: "bg-rust-700 text-white", chartColor: "#A9812F" },
   { name: "Blue", badgeClassName: "bg-blue-700 text-white", chartColor: "#1D4ED8" },
   { name: "Green", badgeClassName: "bg-green-700 text-white", chartColor: "#15803D" },
   { name: "Purple", badgeClassName: "bg-purple-700 text-white", chartColor: "#7E22CE" },
@@ -193,7 +193,7 @@ export default function MachineTypeFormModal({
             ? "Changes apply everywhere this machine type shows up: the patient tab, visit form, and Analytics."
             : "For a whole new category of treatment, like a CO2 laser, not another unit of an existing type. It gets its own tab on every patient page and its own session fields below."}
         </p>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         <div className="space-y-4">
           <div>
@@ -205,7 +205,7 @@ export default function MachineTypeFormModal({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. CO2 Laser"
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
 
@@ -220,7 +220,7 @@ export default function MachineTypeFormModal({
                 onChange={(e) => setBadgeText(e.target.value)}
                 placeholder="e.g. CO2"
                 maxLength={6}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
             <div>
@@ -228,7 +228,7 @@ export default function MachineTypeFormModal({
               <select
                 value={colorIdx}
                 onChange={(e) => setColorIdx(Number(e.target.value))}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 {COLOR_PRESETS.map((p, i) => (
                   <option key={p.name} value={i}>
@@ -247,7 +247,7 @@ export default function MachineTypeFormModal({
               <button
                 type="button"
                 onClick={addColumn}
-                className="text-xs font-medium text-gold-600 hover:underline"
+                className="text-xs font-medium text-rust-700 hover:underline"
               >
                 + Add Field
               </button>
@@ -267,12 +267,12 @@ export default function MachineTypeFormModal({
                     value={col.label}
                     onChange={(e) => updateColumn(i, { label: e.target.value })}
                     placeholder="Field label, e.g. Wattage"
-                    className="min-w-0 flex-1 rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                    className="min-w-0 flex-1 rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                   />
                   <select
                     value={col.type}
                     onChange={(e) => updateColumn(i, { type: e.target.value as SessionFieldType })}
-                    className="flex-shrink-0 rounded-md border border-beige-300 bg-canvas px-2 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                    className="flex-shrink-0 rounded-md border border-beige-300 bg-canvas px-2 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                   >
                     {FIELD_TYPES.map((ft) => (
                       <option key={ft.value} value={ft.value}>
@@ -298,7 +298,7 @@ export default function MachineTypeFormModal({
                     value={col.optionsText}
                     onChange={(e) => updateColumn(i, { optionsText: e.target.value })}
                     placeholder={`Options for "${col.label || "this field"}", comma separated`}
-                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                   />
                 ) : null
               )}
@@ -318,7 +318,7 @@ export default function MachineTypeFormModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+            className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
           >
             {saving ? "Saving…" : isEditing ? "Save Changes" : "Create Machine Type"}
           </button>

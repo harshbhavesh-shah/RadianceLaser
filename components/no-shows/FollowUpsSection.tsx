@@ -22,7 +22,7 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: () => void;
       onClick={onChange}
       disabled={disabled}
       className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        on ? "bg-gold-600" : "bg-beige-300"
+        on ? "bg-rust-700" : "bg-beige-300"
       }`}
     >
       <span
@@ -96,7 +96,7 @@ export default function FollowUpsSection({
   const editingFollowUp = editing && editing !== "new" ? editing : null;
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">No Show Follow-Ups</h2>
@@ -109,7 +109,7 @@ export default function FollowUpsSection({
         {canEdit && (
           <button
             onClick={() => setEditing("new")}
-            className="flex-shrink-0 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="flex-shrink-0 rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
           >
             + New Follow-Up
           </button>

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         sendPushToClinic(message.clinicId, {
           title: "New WhatsApp message",
           body: message.body.length > 120 ? `${message.body.slice(0, 120)}…` : message.body,
-          data: { path: "/dashboard/inbox" },
+          data: { path: "/dashboard/communication?tab=inbox" },
         }).catch((err) => console.error("Failed to send push for inbound WhatsApp message:", err));
       }
     } catch (err) {

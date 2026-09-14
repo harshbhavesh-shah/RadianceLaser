@@ -76,7 +76,7 @@ export default function WhatsAppSection({
   const showForm = editing || !connection || connection.status !== "connected";
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">WhatsApp Messaging</h2>
@@ -97,7 +97,7 @@ export default function WhatsAppSection({
         <div className="mt-4 flex items-center gap-2">
           <button
             onClick={() => setEditing(true)}
-            className="rounded-md border border-beige-300 px-4 py-2 text-sm font-medium text-brown-700 transition-colors hover:border-gold-500"
+            className="rounded-md border border-beige-300 px-4 py-2 text-sm font-medium text-brown-700 transition-colors hover:border-rust-600"
           >
             Edit
           </button>
@@ -112,7 +112,7 @@ export default function WhatsAppSection({
       ) : (
         <form onSubmit={handleSubmit} className="mt-4 max-w-sm space-y-3">
           <div className="flex items-start gap-2 rounded-lg border border-beige-300 bg-canvas p-3">
-            <MessageCircle className="mt-0.5 flex-shrink-0 text-gold-600" size={16} />
+            <MessageCircle className="mt-0.5 flex-shrink-0 text-rust-700" size={16} />
             <p className="text-xs text-brown-600">
               From your own Meta Business Account: Phone Number ID and App Secret from the App Dashboard, and a
               permanent access token from Business Settings &gt; System Users. See{" "}
@@ -120,7 +120,7 @@ export default function WhatsAppSection({
                 href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-gold-600 hover:underline"
+                className="font-medium text-rust-700 hover:underline"
               >
                 Meta's Cloud API setup guide
               </a>
@@ -134,7 +134,7 @@ export default function WhatsAppSection({
               onChange={(e) => setPhoneNumberId(e.target.value)}
               placeholder="e.g. 109876543212345"
               required
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
           </div>
           <div>
@@ -145,7 +145,7 @@ export default function WhatsAppSection({
               type="password"
               placeholder={connection ? "Enter to change" : "Permanent System User token"}
               required={!connection}
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
           </div>
           <div>
@@ -156,7 +156,7 @@ export default function WhatsAppSection({
               type="password"
               placeholder={connection ? "Enter to change" : "From App Dashboard > Settings > Basic"}
               required={!connection}
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
             <p className="mt-1 text-xs text-brown-400">
               Used to verify inbound messages actually came from Meta. Never shared anywhere else.
@@ -170,7 +170,7 @@ export default function WhatsAppSection({
               value={wabaId}
               onChange={(e) => setWabaId(e.target.value)}
               placeholder="e.g. 987654321098765"
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
           </div>
           <div>
@@ -181,7 +181,7 @@ export default function WhatsAppSection({
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="e.g. +919876543210"
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
             <p className="mt-1 text-xs text-brown-400">Shown in the connection status above, for your reference only.</p>
           </div>
@@ -189,7 +189,7 @@ export default function WhatsAppSection({
             <button
               type="submit"
               disabled={busy}
-              className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+              className="rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
             >
               {busy ? "Saving…" : "Save"}
             </button>

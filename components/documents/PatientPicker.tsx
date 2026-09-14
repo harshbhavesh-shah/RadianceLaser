@@ -67,7 +67,7 @@ export default function PatientPicker({
               <button
                 key={p.id}
                 onClick={() => onSelect(p)}
-                className="flex w-full items-center justify-between gap-3 border-b border-beige-300 px-5 py-3 text-left last:border-0 hover:bg-gold-100/40"
+                className="flex w-full items-center justify-between gap-3 border-b border-beige-300 px-5 py-3 text-left last:border-0 hover:bg-rust-100/40"
               >
                 <div>
                   <div className="text-sm font-medium text-brown-900">{p.name}</div>

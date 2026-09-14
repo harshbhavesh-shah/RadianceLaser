@@ -102,7 +102,7 @@ export default function ConsentFormsPanel({
     <div className="space-y-6">
       <ConsentTemplatesSection clinicId={clinicId} initialTemplates={templates} canEdit={canManageTemplates} />
 
-      <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-medium text-brown-900">Signed Consent Forms</h2>
@@ -110,7 +110,7 @@ export default function ConsentFormsPanel({
           </div>
           <button
             onClick={() => setPickerOpen(true)}
-            className="flex-shrink-0 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="flex-shrink-0 rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
           >
             + New Consent Form
           </button>
@@ -148,7 +148,7 @@ export default function ConsentFormsPanel({
                 key={form.id}
                 onClick={() => setViewingForm(form)}
                 style={{ animationDelay: `${i * 30}ms` }}
-                className="animate-fade-up flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors hover:bg-gold-100/40"
+                className="animate-fade-up flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors hover:bg-rust-100/40"
               >
                 <div>
                   <div className="text-sm font-medium text-brown-900">

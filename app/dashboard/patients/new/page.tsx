@@ -11,12 +11,12 @@ export default function NewPatientPage() {
 
   return (
     <div className="max-w-2xl">
-      <Link href="/dashboard/patients" className="text-sm text-brown-600 hover:text-gold-600">
+      <Link href="/dashboard/patients" className="text-sm text-brown-600 hover:text-rust-700">
         ← Back to Patients
       </Link>
 
       <h1 className="mt-3 font-display text-2xl font-medium text-brown-900">New Patient</h1>
-      <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
+      <div className="mt-2 mb-8 h-[2px] w-8 bg-rust-600" />
 
       <form action={formAction} className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -50,7 +50,7 @@ export default function NewPatientPage() {
             name="contraindications"
             rows={3}
             placeholder="Pregnancy, isotretinoin use, photosensitizing medication, recent sun exposure, etc."
-            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
           />
         </div>
 
@@ -61,7 +61,7 @@ export default function NewPatientPage() {
               name="dataConsent"
               value="1"
               required
-              className="mt-0.5 h-4 w-4 rounded border-beige-400 text-gold-600 focus:ring-gold-500"
+              className="mt-0.5 h-4 w-4 rounded border-beige-400 text-rust-700 focus:ring-rust-600"
             />
             <span>
               I have informed the patient (or their guardian) what personal data we collect, why, and that they
@@ -73,7 +73,7 @@ export default function NewPatientPage() {
         {state.error && <p className="mt-4 text-sm text-red-700">{state.error}</p>}
 
         {state.duplicate && (
-          <div className="mt-4 rounded-md border border-gold-500/40 bg-gold-100/50 p-4 text-sm">
+          <div className="mt-4 rounded-md border border-rust-600/40 bg-rust-100/50 p-4 text-sm">
             <p className="text-brown-800">
               A patient named <span className="font-medium">{state.duplicate.name}</span> already has this
               phone number ({state.duplicate.phone}).
@@ -81,7 +81,7 @@ export default function NewPatientPage() {
             <div className="mt-2 flex flex-wrap items-center gap-4">
               <Link
                 href={`/dashboard/patients/${state.duplicate.id}`}
-                className="text-sm font-medium text-gold-600 hover:underline"
+                className="text-sm font-medium text-rust-700 hover:underline"
               >
                 View that patient instead →
               </Link>
@@ -111,7 +111,7 @@ function SubmitButton({ label = "Save Patient" }: { label?: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+      className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
     >
       {pending ? "Saving…" : label}
     </button>
@@ -135,7 +135,7 @@ function Field({
     <div>
       <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-brown-700">
         {label}
-        {required && <span className="text-gold-600"> *</span>}
+        {required && <span className="text-rust-700"> *</span>}
       </label>
       <input
         id={name}
@@ -143,7 +143,7 @@ function Field({
         type={type}
         required={required}
         min={min}
-        className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+        className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
       />
     </div>
   );
@@ -169,7 +169,7 @@ function SelectField({
         id={name}
         name={name}
         defaultValue=""
-        className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+        className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
       >
         <option value="">— Select —</option>
         {options.map((opt) => (

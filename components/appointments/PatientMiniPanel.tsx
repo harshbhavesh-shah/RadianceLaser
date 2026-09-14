@@ -40,7 +40,7 @@ export default function PatientMiniPanel({
   const linkedVisitId = visitIdByAppointmentId[appointment.id];
   const hasReceipt = !!receiptedAppointmentIds[appointment.id];
   const logVisitHref = `/dashboard/patients/${patient.id}?logVisit=1&sessionType=${encodeURIComponent(appointment.sessionType)}&appointmentId=${appointment.id}`;
-  const generateReceiptHref = `/dashboard/documents?tab=receipts&newReceiptForPatient=${patient.id}&visitId=${linkedVisitId}`;
+  const generateReceiptHref = `/dashboard/packages?tab=receipts&newReceiptForPatient=${patient.id}&visitId=${linkedVisitId}`;
 
   return (
     <aside className="flex h-full flex-col overflow-hidden rounded-xl bg-surface shadow-card ring-1 ring-beige-300">
@@ -71,7 +71,7 @@ export default function PatientMiniPanel({
 
         <Link
           href={`/dashboard/patients/${patient.id}`}
-          className="mt-3 block w-full rounded-md border border-beige-300 py-1.5 text-center text-xs font-medium text-gold-600 transition-colors hover:border-gold-500 hover:bg-gold-100"
+          className="mt-3 block w-full rounded-md border border-beige-300 py-1.5 text-center text-xs font-medium text-rust-700 transition-colors hover:border-rust-600 hover:bg-rust-100"
         >
           View Full Patient Record →
         </Link>
@@ -107,7 +107,7 @@ export default function PatientMiniPanel({
             {appointment.status === "booked" && !linkedVisitId && (
               <Link
                 href={logVisitHref}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-brown-900 py-1.5 text-xs font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-rust-600 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rust-700"
               >
                 <Stethoscope size={13} /> Log Visit
               </Link>
@@ -115,14 +115,14 @@ export default function PatientMiniPanel({
             {appointment.status === "booked" && linkedVisitId && !hasReceipt && (
               <Link
                 href={generateReceiptHref}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-brown-900 py-1.5 text-xs font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-rust-600 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rust-700"
               >
                 <ReceiptIcon size={13} /> Generate Receipt
               </Link>
             )}
             <button
               onClick={onEditAppointment}
-              className="w-full rounded-md border border-gold-500 py-1.5 text-xs font-medium text-gold-600 transition-colors hover:bg-gold-100"
+              className="w-full rounded-md border border-rust-600 py-1.5 text-xs font-medium text-rust-700 transition-colors hover:bg-rust-100"
             >
               Edit This Appointment
             </button>
@@ -142,7 +142,7 @@ export default function PatientMiniPanel({
                   <div key={pkg.id} className="rounded-lg border border-beige-300 p-2.5">
                     <div className="mb-1 truncate text-xs font-medium text-brown-900">{pkg.label}</div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-beige-200">
-                      <div className="h-full rounded-full bg-gold-500" style={{ width: `${usedPct}%` }} />
+                      <div className="h-full rounded-full bg-rust-600" style={{ width: `${usedPct}%` }} />
                     </div>
                     <div className="mt-1 text-[10px] text-brown-400">
                       {ledger.sessionsRemaining} sessions left · {formatCurrency(ledger.amountRemaining)}

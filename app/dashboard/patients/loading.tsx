@@ -6,7 +6,7 @@ export default function PatientsLoading() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <Skeleton className="h-7 w-28" />
-          <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+          <div className="mt-2 h-[2px] w-8 bg-rust-600" />
         </div>
         <Skeleton className="h-9 w-32 rounded-md" />
       </div>

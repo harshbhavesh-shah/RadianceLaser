@@ -47,7 +47,7 @@ function formatDateTime(ms: number): string {
  * every other account-level (not day-to-day clinical) section here. */
 export default function ActivityLogSection({ entries }: { entries: AuditLogEntry[] }) {
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <h2 className="font-display text-lg font-medium text-brown-900">Activity Log</h2>
       <p className="mt-1 text-sm text-brown-400">
         Who touched patient records, and when, for CERT-In / DPDP compliance requests.

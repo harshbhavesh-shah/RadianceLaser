@@ -33,7 +33,7 @@ export default function TwoFactorSection({
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <h2 className="font-display text-lg font-medium text-brown-900">Two-Factor Sign-In</h2>
       <p className="mt-1 text-sm text-brown-600">
         When turned on, signing in also requires a 6-digit code emailed to <strong>{email}</strong>,
@@ -44,12 +44,12 @@ export default function TwoFactorSection({
         onClick={handleToggle}
         disabled={saving}
         className={`mt-4 flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors disabled:cursor-default ${
-          enabled ? "border-gold-500 bg-gold-100/40" : "border-beige-300 enabled:hover:bg-beige-200/40"
+          enabled ? "border-rust-600 bg-rust-100/40" : "border-beige-300 enabled:hover:bg-beige-200/40"
         }`}
       >
         <span
           className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${
-            enabled ? "bg-gold-500" : "bg-beige-300"
+            enabled ? "bg-rust-600" : "bg-beige-300"
           }`}
         >
           <span

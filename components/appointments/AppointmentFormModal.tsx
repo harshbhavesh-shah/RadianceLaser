@@ -203,7 +203,7 @@ export default function AppointmentFormModal({
         <h2 className="font-display text-lg font-medium text-brown-900">
           {isEditing ? "Edit Appointment" : "New Appointment"}
         </h2>
-        <div className="mb-5 mt-1 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-1 h-[2px] w-8 bg-rust-600" />
 
         <div className="relative mb-4">
           <label className="mb-1.5 block text-sm font-medium text-brown-700">Patient</label>
@@ -221,7 +221,7 @@ export default function AppointmentFormModal({
             }}
             onFocus={() => setShowPatientResults(true)}
             placeholder="Search by name or phone…"
-            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
           />
           {showPatientResults && patientMatches.length > 0 && (
             <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-beige-300 bg-surface shadow-card">
@@ -230,7 +230,7 @@ export default function AppointmentFormModal({
                   key={p.id}
                   type="button"
                   onClick={() => selectPatient(p)}
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gold-100/50"
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-rust-100/50"
                 >
                   <span className="font-medium text-brown-900">{p.name}</span>
                   <span className="text-brown-400">{p.phone}</span>
@@ -254,7 +254,7 @@ export default function AppointmentFormModal({
                 <button
                   type="button"
                   onClick={() => setShowQuickAdd(true)}
-                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-gold-600 hover:underline"
+                  className="mt-2 flex items-center gap-1.5 text-sm font-medium text-rust-700 hover:underline"
                 >
                   <UserPlus size={14} />
                   Add &ldquo;{patientQuery}&rdquo; as a new patient
@@ -277,27 +277,27 @@ export default function AppointmentFormModal({
                     setQuickAddDuplicate(null);
                   }}
                   placeholder="Phone number"
-                  className="flex-1 rounded-md border border-beige-300 bg-surface px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500"
+                  className="flex-1 rounded-md border border-beige-300 bg-surface px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:ring-1 focus:ring-rust-600"
                 />
                 <button
                   type="button"
                   onClick={() => handleQuickAdd(false)}
                   disabled={quickAddSaving || !quickAddPhone.trim()}
-                  className="flex-shrink-0 rounded-md bg-brown-900 px-3 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+                  className="flex-shrink-0 rounded-md bg-rust-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
                 >
                   {quickAddSaving ? "Adding…" : "Add & Select"}
                 </button>
               </div>
               {quickAddError && <p className="mt-1.5 text-xs text-red-700">{quickAddError}</p>}
               {quickAddDuplicate && (
-                <div className="mt-1.5 rounded-md border border-gold-500/40 bg-gold-100/50 p-2 text-xs text-brown-800">
+                <div className="mt-1.5 rounded-md border border-rust-600/40 bg-rust-100/50 p-2 text-xs text-brown-800">
                   <p>
                     A patient with this phone already exists: {quickAddDuplicate.name} ({quickAddDuplicate.phone}).
                   </p>
                   <button
                     type="button"
                     onClick={() => selectPatient(quickAddDuplicate as Patient)}
-                    className="mt-1 font-medium text-gold-600 hover:underline"
+                    className="mt-1 font-medium text-rust-700 hover:underline"
                   >
                     Select {quickAddDuplicate.name} instead
                   </button>
@@ -307,7 +307,7 @@ export default function AppointmentFormModal({
           )}
 
           {selectedPatient && (
-            <p className="mt-1.5 text-xs text-gold-600">
+            <p className="mt-1.5 text-xs text-rust-700">
               Selected: {selectedPatient.name} · {selectedPatient.phone}
             </p>
           )}
@@ -319,7 +319,7 @@ export default function AppointmentFormModal({
             <select
               value={sessionType}
               onChange={(e) => setSessionType(e.target.value as SessionType)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             >
               {(Object.keys(SESSION_TYPE_CONFIG) as SessionType[]).map((type) => (
                 <option key={type} value={type}>
@@ -333,7 +333,7 @@ export default function AppointmentFormModal({
             <select
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(Number(e.target.value))}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             >
               {DURATION_OPTIONS.map((d) => (
                 <option key={d} value={d}>
@@ -352,7 +352,7 @@ export default function AppointmentFormModal({
               value={date}
               min={isEditing ? undefined : todayLocalStr()}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
           <div>
@@ -361,7 +361,7 @@ export default function AppointmentFormModal({
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
         </div>
@@ -372,7 +372,7 @@ export default function AppointmentFormModal({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as AppointmentStatus)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -391,14 +391,14 @@ export default function AppointmentFormModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+            className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
           />
         </div>
 
         {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
 
         {slotConflict && (
-          <div className="mt-3 rounded-md border border-gold-500/40 bg-gold-100/50 p-3 text-sm">
+          <div className="mt-3 rounded-md border border-rust-600/40 bg-rust-100/50 p-3 text-sm">
             <p className="text-brown-800">
               {slotConflict.patientName} is already booked at this exact date and time. If your clinic has more
               than one chair or machine free, this is fine to double-book.
@@ -407,7 +407,7 @@ export default function AppointmentFormModal({
               type="button"
               onClick={() => handleSave(true)}
               disabled={saving}
-              className="mt-2 rounded-md border border-gold-500 px-3 py-1.5 text-xs font-medium text-gold-600 transition-colors hover:bg-gold-100 disabled:opacity-60"
+              className="mt-2 rounded-md border border-rust-600 px-3 py-1.5 text-xs font-medium text-rust-700 transition-colors hover:bg-rust-100 disabled:opacity-60"
             >
               {saving ? "Booking…" : "Book Anyway"}
             </button>
@@ -439,7 +439,7 @@ export default function AppointmentFormModal({
               type="button"
               onClick={() => handleSave(false)}
               disabled={saving}
-              className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+              className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save"}
             </button>

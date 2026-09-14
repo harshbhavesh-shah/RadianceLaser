@@ -139,7 +139,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
           including sessions that treated more than one area, from a CSV or Excel file. Each patient must
           already exist in Patients.
         </p>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         {step === "type" && (
           <div>
@@ -156,8 +156,8 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                     key={key}
                     className={`flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors ${
                       sessionType === key
-                        ? "border-gold-500 bg-gold-100/40"
-                        : "border-beige-300 hover:border-gold-500"
+                        ? "border-rust-600 bg-rust-100/40"
+                        : "border-beige-300 hover:border-rust-600"
                     }`}
                   >
                     <input
@@ -165,7 +165,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                       name="sessionType"
                       checked={sessionType === key}
                       onChange={() => setSessionType(key)}
-                      className="accent-gold-600"
+                      className="accent-rust-600"
                     />
                     <span
                       className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${SESSION_TYPE_CONFIG[key].badgeClassName}`}
@@ -181,7 +181,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={() => setStep("pick")}
                 disabled={!sessionType}
-                className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-40"
+                className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-40"
               >
                 Continue
               </button>
@@ -191,7 +191,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
 
         {step === "pick" && (
           <div>
-            <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-beige-300 px-6 py-10 text-center transition-colors hover:border-gold-500">
+            <label className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-beige-300 px-6 py-10 text-center transition-colors hover:border-rust-600">
               <span className="text-sm font-medium text-brown-700">
                 Click to choose a .csv, .xlsx, or .xls file
               </span>
@@ -257,8 +257,8 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                     }}
                     className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
                       identifyBy === opt.value
-                        ? "border-gold-500 bg-gold-100/40 text-brown-900"
-                        : "border-beige-300 text-brown-600 hover:border-gold-500"
+                        ? "border-rust-600 bg-rust-100/40 text-brown-900"
+                        : "border-beige-300 text-brown-600 hover:border-rust-600"
                     }`}
                   >
                     {opt.label}
@@ -293,7 +293,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                     onChange={(e) =>
                       setBaseMapping((prev) => ({ ...prev, [field.key]: e.target.value || undefined }))
                     }
-                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                   >
                     <option value="">— Don&apos;t import —</option>
                     {parsed.headers.map((h) => (
@@ -362,7 +362,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                         <select
                           value={partMapping[col.key] || ""}
                           onChange={(e) => updatePartMapping(partIndex, col.key, e.target.value)}
-                          className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                          className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                         >
                           <option value="">— Don&apos;t import —</option>
                           {parsed.headers.map((h) => (
@@ -388,7 +388,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={() => setStep("preview")}
                 disabled={!requiredMapped}
-                className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-40"
+                className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-40"
               >
                 Preview Import
               </button>
@@ -399,7 +399,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
         {step === "preview" && (
           <div>
             <div className="mb-4 flex flex-wrap gap-3 text-sm">
-              <span className="rounded-full bg-gold-100 px-3 py-1 font-medium text-gold-600">
+              <span className="rounded-full bg-rust-100 px-3 py-1 font-medium text-rust-700">
                 {readyRows.length} ready to import
               </span>
               {skippedRows.length > 0 && (
@@ -474,8 +474,8 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                   onClick={() => setDuplicateAction("skip")}
                   className={`flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
                     duplicateAction === "skip"
-                      ? "border-gold-500 bg-gold-100/40 text-brown-900"
-                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                      ? "border-rust-600 bg-rust-100/40 text-brown-900"
+                      : "border-beige-300 text-brown-600 hover:border-rust-600"
                   }`}
                 >
                   <span className="font-medium">Skip</span>
@@ -486,8 +486,8 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
                   onClick={() => setDuplicateAction("replace")}
                   className={`flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${
                     duplicateAction === "replace"
-                      ? "border-gold-500 bg-gold-100/40 text-brown-900"
-                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                      ? "border-rust-600 bg-rust-100/40 text-brown-900"
+                      : "border-beige-300 text-brown-600 hover:border-rust-600"
                   }`}
                 >
                   <span className="font-medium">Replace</span>
@@ -506,7 +506,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={handleImport}
                 disabled={readyRows.length === 0}
-                className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-40"
+                className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-40"
               >
                 Import {readyRows.length} Visit{readyRows.length === 1 ? "" : "s"}
               </button>
@@ -516,7 +516,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
 
         {step === "importing" && (
           <div className="flex flex-col items-center justify-center gap-3 py-10">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-beige-300 border-t-gold-500" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-beige-300 border-t-rust-600" />
             <p className="text-sm text-brown-600">Importing session history…</p>
           </div>
         )}
@@ -542,7 +542,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
             <div className="mt-6 flex justify-end">
               <button
                 onClick={onClose}
-                className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+                className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
               >
                 Done
               </button>
@@ -566,7 +566,7 @@ function SummaryRow({ label, value, accent }: { label: string; value: number; ac
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-brown-600">{label}</span>
-      <span className={`font-display text-lg font-medium ${accent ? "text-gold-600" : "text-brown-900"}`}>
+      <span className={`font-display text-lg font-medium ${accent ? "text-rust-700" : "text-brown-900"}`}>
         {value}
       </span>
     </div>

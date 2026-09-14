@@ -16,7 +16,7 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: () => void;
       onClick={onChange}
       disabled={disabled}
       className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        on ? "bg-gold-600" : "bg-beige-300"
+        on ? "bg-rust-700" : "bg-beige-300"
       }`}
     >
       <span
@@ -99,7 +99,7 @@ export default function ScheduledMessagesSection({
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <h2 className="font-display text-lg font-medium text-brown-900">Automated Messages</h2>
       <p className="mt-0.5 text-xs text-brown-400">
         Sent automatically over WhatsApp, so no one has to remember to send these by hand.
@@ -121,7 +121,7 @@ export default function ScheduledMessagesSection({
                   <select
                     value={reminderHoursBefore}
                     onChange={(e) => handleReminderHours(Number(e.target.value))}
-                    className="rounded-md border border-beige-300 bg-canvas px-2 py-1 text-xs text-brown-900 outline-none focus:border-gold-500"
+                    className="rounded-md border border-beige-300 bg-canvas px-2 py-1 text-xs text-brown-900 outline-none focus:border-rust-600"
                   >
                     {REMINDER_HOUR_OPTIONS.map((h) => (
                       <option key={h} value={h}>
@@ -157,7 +157,7 @@ export default function ScheduledMessagesSection({
                   <select
                     value={feedbackSurveyDelayHours}
                     onChange={(e) => handleSurveyHours(Number(e.target.value))}
-                    className="rounded-md border border-beige-300 bg-canvas px-2 py-1 text-xs text-brown-900 outline-none focus:border-gold-500"
+                    className="rounded-md border border-beige-300 bg-canvas px-2 py-1 text-xs text-brown-900 outline-none focus:border-rust-600"
                   >
                     {SURVEY_HOUR_OPTIONS.map((h) => (
                       <option key={h} value={h}>
@@ -184,7 +184,7 @@ export default function ScheduledMessagesSection({
       )}
 
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-      {saved && <p className="mt-3 text-sm text-gold-600">Saved.</p>}
+      {saved && <p className="mt-3 text-sm text-rust-700">Saved.</p>}
     </div>
   );
 }

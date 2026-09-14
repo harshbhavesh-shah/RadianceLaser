@@ -49,14 +49,14 @@ export default function FollowUpList({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Link
                       href={`/dashboard/patients/${visit.patientId}`}
-                      className="text-sm font-medium text-brown-900 hover:text-gold-600"
+                      className="text-sm font-medium text-brown-900 hover:text-rust-700"
                     >
                       {patientName}
                     </Link>
                     {patientPhone && (
                       <a
                         href={`tel:${patientPhone}`}
-                        className="flex flex-shrink-0 items-center gap-1 text-xs font-medium text-gold-600 hover:underline"
+                        className="flex flex-shrink-0 items-center gap-1 text-xs font-medium text-rust-700 hover:underline"
                       >
                         <Phone size={12} /> {patientPhone}
                       </a>

@@ -117,7 +117,7 @@ export default function PhotoCompareSlider({
           value={percent}
           onChange={(e) => setPercent(Number(e.target.value))}
           aria-label="Reveal slider"
-          className="mt-4 w-full accent-gold-500"
+          className="mt-4 w-full accent-rust-600"
         />
       </div>
     </div>

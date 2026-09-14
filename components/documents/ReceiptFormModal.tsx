@@ -160,7 +160,7 @@ export default function ReceiptFormModal({
         <p className="mt-1 text-sm text-brown-400">
           Pick a session or package to auto-fill a line, or add a custom line for anything else.
         </p>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -170,7 +170,7 @@ export default function ReceiptFormModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
             <div>
@@ -182,7 +182,7 @@ export default function ReceiptFormModal({
                 value={consultingDoctor}
                 onChange={(e) => setConsultingDoctor(e.target.value)}
                 placeholder="e.g. Dr. Bhavesh Shah"
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
           </div>
@@ -196,7 +196,7 @@ export default function ReceiptFormModal({
                     key={v.id}
                     type="button"
                     onClick={() => addVisitLine(v)}
-                    className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium text-brown-600 transition-colors hover:bg-gold-100 hover:text-gold-600"
+                    className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium text-brown-600 transition-colors hover:bg-rust-100 hover:text-rust-700"
                   >
                     {SESSION_TYPE_CONFIG[v.sessionType]?.label || v.sessionType} · {v.date || "undated"} ·{" "}
                     {formatCurrency(Number(v.fields.fee) || 0)}
@@ -207,7 +207,7 @@ export default function ReceiptFormModal({
                     key={p.id}
                     type="button"
                     onClick={() => addPackageLine(p)}
-                    className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium text-brown-600 transition-colors hover:bg-gold-100 hover:text-gold-600"
+                    className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium text-brown-600 transition-colors hover:bg-rust-100 hover:text-rust-700"
                   >
                     {p.label} · {formatCurrency(p.totalAmount)}
                   </button>
@@ -222,7 +222,7 @@ export default function ReceiptFormModal({
               <button
                 type="button"
                 onClick={addCustomLine}
-                className="flex items-center gap-1 text-xs font-medium text-gold-600 hover:underline"
+                className="flex items-center gap-1 text-xs font-semibold text-rust-700 hover:underline"
               >
                 <Plus size={14} /> Add custom line
               </button>
@@ -247,21 +247,21 @@ export default function ReceiptFormModal({
                       value={it.description}
                       onChange={(e) => updateItem(i, { description: e.target.value })}
                       placeholder="Description"
-                      className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                      className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                     />
                     <input
                       type="number"
                       value={it.amount}
                       onChange={(e) => updateItem(i, { amount: Number(e.target.value) })}
                       placeholder="Price"
-                      className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                      className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                     />
                     <input
                       type="number"
                       value={it.discount || 0}
                       onChange={(e) => updateItem(i, { discount: Number(e.target.value) })}
                       placeholder="Discount"
-                      className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                      className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                     />
                     <button
                       type="button"
@@ -291,7 +291,7 @@ export default function ReceiptFormModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Paid by card"
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function ReceiptFormModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+            className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
           >
             {saving ? "Saving…" : "Generate Receipt"}
           </button>

@@ -99,7 +99,7 @@ export default function ReceiptViewModal({
           </div>
 
           <div className="mt-6 text-center">
-            <h2 className="inline-block border-y-2 border-gold-500 px-6 py-1.5 font-display text-xl font-medium text-brown-900">
+            <h2 className="inline-block border-y-2 border-rust-600 px-6 py-1.5 font-display text-xl font-medium text-brown-900">
               OPD Receipt
             </h2>
           </div>
@@ -135,7 +135,7 @@ export default function ReceiptViewModal({
           <div className="mt-5 overflow-hidden rounded-md border border-brown-900/20">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="bg-gold-100 text-xs uppercase tracking-wide text-brown-700">
+                <tr className="bg-rust-100 text-xs uppercase tracking-wide text-brown-700">
                   <th className="w-10 px-3 py-2 font-semibold">#</th>
                   <th className="px-3 py-2 font-semibold">Type</th>
                   <th className="px-3 py-2 text-right font-semibold">Price</th>
@@ -181,7 +181,7 @@ export default function ReceiptViewModal({
             <button
               onClick={() => handleSend("whatsapp")}
               disabled={sending !== null}
-              className="flex items-center gap-1.5 rounded-md border border-beige-300 px-3 py-1.5 text-sm font-medium text-brown-700 transition-colors hover:border-gold-500 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-md border border-beige-300 px-3 py-1.5 text-sm font-medium text-brown-700 transition-colors hover:border-rust-600 disabled:opacity-60"
             >
               <MessageCircle size={14} />
               {sending === "whatsapp" ? "Sending…" : "Send via WhatsApp"}
@@ -189,7 +189,7 @@ export default function ReceiptViewModal({
             <button
               onClick={() => handleSend("sms")}
               disabled={sending !== null}
-              className="flex items-center gap-1.5 rounded-md border border-beige-300 px-3 py-1.5 text-sm font-medium text-brown-700 transition-colors hover:border-gold-500 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-md border border-beige-300 px-3 py-1.5 text-sm font-medium text-brown-700 transition-colors hover:border-rust-600 disabled:opacity-60"
             >
               <Send size={14} />
               {sending === "sms" ? "Sending…" : "Send via SMS"}

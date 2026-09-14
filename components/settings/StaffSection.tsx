@@ -51,13 +51,13 @@ export default function StaffSection({
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-lg font-medium text-brown-900">Staff</h2>
         {isOwner && (
           <button
             onClick={() => setModalOpen(true)}
-            className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
           >
             + Add Staff
           </button>
@@ -89,7 +89,7 @@ export default function StaffSection({
                     value={member.role}
                     disabled={isBusy}
                     onChange={(e) => handleRoleChange(member.uid, e.target.value as UserRole)}
-                    className="rounded-md border border-beige-300 bg-canvas px-2 py-1 text-xs text-brown-900 outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500"
+                    className="rounded-md border border-beige-300 bg-canvas px-2 py-1 text-xs text-brown-900 outline-none focus:border-rust-600 focus:ring-1 focus:ring-rust-600"
                   >
                     {ROLE_OPTIONS.map((r) => (
                       <option key={r.value} value={r.value}>

@@ -83,7 +83,7 @@ export default function PackageFormModal({
           </span>
           <h2 className="font-display text-lg font-medium text-brown-900">New Package</h2>
         </div>
-        <div className="mb-5 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 h-[2px] w-8 bg-rust-600" />
 
         <div className="space-y-4">
           {packageTypeDefs.length > 0 && (
@@ -103,7 +103,7 @@ export default function PackageFormModal({
                     setTotalAmount(String(def.suggestedAmount));
                   }
                 }}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 <option value="">Custom</option>
                 {packageTypeDefs.map((def) => (
@@ -124,7 +124,7 @@ export default function PackageFormModal({
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
 
@@ -138,7 +138,7 @@ export default function PackageFormModal({
                 min={1}
                 value={totalSessions}
                 onChange={(e) => setTotalSessions(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
             <div>
@@ -151,7 +151,7 @@ export default function PackageFormModal({
                 value={totalAmount}
                 onChange={(e) => setTotalAmount(e.target.value)}
                 placeholder="e.g. 15000"
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
           </div>
@@ -172,7 +172,7 @@ export default function PackageFormModal({
                 type="date"
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
             <div>
@@ -183,7 +183,7 @@ export default function PackageFormModal({
                 type="date"
                 value={expiryDate}
                 onChange={(e) => setExpiryDate(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
           </div>
@@ -200,8 +200,8 @@ export default function PackageFormModal({
                   onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
                   className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
                     paymentMethod === method
-                      ? "border-gold-500 bg-gold-100 text-gold-600"
-                      : "border-beige-300 text-brown-600 hover:border-gold-500"
+                      ? "border-rust-600 bg-rust-100 text-rust-700"
+                      : "border-beige-300 text-brown-600 hover:border-rust-600"
                   }`}
                 >
                   {method}
@@ -225,7 +225,7 @@ export default function PackageFormModal({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+            className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
           >
             {saving ? "Saving…" : "Create Package"}
           </button>

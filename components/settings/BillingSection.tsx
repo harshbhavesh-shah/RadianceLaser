@@ -244,7 +244,7 @@ export default function BillingSection({
   const autoRenewNeedsAttention = razorpaySubscriptionStatus === "pending" || razorpaySubscriptionStatus === "halted";
 
   return (
-    <div id="billing" className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div id="billing" className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-lg font-medium text-brown-900">Billing</h2>
         <span className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium capitalize text-brown-600">
@@ -284,8 +284,8 @@ export default function BillingSection({
                 onClick={() => setSelectedTier(tier)}
                 className={`rounded-md border px-3 py-2 text-left text-xs font-semibold transition-colors ${
                   selectedTier === tier
-                    ? "border-gold-500 bg-gold-50 text-brown-900"
-                    : "border-beige-300 bg-surface text-brown-600 hover:border-gold-400"
+                    ? "border-rust-600 bg-rust-100 text-brown-900"
+                    : "border-beige-300 bg-surface text-brown-600 hover:border-rust-600"
                 }`}
               >
                 <div>{TIER_LABELS[tier]}</div>
@@ -310,7 +310,7 @@ export default function BillingSection({
                 max={ENTERPRISE_MAX_CENTERS}
                 value={enterpriseCenters}
                 onChange={(e) => setEnterpriseCenters(Number(e.target.value))}
-                className="w-16 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
+                className="w-16 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-rust-600"
               />
               <span className="text-xs text-brown-400">
                 {ENTERPRISE_MIN_CENTERS}–{ENTERPRISE_MAX_CENTERS} locations
@@ -322,7 +322,7 @@ export default function BillingSection({
             <button
               onClick={handleSubscribe}
               disabled={isProcessing}
-              className="flex items-center gap-2 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
             >
               <CreditCard size={16} />
               {isProcessing
@@ -372,7 +372,7 @@ export default function BillingSection({
               className={`flex-shrink-0 rounded-md px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
                 autoRenewEnabled
                   ? "border border-beige-300 text-brown-700 hover:bg-beige-100"
-                  : "bg-brown-900 text-beige-200 hover:bg-gold-600"
+                  : "bg-rust-600 text-white hover:bg-rust-700"
               }`}
             >
               {isAutoRenewProcessing ? "Working…" : autoRenewEnabled ? "Turn off" : "Turn on"}

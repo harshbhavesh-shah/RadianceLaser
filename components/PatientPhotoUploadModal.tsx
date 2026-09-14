@@ -117,7 +117,7 @@ export default function PatientPhotoUploadModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">Add Photos</h2>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         <div className="space-y-4">
           <div>
@@ -127,7 +127,7 @@ export default function PatientPhotoUploadModal({
               accept="image/*"
               multiple
               onChange={(e) => handleFilesChosen(e.target.files)}
-              className="block w-full text-sm text-brown-700 file:mr-3 file:rounded-md file:border-0 file:bg-brown-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-beige-200 hover:file:bg-gold-600"
+              className="block w-full text-sm text-brown-700 file:mr-3 file:rounded-md file:border-0 file:bg-brown-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-beige-200 hover:file:bg-rust-700"
             />
             {files.length > 0 && (
               <div className="mt-3 grid grid-cols-4 gap-2">
@@ -155,7 +155,7 @@ export default function PatientPhotoUploadModal({
             <select
               value={visitId}
               onChange={(e) => handleVisitChange(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             >
               <option value="">No specific session</option>
               {sortedVisits.map((v) => (
@@ -191,7 +191,7 @@ export default function PatientPhotoUploadModal({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. Front, Before"
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
 
@@ -200,7 +200,7 @@ export default function PatientPhotoUploadModal({
               type="checkbox"
               checked={sensitive}
               onChange={(e) => handleSensitiveChange(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-gold-600"
+              className="mt-0.5 h-4 w-4 accent-rust-600"
             />
             <span className="text-sm text-brown-700">
               Sensitive area
@@ -216,7 +216,7 @@ export default function PatientPhotoUploadModal({
           <div className="mt-4">
             <div className="h-1.5 overflow-hidden rounded-full bg-beige-200">
               <div
-                className="h-full rounded-full bg-gold-500 transition-all"
+                className="h-full rounded-full bg-rust-600 transition-all"
                 style={{ width: `${Math.round((progress / files.length) * 100)}%` }}
               />
             </div>
@@ -239,7 +239,7 @@ export default function PatientPhotoUploadModal({
           <button
             onClick={handleUpload}
             disabled={uploading || files.length === 0}
-            className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+            className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
           >
             {uploading ? "Uploading…" : `Upload ${files.length || ""}`.trim()}
           </button>

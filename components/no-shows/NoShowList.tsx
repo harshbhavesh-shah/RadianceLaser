@@ -40,7 +40,7 @@ export default function NoShowList({
   const surveyByAppointment = new Map(surveyResponses.map((s) => [s.appointmentId, s]));
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <h2 className="font-display text-lg font-medium text-brown-900">Recent No Shows</h2>
       <p className="mt-0.5 text-xs text-brown-400">Last 30 days, most recent first.</p>
 
@@ -60,7 +60,7 @@ export default function NoShowList({
                     {appt.patientId ? (
                       <Link
                         href={`/dashboard/patients/${appt.patientId}`}
-                        className="text-sm font-medium text-brown-900 hover:text-gold-600"
+                        className="text-sm font-medium text-brown-900 hover:text-rust-700"
                       >
                         {appt.patientName}
                       </Link>

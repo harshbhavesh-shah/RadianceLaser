@@ -9,11 +9,24 @@ import { getWhatsAppConnection } from "@/lib/db/whatsapp";
 import { computeNoShowStats, computeNoShowTrend } from "@/lib/analyticsPage";
 import { getClinic } from "@/lib/db/clinics";
 import { getClinicTier, getEntitlements } from "@/lib/entitlements";
-import NoShowStatsStrip from "@/components/no-shows/NoShowStatsStrip";
-import NoShowList from "@/components/no-shows/NoShowList";
-import FollowUpsSection from "@/components/no-shows/FollowUpsSection";
+import { getVisitsWithFollowUpBetween } from "@/lib/db/visits";
+import { getPatientsByIds } from "@/lib/db/patients";
+import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
+import { buildSessionTypeConfig } from "@/lib/sessionTypes";
+import { todayLocalStr, toDateStr, addDays, parseDateStr } from "@/lib/calendar";
+import PatientRetentionTabs from "@/components/patients-config/PatientRetentionTabs";
+import type { FollowUpRow } from "@/components/follow-ups/FollowUpList";
+import type { Visit } from "@/types";
 
-export default async function NoShowsPage() {
+function formatDayLabel(dateStr: string): string {
+  return parseDateStr(dateStr).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+}
+
+export default async function PatientRetentionPage({
+  searchParams,
+}: {
+  searchParams: { tab?: string };
+}) {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
 
@@ -23,50 +36,75 @@ export default async function NoShowsPage() {
   );
   if (!getEntitlements(tier).patientRetention) redirect("/dashboard");
 
-  const [allAppointments, recentNoShows, followUps, messageLog, surveyResponses, templates, connection] =
-    await Promise.all([
-      getClinicAppointments(session.clinicId),
-      getRecentNoShowAppointments(session.clinicId),
-      getClinicNoShowFollowUps(session.clinicId),
-      getClinicNoShowMessageLog(session.clinicId),
-      getClinicNoShowSurveyResponses(session.clinicId),
-      getClinicMessageTemplates(session.clinicId),
-      getWhatsAppConnection(session.clinicId),
-    ]);
+  const today = todayLocalStr();
+  const tomorrow = toDateStr(addDays(new Date(), 1));
+
+  const [
+    allAppointments,
+    recentNoShows,
+    noShowFollowUps,
+    messageLog,
+    surveyResponses,
+    templates,
+    connection,
+    followUpVisits,
+    sessionTypeDefs,
+  ] = await Promise.all([
+    getClinicAppointments(session.clinicId),
+    getRecentNoShowAppointments(session.clinicId),
+    getClinicNoShowFollowUps(session.clinicId),
+    getClinicNoShowMessageLog(session.clinicId),
+    getClinicNoShowSurveyResponses(session.clinicId),
+    getClinicMessageTemplates(session.clinicId),
+    getWhatsAppConnection(session.clinicId),
+    getVisitsWithFollowUpBetween(session.clinicId, today, tomorrow),
+    getClinicSessionTypeDefs(session.clinicId),
+  ]);
 
   const stats = computeNoShowStats(allAppointments);
   const trend = computeNoShowTrend(allAppointments);
   const isOwner = session.role === "owner";
-  const isConnected = connection?.status === "connected";
+  const isWhatsAppConnected = connection?.status === "connected";
+  const sessionTypeConfig = buildSessionTypeConfig(sessionTypeDefs);
+
+  const patientIds = [...new Set(followUpVisits.map((v) => v.patientId))];
+  const patients = await getPatientsByIds(patientIds);
+  const patientsById = new Map(patients.map((p) => [p.id, p]));
+
+  function rowsFor(dateStr: string): FollowUpRow[] {
+    return followUpVisits
+      .filter((v: Visit) => v.followUpDate === dateStr)
+      .map((visit) => ({
+        visit,
+        patientName: patientsById.get(visit.patientId)?.name || "Unknown patient",
+        patientPhone: patientsById.get(visit.patientId)?.phone || "",
+      }))
+      .sort((a, b) => a.patientName.localeCompare(b.patientName));
+  }
 
   return (
     <div className="max-w-6xl">
-      <h1 className="font-display text-2xl font-medium text-brown-900">No Shows</h1>
-      <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
+      <h1 className="mb-8 inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
+        Patient Retention
+      </h1>
 
-      <div className="space-y-6">
-        <NoShowStatsStrip stats={stats} trend={trend} />
-
-        {/* Main column is the actual list of who no-showed — the thing
-            worth scanning day to day. Configuring the follow-up rules is a
-            settings-shaped task by comparison, so it sits in a narrower
-            sidebar instead of stretching to match. */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
-          <NoShowList
-            appointments={recentNoShows}
-            followUps={followUps}
-            messageLog={messageLog}
-            surveyResponses={surveyResponses}
-          />
-
-          <FollowUpsSection
-            initialFollowUps={followUps}
-            templates={templates}
-            isConnected={isConnected}
-            canEdit={isOwner}
-          />
-        </div>
-      </div>
+      <PatientRetentionTabs
+        stats={stats}
+        trend={trend}
+        recentNoShows={recentNoShows}
+        noShowFollowUps={noShowFollowUps}
+        messageLog={messageLog}
+        surveyResponses={surveyResponses}
+        templates={templates}
+        isWhatsAppConnected={isWhatsAppConnected}
+        isOwner={isOwner}
+        todayLabel={formatDayLabel(today)}
+        tomorrowLabel={formatDayLabel(tomorrow)}
+        todayRows={rowsFor(today)}
+        tomorrowRows={rowsFor(tomorrow)}
+        sessionTypeConfig={sessionTypeConfig}
+        initialTab={searchParams.tab === "follow-ups" ? "follow-ups" : undefined}
+      />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export default function AreaDefsManager({ canEdit }: { canEdit: boolean }) {
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="space-y-6">
         {SESSION_TYPES.map(({ key, label }) => {
           const areas = areaDefs.filter((a) => a.sessionType === key);
@@ -51,7 +51,7 @@ export default function AreaDefsManager({ canEdit }: { canEdit: boolean }) {
                 {canEdit && (
                   <button
                     onClick={() => setEditing({ sessionType: key, area: null })}
-                    className="text-xs font-medium text-gold-600 hover:underline"
+                    className="text-xs font-semibold text-rust-700 hover:underline"
                   >
                     + Add Area
                   </button>

@@ -45,7 +45,7 @@ export default function AddStaffModal({
         {result ? (
           <>
             <h2 className="font-display text-lg font-medium text-brown-900">Staff Member Added</h2>
-            <div className="mb-5 mt-1 h-[2px] w-8 bg-gold-500" />
+            <div className="mb-5 mt-1 h-[2px] w-8 bg-rust-600" />
             <p className="text-sm text-brown-600">
               Share these sign-in details with <strong>{result.staff.name}</strong>. This
               password is shown only once, so make sure to copy it now. They can change it after
@@ -65,7 +65,7 @@ export default function AddStaffModal({
             </div>
             <button
               onClick={onClose}
-              className="mt-6 w-full rounded-md bg-brown-900 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+              className="mt-6 w-full rounded-md bg-rust-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
             >
               Done
             </button>
@@ -73,7 +73,7 @@ export default function AddStaffModal({
         ) : (
           <>
             <h2 className="font-display text-lg font-medium text-brown-900">Add Staff Member</h2>
-            <div className="mb-5 mt-1 h-[2px] w-8 bg-gold-500" />
+            <div className="mb-5 mt-1 h-[2px] w-8 bg-rust-600" />
 
             <div className="space-y-4">
               <div>
@@ -82,7 +82,7 @@ export default function AddStaffModal({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
               </div>
               <div>
@@ -91,7 +91,7 @@ export default function AddStaffModal({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
               </div>
               <div>
@@ -99,7 +99,7 @@ export default function AddStaffModal({
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 >
                   {ROLE_OPTIONS.map((r) => (
                     <option key={r.value} value={r.value}>
@@ -122,7 +122,7 @@ export default function AddStaffModal({
               <button
                 onClick={handleSubmit}
                 disabled={saving}
-                className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+                className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
               >
                 {saving ? "Adding…" : "Add Staff Member"}
               </button>

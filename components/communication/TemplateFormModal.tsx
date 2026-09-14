@@ -79,7 +79,7 @@ export default function TemplateFormModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Must exactly match the name approved in Meta's Template Library"
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
           </div>
 
@@ -89,7 +89,7 @@ export default function TemplateFormModal({
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
               placeholder="e.g. en_US"
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
             <p className="mt-1 text-xs text-brown-400">
               The exact language code this template was approved under in Meta's Template Library. Sends fail if
@@ -102,7 +102,7 @@ export default function TemplateFormModal({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as MessageTemplateCategory)}
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             >
               {CATEGORY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -128,7 +128,7 @@ export default function TemplateFormModal({
                 <button
                   type="button"
                   onClick={addCustomVariable}
-                  className="text-xs font-medium text-gold-600 hover:underline"
+                  className="text-xs font-medium text-rust-700 hover:underline"
                 >
                   + Add variable
                 </button>
@@ -144,7 +144,7 @@ export default function TemplateFormModal({
                       value={label}
                       onChange={(e) => updateCustomVariable(i, e.target.value)}
                       placeholder={`What does {{${i + 1}}} mean?`}
-                      className="flex-1 rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+                      className="flex-1 rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
                     />
                     <button
                       type="button"
@@ -168,7 +168,7 @@ export default function TemplateFormModal({
               onChange={(e) => setBodyPreview(e.target.value)}
               rows={3}
               placeholder="e.g. Hi {{1}}, this is a reminder for your appointment on {{2}} at {{3}}."
-              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="mt-1 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
             <p className="mt-1 text-xs text-brown-400">
               Not sent anywhere. It's just a note so staff can recognize which template this is. The real wording lives
@@ -182,7 +182,7 @@ export default function TemplateFormModal({
             <button
               onClick={handleSubmit}
               disabled={saving || !name.trim()}
-              className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+              className="rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save Template"}
             </button>

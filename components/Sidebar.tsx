@@ -8,9 +8,7 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
-  Package,
   BarChart3,
-  FileText,
   MessageCircle,
   Settings,
   Menu,
@@ -18,21 +16,16 @@ import {
   PanelLeftClose,
   PanelLeft,
   ShieldCheck,
-  UserX,
   Boxes,
-  PhoneCall,
-  Inbox,
   UserCheck,
   Layers,
-  MapPin,
-  ChevronDown,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import { useSidebarCollapse } from "@/components/SidebarContext";
 import { tierAtLeast, type PlanTier } from "@/lib/entitlements";
 import type { Session, UserRole } from "@/types";
 
-interface LeafNavItem {
+interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
@@ -41,32 +34,20 @@ interface LeafNavItem {
   minTier?: PlanTier; // omit = visible on every tier
 }
 
-// A non-clickable header (label only, no href) whose children render
-// indented beneath it — "No Shows" and "Follow-Ups" are two distinct pages
-// (each keeps its own route, data, and tour target), just grouped under
-// one heading rather than two peer-level sidebar rows.
-interface GroupNavItem {
-  label: string;
-  icon: typeof LayoutDashboard;
-  children: LeafNavItem[];
-}
-
-type NavItem = LeafNavItem | GroupNavItem;
-
-function isGroup(item: NavItem): item is GroupNavItem {
-  return "children" in item;
-}
-
+// Every former group (Patient Retention, Patient Management, Communication)
+// is now a single page with its own internal tab bar — see
+// components/patients-config/PatientRetentionTabs.tsx,
+// components/patients-config/PatientManagementTabs.tsx, and
+// components/communication/CommunicationTabs.tsx — rather than a sidebar
+// group whose children were really just that page's own sections one level
+// too high. One flat list, no nesting, matching how Patients/Documents
+// were already structured before this.
 const NAV_ITEMS: NavItem[] = [
   // "Today" (not "Overview" / "Dashboard") on purpose — this is meant to be
   // the one page someone opens each morning and gets everything about their
   // day from, so the label should say what it's for, not just where it is.
   { label: "Today", href: "/dashboard", icon: LayoutDashboard },
   { label: "Schedule", href: "/dashboard/appointments", icon: Calendar },
-  // Standalone, not grouped — in practice almost nobody navigates here
-  // directly. A patient's own page is reached from Schedule (a booking or
-  // walk-in gets routed there via buttons), so it doesn't need to sit
-  // inside a group the way the genuinely page-hopping sections below do.
   { label: "Patients", href: "/dashboard/patients", icon: Users },
   {
     label: "Analytics",
@@ -75,53 +56,16 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["owner", "doctor"],
     minTier: "basic",
   },
-  {
-    label: "Patient Retention",
-    icon: UserCheck,
-    children: [
-      { label: "No Shows", href: "/dashboard/no-shows", icon: UserX, minTier: "standard" },
-      { label: "Follow-Ups", href: "/dashboard/follow-ups", icon: PhoneCall, minTier: "standard" },
-    ],
-  },
-  // Clinic-defined customization for how patients are handled — presets
-  // and records staff set up once and rarely revisit, unlike the daily
-  // per-patient flow above. Not "Clinic Resources" (that name didn't
-  // survive contact with Inventory, which is its own domain — physical
-  // stock, not a patient-management preset — so it stands alone below).
-  {
-    label: "Patient Management",
-    icon: Layers,
-    children: [
-      { label: "Packages", href: "/dashboard/packages", icon: Package },
-      { label: "Areas", href: "/dashboard/areas", icon: MapPin },
-      { label: "Documents", href: "/dashboard/documents", icon: FileText },
-    ],
-  },
+  // No Shows / Follow-Ups tabs live here now — see PatientRetentionTabs.
+  { label: "Patient Retention", href: "/dashboard/no-shows", icon: UserCheck, minTier: "standard" },
+  // Packages / Areas / Consent Forms / Receipts tabs live here now — see
+  // PatientManagementTabs.
+  { label: "Patient Management", href: "/dashboard/packages", icon: Layers },
   { label: "Inventory", href: "/dashboard/inventory", icon: Boxes, minTier: "basic" },
-  {
-    label: "Communication",
-    icon: MessageCircle,
-    children: [
-      // Labeled "WhatsApp" here (not "Communication", matching the page's
-      // own <h1>) — a group and its own child both saying "Communication"
-      // would read as a mistake, not a hierarchy. The page itself is
-      // WhatsApp connection + message templates + automation, so this is
-      // more specific anyway, not just a disambiguation hack.
-      { label: "WhatsApp", href: "/dashboard/communication", icon: MessageCircle, minTier: "basic" },
-      { label: "Inbox", href: "/dashboard/inbox", icon: Inbox, minTier: "pro" },
-    ],
-  },
+  // WhatsApp / Inbox tabs live here now — see CommunicationTabs.
+  { label: "Communication", href: "/dashboard/communication", icon: MessageCircle, minTier: "basic" },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
-
-// Which of the collapsible groups above the user has manually closed —
-// persisted so the choice survives a reload. Group open/closed is keyed by
-// label rather than index since NAV_ITEMS order is safe to change later
-// without silently reinterpreting someone's stored preference as a
-// different group. Starts empty (everything open) on both server and first
-// client render to match; the real value is read from localStorage in an
-// effect, same hydration-safe pattern as SidebarContext's collapsed state.
-const GROUP_STORAGE_KEY = "sidebar-collapsed-groups";
 
 function initialsOf(email: string | null): string {
   if (!email) return "?";
@@ -143,33 +87,13 @@ export default function Sidebar({
   const pathname = usePathname();
   const { collapsed, toggleUserPreference } = useSidebarCollapse();
   const [mobileOpen, setMobileOpen] = useState(false); // mobile off-canvas drawer
-  const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(GROUP_STORAGE_KEY);
-      if (stored) setClosedGroups(new Set(JSON.parse(stored)));
-    } catch {
-      // Malformed/inaccessible storage — just start with everything open.
-    }
-  }, []);
-
-  function toggleGroup(label: string) {
-    setClosedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify([...next]));
-      return next;
-    });
-  }
 
   // Close the mobile drawer automatically on navigation.
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  function renderLeaf(item: LeafNavItem, showLabels: boolean, iconSize = 18) {
+  function renderLeaf(item: NavItem, showLabels: boolean) {
     const Icon = item.icon;
     const isActive = pathname === item.href;
 
@@ -183,7 +107,7 @@ export default function Sidebar({
           }`}
         >
           <span className="flex items-center gap-3">
-            <Icon size={iconSize} className="flex-shrink-0" />
+            <Icon size={18} className="flex-shrink-0" />
             {showLabels && <span>{item.label}</span>}
           </span>
           {showLabels && (
@@ -215,76 +139,23 @@ export default function Sidebar({
             : "text-brown-600 hover:bg-beige-200 hover:text-brown-900"
         }`}
       >
-        <Icon size={iconSize} className={`flex-shrink-0 ${isActive ? "" : "opacity-70"}`} />
+        <Icon size={18} className={`flex-shrink-0 ${isActive ? "" : "opacity-70"}`} />
         {showLabels && <span>{item.label}</span>}
       </Link>
     );
   }
 
-  function leafVisible(item: LeafNavItem): boolean {
+  function leafVisible(item: NavItem): boolean {
     if (item.roles && !item.roles.includes(session.role)) return false;
     if (item.minTier && !tierAtLeast(tier, item.minTier)) return false;
     return true;
   }
 
   function NavLinks({ showLabels }: { showLabels: boolean }) {
-    // Two levels: a group's own children are filtered first (role AND
-    // tier), then the group itself is dropped entirely once nothing in it
-    // is left visible — e.g. "Patient Retention" disappears for a Free/
-    // Basic clinic, while "Communication" survives showing only "WhatsApp"
-    // for a Basic clinic (Inbox stays hidden until Pro).
-    const visibleItems = NAV_ITEMS.map((item) =>
-      isGroup(item) ? { ...item, children: item.children.filter(leafVisible) } : item
-    ).filter((item) => (isGroup(item) ? item.children.length > 0 : leafVisible(item)));
+    const visibleItems = NAV_ITEMS.filter(leafVisible);
     return (
       <nav className="flex-1 space-y-0.5 px-3">
-        {visibleItems.map((item) => {
-          if (isGroup(item)) {
-            // A group containing the active page always renders open,
-            // regardless of the stored preference — collapsing away the
-            // page you're actually on would be confusing, not tidy.
-            const containsActive = item.children.some((child) => child.href === pathname);
-            const open = containsActive || !closedGroups.has(item.label);
-            return (
-              <div key={item.label}>
-                {/* Collapsed (icon-rail) mode skips the header entirely —
-                    it has no href of its own, so there's nothing useful an
-                    icon-only row could do there; just the children's own
-                    icons show, same as before this was grouped. Since
-                    there's no header to click there, groups always render
-                    fully open in icon-rail mode. A plain uppercase label
-                    (no leading icon) rather than a full nav-row — this is
-                    a section heading, not a destination. */}
-                {showLabels && (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(item.label)}
-                    aria-expanded={open}
-                    className="flex w-full items-center gap-2 rounded-md px-3 pt-4 pb-1.5 text-left transition-colors"
-                  >
-                    <span className="flex-1 text-[10.5px] font-bold uppercase tracking-wide text-brown-400">
-                      {item.label}
-                    </span>
-                    <ChevronDown
-                      size={13}
-                      className={`flex-shrink-0 text-brown-400 transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
-                    />
-                  </button>
-                )}
-                <div
-                  className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${
-                    showLabels && !open ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
-                  }`}
-                >
-                  <div className={`overflow-hidden ${showLabels ? "space-y-0.5" : "space-y-0.5"}`}>
-                    {item.children.map((child) => renderLeaf(child, showLabels, 17))}
-                  </div>
-                </div>
-              </div>
-            );
-          }
-          return renderLeaf(item, showLabels);
-        })}
+        {visibleItems.map((item) => renderLeaf(item, showLabels))}
       </nav>
     );
   }
@@ -342,7 +213,7 @@ export default function Sidebar({
           onClick={() => setMobileOpen(false)}
         />
         <aside
-          className={`relative flex h-full w-72 flex-col bg-surface text-brown-900 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          className={`relative flex h-full w-72 flex-col overflow-y-auto bg-surface text-brown-900 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >

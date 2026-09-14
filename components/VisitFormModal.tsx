@@ -266,7 +266,7 @@ export default function VisitFormModal({
             {isEditing ? "Edit Visit" : "Log New Visit"}
           </h2>
         </div>
-        <div className="mb-4 h-[2px] w-8 flex-shrink-0 bg-gold-500" />
+        <div className="mb-4 h-[2px] w-8 flex-shrink-0 bg-rust-600" />
 
         <div className="flex-shrink-0 overflow-y-auto">
           <div className="mb-4">
@@ -276,12 +276,12 @@ export default function VisitFormModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
               <button
                 type="button"
                 onClick={() => setDate(todayLocalStr())}
-                className="flex-shrink-0 rounded-md border border-beige-300 px-3 py-2 text-sm font-medium text-brown-600 transition-colors hover:border-gold-500 hover:text-gold-600"
+                className="flex-shrink-0 rounded-md border border-beige-300 px-3 py-2 text-sm font-medium text-brown-600 transition-colors hover:border-rust-600 hover:text-rust-700"
               >
                 Today
               </button>
@@ -294,7 +294,7 @@ export default function VisitFormModal({
               <select
                 value={packageId}
                 onChange={(e) => handlePackageChange(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 <option value="">None, pay per visit</option>
                 {activePackages.map((pkg) => (
@@ -304,7 +304,7 @@ export default function VisitFormModal({
                 ))}
               </select>
               {selectedPackage && (
-                <p className="mt-1.5 text-xs text-gold-600">
+                <p className="mt-1.5 text-xs text-rust-700">
                   Covered by {selectedPackage.label}, no separate fee for this visit.
                 </p>
               )}
@@ -327,8 +327,8 @@ export default function VisitFormModal({
                     onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
                     className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
                       paymentMethod === method
-                        ? "border-gold-500 bg-gold-100 text-gold-600"
-                        : "border-beige-300 text-brown-600 hover:border-gold-500"
+                        ? "border-rust-600 bg-rust-100 text-rust-700"
+                        : "border-beige-300 text-brown-600 hover:border-rust-600"
                     }`}
                   >
                     {method}
@@ -346,14 +346,14 @@ export default function VisitFormModal({
               type="date"
               value={followUpDate}
               onChange={(e) => setFollowUpDate(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
             {followUpDate && (
               <input
                 value={followUpNote}
                 onChange={(e) => setFollowUpNote(e.target.value)}
                 placeholder="What's this follow-up about? e.g. Check for reaction"
-                className="mt-2 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="mt-2 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             )}
           </div>
@@ -366,7 +366,7 @@ export default function VisitFormModal({
                   <select
                     value={machineId}
                     onChange={(e) => setMachineId(e.target.value)}
-                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                   >
                     <option value="">— None —</option>
                     {machinesForType.map((m) => (
@@ -383,7 +383,7 @@ export default function VisitFormModal({
                   <select
                     value={performedByUid}
                     onChange={(e) => setPerformedByUid(e.target.value)}
-                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                   >
                     <option value="">— None —</option>
                     {staff.map((s) => (
@@ -404,7 +404,7 @@ export default function VisitFormModal({
                     setDurationMinutes(e.target.value);
                     setDurationTouched(true);
                   }}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
               </div>
             </div>
@@ -422,7 +422,7 @@ export default function VisitFormModal({
             <button
               type="button"
               onClick={addArea}
-              className="text-sm font-medium text-gold-600 hover:underline"
+              className="text-sm font-medium text-rust-700 hover:underline"
             >
               + Add Row
             </button>
@@ -457,7 +457,7 @@ export default function VisitFormModal({
                               <select
                                 value={entry[col.key] || ""}
                                 onChange={(e) => updateAreaField(index, col.key, e.target.value)}
-                                className="w-full min-w-[6rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-gold-100/40 focus:ring-1 focus:ring-gold-500"
+                                className="w-full min-w-[6rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-rust-100/40 focus:ring-1 focus:ring-rust-600"
                               >
                                 <option value="">—</option>
                                 {(col.key === AREA_COLUMN_KEY ? areaOptions : col.options)?.map((opt) => (
@@ -482,7 +482,7 @@ export default function VisitFormModal({
                                   }
                                 }}
                                 disabled={isFeeLocked}
-                                className="w-full min-w-[5.5rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-gold-100/40 focus:ring-1 focus:ring-gold-500 disabled:text-brown-400"
+                                className="w-full min-w-[5.5rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-rust-100/40 focus:ring-1 focus:ring-rust-600 disabled:text-brown-400"
                               />
                             )}
                           </td>
@@ -541,7 +541,7 @@ export default function VisitFormModal({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+              className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save Visit"}
             </button>

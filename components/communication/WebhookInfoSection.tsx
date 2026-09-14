@@ -34,7 +34,7 @@ export default function WebhookInfoSection({ verifyToken }: { verifyToken: strin
   return (
     <div className="rounded-xl bg-surface p-5 shadow-soft ring-1 ring-beige-300">
       <div className="flex items-center gap-2">
-        <Webhook size={16} className="text-gold-600" />
+        <Webhook size={16} className="text-rust-700" />
         <h2 className="font-display text-base font-medium text-brown-900">Webhook Setup</h2>
       </div>
       <p className="mt-1.5 text-sm text-brown-600">
@@ -50,7 +50,7 @@ export default function WebhookInfoSection({ verifyToken }: { verifyToken: strin
             <button
               type="button"
               onClick={() => copy("url", callbackUrl)}
-              className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gold-600 transition-colors hover:bg-gold-100"
+              className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-rust-700 transition-colors hover:bg-rust-100"
             >
               {copiedField === "url" ? <Check size={13} /> : <Copy size={13} />}
               {copiedField === "url" ? "Copied" : "Copy"}
@@ -66,14 +66,14 @@ export default function WebhookInfoSection({ verifyToken }: { verifyToken: strin
               <button
                 type="button"
                 onClick={() => copy("token", verifyToken)}
-                className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gold-600 transition-colors hover:bg-gold-100"
+                className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-rust-700 transition-colors hover:bg-rust-100"
               >
                 {copiedField === "token" ? <Check size={13} /> : <Copy size={13} />}
                 {copiedField === "token" ? "Copied" : "Copy"}
               </button>
             </div>
           ) : (
-            <p className="mt-1 rounded-md border border-gold-500/40 bg-gold-100/50 p-2 text-xs text-brown-700">
+            <p className="mt-1 rounded-md border border-rust-600/40 bg-rust-100/50 p-2 text-xs text-brown-700">
               Not set up yet. Add WHATSAPP_WEBHOOK_VERIFY_TOKEN to the server's environment first.
             </p>
           )}

@@ -8,7 +8,7 @@ export default function PatientDetailLoading() {
       <div className="mt-3 mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
           <Skeleton className="h-7 w-48" />
-          <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+          <div className="mt-2 h-[2px] w-8 bg-rust-600" />
         </div>
         <Skeleton className="h-7 w-28 rounded-full" />
       </div>
@@ -26,7 +26,7 @@ export default function PatientDetailLoading() {
 
       <div className="mt-8">
         <Skeleton className="h-5 w-32" />
-        <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
+        <div className="mt-2 mb-4 h-[2px] w-8 bg-rust-600" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     </div>

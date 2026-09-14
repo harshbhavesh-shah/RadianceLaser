@@ -110,7 +110,7 @@ const SignaturePad = forwardRef<SignaturePadHandle, { height?: number }>(functio
       <button
         type="button"
         onClick={clear}
-        className="mt-1.5 text-xs font-medium text-brown-600 hover:text-gold-600"
+        className="mt-1.5 text-xs font-medium text-brown-600 hover:text-rust-700"
       >
         Clear signature
       </button>

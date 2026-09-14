@@ -106,7 +106,7 @@ export default function MachineFormModal({
         <h2 className="font-display text-lg font-medium text-brown-900">
           {isEditing ? "Edit Machine" : "Add Machine"}
         </h2>
-        <div className="mb-5 mt-1 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-1 h-[2px] w-8 bg-rust-600" />
 
         <div className="space-y-4">
           <div>
@@ -116,7 +116,7 @@ export default function MachineFormModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Q-Switch Nd:YAG #1"
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
 
@@ -126,7 +126,7 @@ export default function MachineFormModal({
               <select
                 value={sessionType}
                 onChange={(e) => setSessionType(e.target.value as SessionType)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 {(Object.keys(SESSION_TYPE_CONFIG) as SessionType[]).map((type) => (
                   <option key={type} value={type}>
@@ -140,7 +140,7 @@ export default function MachineFormModal({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as MachineStatus)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -160,7 +160,7 @@ export default function MachineFormModal({
                 type="text"
                 value={serialNumber}
                 onChange={(e) => setSerialNumber(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
             <div>
@@ -171,7 +171,7 @@ export default function MachineFormModal({
                 type="date"
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function MachineFormModal({
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Maintenance history, calibration dates, etc."
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function MachineFormModal({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+              className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save"}
             </button>

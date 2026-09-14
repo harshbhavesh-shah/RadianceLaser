@@ -14,7 +14,7 @@ export default function ReplayTourSection({ role }: { role: UserRole }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Product Tour</h2>
@@ -22,7 +22,7 @@ export default function ReplayTourSection({ role }: { role: UserRole }) {
         </div>
         <button
           onClick={() => setOpen(true)}
-          className="flex flex-shrink-0 items-center gap-2 rounded-md border border-beige-300 px-4 py-2 text-sm font-medium text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600"
+          className="flex flex-shrink-0 items-center gap-2 rounded-md border border-beige-300 px-4 py-2 text-sm font-medium text-brown-700 transition-colors hover:border-rust-600 hover:text-rust-700"
         >
           <Compass size={16} />
           Replay Tour

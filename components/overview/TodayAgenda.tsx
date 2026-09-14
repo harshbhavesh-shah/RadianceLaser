@@ -62,7 +62,7 @@ export default function TodayAgenda({
         // real patientId.
         const isLinked = !!appt.patientId;
         const logVisitHref = `/dashboard/patients/${appt.patientId}?logVisit=1&sessionType=${encodeURIComponent(appt.sessionType)}&appointmentId=${appt.id}`;
-        const generateReceiptHref = `/dashboard/documents?tab=receipts&newReceiptForPatient=${appt.patientId}&visitId=${linkedVisitId}`;
+        const generateReceiptHref = `/dashboard/packages?tab=receipts&newReceiptForPatient=${appt.patientId}&visitId=${linkedVisitId}`;
 
         return (
           <div

@@ -107,7 +107,7 @@ export default function ConsentFormSignModal({
           <div className="mt-5 flex justify-end">
             <button
               onClick={onClose}
-              className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 hover:bg-gold-600"
+              className="rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rust-700"
             >
               Close
             </button>
@@ -121,7 +121,7 @@ export default function ConsentFormSignModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">New Consent Form</h2>
-        <div className="mb-5 mt-3 h-[2px] w-8 bg-gold-500" />
+        <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -130,7 +130,7 @@ export default function ConsentFormSignModal({
               <select
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -146,7 +146,7 @@ export default function ConsentFormSignModal({
               <select
                 value={visitId}
                 onChange={(e) => setVisitId(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
                 <option value="">No specific session</option>
                 {sortedVisits.map((v) => (
@@ -172,7 +172,7 @@ export default function ConsentFormSignModal({
               value={signedByName}
               onChange={(e) => setSignedByName(e.target.value)}
               placeholder="Patient name, or a parent/guardian signing on their behalf"
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
 
@@ -195,7 +195,7 @@ export default function ConsentFormSignModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+            className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
           >
             {saving ? "Saving…" : "Save Signed Form"}
           </button>

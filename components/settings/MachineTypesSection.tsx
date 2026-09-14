@@ -61,7 +61,7 @@ export default function MachineTypesSection({
       : null;
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="font-display text-lg font-medium text-brown-900">Machine Types</h2>
@@ -73,7 +73,7 @@ export default function MachineTypesSection({
         {canEdit && (
           <button
             onClick={openCreate}
-            className="flex-shrink-0 rounded-md border border-brown-900 px-4 py-2 text-sm font-semibold text-brown-900 transition-colors hover:bg-brown-900 hover:text-beige-200"
+            className="flex-shrink-0 rounded-md border border-rust-600 px-4 py-2 text-sm font-semibold text-rust-700 transition-colors hover:bg-rust-100"
           >
             + Add Machine Type
           </button>
@@ -89,7 +89,7 @@ export default function MachineTypesSection({
               key={key}
               onClick={() => canEdit && openEdit(key)}
               disabled={!canEdit}
-              className="flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-gold-100/40 disabled:cursor-default"
+              className="flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-rust-100/40 disabled:cursor-default"
             >
               <div className="flex items-center gap-3">
                 <span

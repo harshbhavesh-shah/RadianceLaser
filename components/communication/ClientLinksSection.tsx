@@ -33,7 +33,7 @@ export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
   return (
     <div className="rounded-xl bg-surface p-5 shadow-soft ring-1 ring-beige-300">
       <div className="flex items-center gap-2">
-        <Link2 size={16} className="text-gold-600" />
+        <Link2 size={16} className="text-rust-700" />
         <h2 className="font-display text-base font-medium text-brown-900">Patient Booking Link</h2>
       </div>
       <p className="mt-1.5 text-sm text-brown-600">
@@ -46,7 +46,7 @@ export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gold-600 transition-colors hover:bg-gold-100"
+          className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-rust-700 transition-colors hover:bg-rust-100"
         >
           {copied ? <Check size={13} /> : <Copy size={13} />}
           {copied ? "Copied" : "Copy"}
@@ -57,7 +57,7 @@ export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
         href={bookingPath}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-brown-500 hover:text-gold-600"
+        className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-brown-500 hover:text-rust-700"
       >
         <ExternalLink size={12} />
         Open the booking page
