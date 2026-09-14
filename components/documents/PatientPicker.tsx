@@ -37,7 +37,7 @@ export default function PatientPicker({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[80vh] w-full max-w-md overflow-hidden rounded-xl bg-surface shadow-card">
+      <div className="max-h-[80vh] w-full max-w-md overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-card">
         <div className="flex items-center justify-between border-b border-beige-300 px-5 py-4">
           <h2 className="font-display text-lg font-medium text-brown-900">{title}</h2>
           <button onClick={onClose} className="rounded-md p-1 text-brown-600 hover:bg-beige-200" aria-label="Close">

@@ -13,7 +13,7 @@ export default function PatientsLoading() {
 
       <Skeleton className="mb-5 h-11 w-full rounded-md" />
 
-      <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+      <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
         {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}

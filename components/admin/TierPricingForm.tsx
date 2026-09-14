@@ -66,9 +66,9 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
   }
 
   return (
-    <div className="h-fit max-w-2xl rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="h-fit max-w-2xl rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="flex items-center gap-2">
-        <Tag size={16} className="text-gold-600" />
+        <Tag size={16} className="text-rust-700" />
         <h2 className="font-display text-base font-medium text-brown-900">Tier Pricing</h2>
       </div>
       <p className="mt-1.5 text-sm text-brown-600">
@@ -92,7 +92,7 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
               step={1}
               value={basic}
               onChange={(e) => setBasic(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
           <div>
@@ -103,7 +103,7 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
               step={1}
               value={standard}
               onChange={(e) => setStandard(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
           <div>
@@ -114,7 +114,7 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
               step={1}
               value={pro}
               onChange={(e) => setPro(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
               step={1}
               value={enterpriseMin}
               onChange={(e) => setEnterpriseMin(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
             <span className="text-sm text-brown-400">to</span>
             <input
@@ -139,7 +139,7 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
               step={1}
               value={enterpriseMax}
               onChange={(e) => setEnterpriseMax(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
           {previewPriceInr !== null && (
@@ -153,7 +153,7 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-brown-900 px-5 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+          className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save tier pricing"}
         </button>

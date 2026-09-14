@@ -19,7 +19,7 @@ const ACTION_STYLES: Record<AdminAuditAction, string> = {
   activate: "bg-green-100 text-green-800",
   terminate: "bg-orange-100 text-orange-800",
   delete: "bg-red-100 text-red-800",
-  price_change: "bg-gold-100 text-brown-800",
+  price_change: "bg-rust-100 text-brown-800",
   impersonate: "bg-blue-100 text-blue-800",
   plan_tier_change: "bg-beige-200 text-brown-800",
 };
@@ -42,7 +42,7 @@ export default function AuditLogTable({ entries }: { entries: AdminAuditLogEntry
       {/* Mobile: stacked cards, same pattern as ClinicsTable. */}
       <div className="space-y-3 md:hidden">
         {entries.map((entry) => (
-          <div key={entry.id} className="rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300">
+          <div key={entry.id} className="rounded-2xl border border-beige-300 bg-surface p-4 shadow-soft">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="truncate font-medium text-brown-900">{entry.clinicName ?? "Platform-wide"}</div>
@@ -57,7 +57,7 @@ export default function AuditLogTable({ entries }: { entries: AdminAuditLogEntry
       </div>
 
       {/* md+: table. */}
-      <div className="hidden overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300 md:block">
+      <div className="hidden overflow-x-auto rounded-2xl border border-beige-300 bg-surface shadow-soft md:block">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
             <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">

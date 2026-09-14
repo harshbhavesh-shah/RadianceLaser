@@ -66,7 +66,7 @@ export default function UnlinkedBookingPanel({
   }
 
   return (
-    <aside className="flex h-full flex-col overflow-hidden rounded-xl bg-surface shadow-card ring-1 ring-beige-300">
+    <aside className="flex h-full flex-col overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-card">
       <div className="flex-shrink-0 border-b border-beige-300 p-5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

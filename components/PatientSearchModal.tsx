@@ -57,7 +57,7 @@ export default function PatientSearchModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[70vh] w-full max-w-lg overflow-hidden rounded-xl bg-surface shadow-card"
+        className="max-h-[70vh] w-full max-w-lg overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-beige-300 px-4 py-3.5">

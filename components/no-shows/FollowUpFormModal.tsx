@@ -76,7 +76,7 @@ export default function FollowUpFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">
           {isEditing ? `Edit ${editing!.name}` : "New No Show Follow-Up"}
         </h2>

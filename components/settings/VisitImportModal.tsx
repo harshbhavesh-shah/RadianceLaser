@@ -132,7 +132,7 @@ export default function VisitImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">Import Session History</h2>
         <p className="mt-1 text-sm text-brown-400">
           Bring in past visits: last visit date, area, fee, and every other field for a session type,

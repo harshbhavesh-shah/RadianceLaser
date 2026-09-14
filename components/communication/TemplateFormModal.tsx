@@ -64,7 +64,7 @@ export default function TemplateFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface p-6 shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <h3 className="font-display text-lg font-medium text-brown-900">New Message Template</h3>
           <button onClick={onClose} className="rounded p-1 text-brown-400 hover:bg-beige-200 hover:text-brown-700">

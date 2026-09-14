@@ -43,7 +43,7 @@ export default function PatientMiniPanel({
   const generateReceiptHref = `/dashboard/packages?tab=receipts&newReceiptForPatient=${patient.id}&visitId=${linkedVisitId}`;
 
   return (
-    <aside className="flex h-full flex-col overflow-hidden rounded-xl bg-surface shadow-card ring-1 ring-beige-300">
+    <aside className="flex h-full flex-col overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-card">
       {/* Header — name, patient code, and the way back to the full record all
           stay visible without scrolling, since that's the one thing you
           might reach for no matter how long the rest of this panel gets. */}

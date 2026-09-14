@@ -32,7 +32,7 @@ export default function WebhookInfoSection({ verifyToken }: { verifyToken: strin
   }
 
   return (
-    <div className="rounded-xl bg-surface p-5 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-5 shadow-soft">
       <div className="flex items-center gap-2">
         <Webhook size={16} className="text-rust-700" />
         <h2 className="font-display text-base font-medium text-brown-900">Webhook Setup</h2>

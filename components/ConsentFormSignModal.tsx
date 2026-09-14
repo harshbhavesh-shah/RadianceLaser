@@ -99,7 +99,7 @@ export default function ConsentFormSignModal({
   if (templates.length === 0) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-        <div className="w-full max-w-md rounded-xl bg-surface p-6 shadow-card">
+        <div className="w-full max-w-md rounded-2xl border border-beige-300 bg-surface p-6 shadow-card">
           <h2 className="font-display text-lg font-medium text-brown-900">No Consent Templates Yet</h2>
           <p className="mt-2 text-sm text-brown-600">
             Ask an owner to add a consent form template in Settings before signing one here.
@@ -119,7 +119,7 @@ export default function ConsentFormSignModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
+      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">New Consent Form</h2>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 

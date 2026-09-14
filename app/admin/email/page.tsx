@@ -17,21 +17,24 @@ export default async function AdminEmailPage({
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-medium text-brown-900">Email</h1>
-      <p className="mt-1 text-sm text-brown-400">Read, send, and reply as admin@radiancelaser.in.</p>
-      <div className="mt-2 mb-6 h-[2px] w-8 bg-gold-500" />
+      <h1 className="inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
+        Email
+      </h1>
+      <p className="mt-3 text-sm text-brown-400">Read, send, and reply as admin@radiancelaser.in.</p>
 
       {searchParams.error && (
-        <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+        <p className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
           {searchParams.error}
         </p>
       )}
 
-      {!connection ? (
-        <ConnectGmailPrompt />
-      ) : (
-        <EmailInboxClientLoader gmailAccount={connection.gmailAccount} initialCompose={initialCompose} />
-      )}
+      <div className="mt-8">
+        {!connection ? (
+          <ConnectGmailPrompt />
+        ) : (
+          <EmailInboxClientLoader gmailAccount={connection.gmailAccount} initialCompose={initialCompose} />
+        )}
+      </div>
     </div>
   );
 }
@@ -52,7 +55,7 @@ async function EmailInboxClientLoader({
   } catch (err) {
     console.error("Failed to load initial email threads:", err);
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
         Couldn&apos;t load the inbox. The Gmail connection may have expired or been revoked.{" "}
         <a href="/api/oauth/google/start" className="font-medium underline">
           Reconnect Gmail

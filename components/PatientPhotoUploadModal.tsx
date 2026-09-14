@@ -115,7 +115,7 @@ export default function PatientPhotoUploadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">Add Photos</h2>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />
 
@@ -127,7 +127,7 @@ export default function PatientPhotoUploadModal({
               accept="image/*"
               multiple
               onChange={(e) => handleFilesChosen(e.target.files)}
-              className="block w-full text-sm text-brown-700 file:mr-3 file:rounded-md file:border-0 file:bg-brown-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-beige-200 hover:file:bg-rust-700"
+              className="block w-full text-sm text-brown-700 file:mr-3 file:rounded-md file:border-0 file:bg-rust-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-rust-700"
             />
             {files.length > 0 && (
               <div className="mt-3 grid grid-cols-4 gap-2">
@@ -178,7 +178,7 @@ export default function PatientPhotoUploadModal({
                   onClick={() => setLabel(preset)}
                   className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                     label === preset
-                      ? "bg-brown-900 text-beige-200"
+                      ? "bg-rust-600 text-white"
                       : "bg-beige-200 text-brown-600 hover:bg-beige-300"
                   }`}
                 >

@@ -60,21 +60,21 @@ export default function LedgerClient({ initialEntries }: { initialEntries: Ledge
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl bg-surface p-5 shadow-soft ring-1 ring-beige-300">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-5 shadow-soft">
           <div className="flex items-center gap-2 text-red-700">
             <TrendingDown size={16} />
             <span className="text-xs font-semibold uppercase tracking-wide">Total Cost</span>
           </div>
           <p className="mt-2 font-display text-2xl font-medium text-red-700">{formatCurrency(summary.totalCost)}</p>
         </div>
-        <div className="rounded-xl bg-surface p-5 shadow-soft ring-1 ring-beige-300">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-5 shadow-soft">
           <div className="flex items-center gap-2 text-green-700">
             <TrendingUp size={16} />
             <span className="text-xs font-semibold uppercase tracking-wide">Total Profit</span>
           </div>
           <p className="mt-2 font-display text-2xl font-medium text-green-700">{formatCurrency(summary.totalProfit)}</p>
         </div>
-        <div className="rounded-xl bg-surface p-5 shadow-soft ring-1 ring-beige-300">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-5 shadow-soft">
           <div className={`flex items-center gap-2 ${summary.net >= 0 ? "text-green-700" : "text-red-700"}`}>
             <Wallet size={16} />
             <span className="text-xs font-semibold uppercase tracking-wide">Net</span>
@@ -86,7 +86,7 @@ export default function LedgerClient({ initialEntries }: { initialEntries: Ledge
         </div>
       </div>
 
-      <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
         <h2 className="font-display text-base font-medium text-brown-900">Add an entry</h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="flex gap-2">
@@ -123,7 +123,7 @@ export default function LedgerClient({ initialEntries }: { initialEntries: Ledge
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="e.g. 5000"
                 required
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
             <div>
@@ -133,7 +133,7 @@ export default function LedgerClient({ initialEntries }: { initialEntries: Ledge
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               />
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function LedgerClient({ initialEntries }: { initialEntries: Ledge
               onChange={(e) => setDescription(e.target.value)}
               placeholder={type === "cost" ? "e.g. Vercel hosting, September" : "e.g. Annual renewal, Advanced Skin Clinic"}
               required
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             />
           </div>
 
@@ -155,7 +155,7 @@ export default function LedgerClient({ initialEntries }: { initialEntries: Ledge
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-md bg-brown-900 px-5 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-md bg-rust-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
           >
             <Plus size={15} />
             {saving ? "Adding…" : "Add Entry"}
@@ -163,7 +163,7 @@ export default function LedgerClient({ initialEntries }: { initialEntries: Ledge
         </form>
       </div>
 
-      <div className="rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface shadow-soft">
         {entries.length === 0 ? (
           <div className="p-10 text-center text-sm text-brown-400">No entries yet.</div>
         ) : (

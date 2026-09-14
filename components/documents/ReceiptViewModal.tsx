@@ -68,7 +68,7 @@ export default function ReceiptViewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4 print:static print:block print:bg-white print:px-0">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface shadow-card print:max-h-none print:w-auto print:max-w-none print:overflow-visible print:rounded-none print:shadow-none">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-beige-300 bg-surface shadow-card print:max-h-none print:w-auto print:max-w-none print:overflow-visible print:rounded-none print:border-none print:shadow-none">
         <div className="flex items-center justify-between border-b border-beige-300 px-6 py-4 print:hidden">
           <div>
             <h2 className="font-display text-lg font-medium text-brown-900">{receipt.receiptNumber}</h2>

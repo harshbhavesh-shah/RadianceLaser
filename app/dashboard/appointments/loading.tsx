@@ -13,7 +13,7 @@ export default function AppointmentsLoading() {
         <Skeleton className="h-10 w-40 rounded-lg" />
       </div>
 
-      <div className="rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface p-4 shadow-soft">
         <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: 7 }).map((_, i) => (
             <Skeleton key={`h-${i}`} className="h-4 w-full" />

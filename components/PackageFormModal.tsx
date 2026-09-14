@@ -74,7 +74,7 @@ export default function PackageFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-surface p-5 shadow-card sm:p-6">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-5 shadow-card sm:p-6">
         <div className="mb-1 flex items-center gap-2">
           <span
             className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${config.badgeClassName}`}

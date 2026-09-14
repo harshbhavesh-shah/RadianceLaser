@@ -18,7 +18,7 @@ export default function DashboardLoading() {
         <div className="lg:col-span-2">
           <Skeleton className="h-5 w-36" />
           <div className="mt-2 mb-3 h-[2px] w-8 bg-rust-600" />
-          <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+          <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className={`px-5 py-4 ${i !== 3 ? "border-b border-beige-300" : ""}`}>
                 <Skeleton className="h-4 w-56" />

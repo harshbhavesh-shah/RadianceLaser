@@ -142,7 +142,7 @@ export default function ProductTour({ role, onClose }: { role: UserRole; onClose
       )}
 
       <div
-        className="fixed w-[300px] max-w-[calc(100vw-2rem)] rounded-xl bg-surface p-5 shadow-2xl ring-1 ring-beige-300"
+        className="fixed w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl border border-beige-300 bg-surface p-5 shadow-2xl"
         style={tooltipStyle}
       >
         <div className="flex items-start justify-between gap-3">
@@ -172,7 +172,7 @@ export default function ProductTour({ role, onClose }: { role: UserRole; onClose
             )}
             <button
               onClick={next}
-              className="rounded-md bg-brown-900 px-3 py-1.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+              className="rounded-md bg-rust-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
             >
               {isLast ? "Done" : "Next"}
             </button>

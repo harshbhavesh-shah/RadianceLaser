@@ -74,7 +74,7 @@ export default function InboxClient({ initialConversations }: { initialConversat
   }
 
   return (
-    <div className="grid grid-cols-1 overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300 lg:grid-cols-[340px_1fr] lg:h-[70vh]">
+    <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft lg:grid-cols-[340px_1fr] lg:h-[70vh]">
       <div className="overflow-y-auto border-b border-beige-300 lg:border-b-0 lg:border-r">
         {conversations.map((c) => (
           <button

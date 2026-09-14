@@ -118,9 +118,9 @@ export default function EmailInboxClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-beige-300 bg-surface p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-2 text-sm text-brown-600 sm:items-center">
-          <Mail size={15} className="mt-0.5 flex-shrink-0 text-gold-600 sm:mt-0" />
+          <Mail size={15} className="mt-0.5 flex-shrink-0 text-rust-700 sm:mt-0" />
           <span>
             Connected as <span className="font-medium text-brown-900">{gmailAccount}</span>, sending as{" "}
             <span className="font-medium text-brown-900">{RADIANCE_EMAIL_ADDRESS}</span>
@@ -132,7 +132,7 @@ export default function EmailInboxClient({
               setCompose({ to: "", subject: "", body: "" });
               setSelectedId(null);
             }}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 sm:flex-none"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 sm:flex-none"
           >
             <PenSquare size={14} />
             Compose
@@ -147,7 +147,7 @@ export default function EmailInboxClient({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300 lg:grid-cols-[340px_1fr] lg:h-[65vh]">
+      <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft lg:grid-cols-[340px_1fr] lg:h-[65vh]">
         <div className="overflow-y-auto border-b border-beige-300 lg:border-b-0 lg:border-r">
           {threads.length === 0 ? (
             <div className="p-8 text-center text-sm text-brown-400">No messages yet.</div>
@@ -157,14 +157,14 @@ export default function EmailInboxClient({
                 key={thread.id}
                 onClick={() => handleSelect(thread)}
                 className={`flex w-full flex-col gap-0.5 border-b border-beige-300 px-4 py-3 text-left transition-colors last:border-0 ${
-                  selectedId === thread.id ? "bg-gold-100/50" : "hover:bg-beige-100/60"
+                  selectedId === thread.id ? "bg-rust-100/50" : "hover:bg-beige-100/60"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className={`truncate text-sm ${thread.unread ? "font-semibold text-brown-900" : "font-medium text-brown-800"}`}>
                     {thread.participants.map(extractName).join(", ") || "(unknown sender)"}
                   </span>
-                  {thread.unread && <span className="h-2 w-2 flex-shrink-0 rounded-full bg-gold-600" />}
+                  {thread.unread && <span className="h-2 w-2 flex-shrink-0 rounded-full bg-rust-600" />}
                 </div>
                 <span className="truncate text-xs text-brown-700">{thread.subject}</span>
                 <span className="truncate text-xs text-brown-400">{thread.snippet}</span>
@@ -188,28 +188,28 @@ export default function EmailInboxClient({
                   value={compose.to}
                   onChange={(e) => setCompose({ ...compose, to: e.target.value })}
                   placeholder="To"
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
                 <input
                   type="text"
                   value={compose.subject}
                   onChange={(e) => setCompose({ ...compose, subject: e.target.value })}
                   placeholder="Subject"
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
                 <textarea
                   value={compose.body}
                   onChange={(e) => setCompose({ ...compose, body: e.target.value })}
                   rows={10}
                   placeholder="Write your message…"
-                  className="w-full flex-1 resize-none rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full flex-1 resize-none rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                 />
               </div>
               {sendError && <p className="mt-2 text-xs text-red-700">{sendError}</p>}
               <button
                 onClick={handleSendCompose}
                 disabled={sending || !compose.to.trim() || !compose.subject.trim() || !compose.body.trim()}
-                className="mt-3 flex w-fit items-center gap-1.5 rounded-md bg-brown-900 px-5 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+                className="mt-3 flex w-fit items-center gap-1.5 rounded-md bg-rust-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
               >
                 <Send size={14} />
                 {sending ? "Sending…" : "Send"}
@@ -232,7 +232,7 @@ export default function EmailInboxClient({
                   messages.map((message) => {
                     const isOutbound = message.from.includes(RADIANCE_EMAIL_ADDRESS);
                     return (
-                      <div key={message.id} className={`rounded-lg border p-3.5 ${isOutbound ? "border-gold-500/40 bg-gold-100/30" : "border-beige-300 bg-canvas"}`}>
+                      <div key={message.id} className={`rounded-lg border p-3.5 ${isOutbound ? "border-rust-600/40 bg-rust-100/30" : "border-beige-300 bg-canvas"}`}>
                         <div className="flex items-center justify-between gap-2 text-xs text-brown-500">
                           <span className="font-medium text-brown-800">{extractName(message.from)}</span>
                           <span>{formatDate(message.date)}</span>
@@ -252,12 +252,12 @@ export default function EmailInboxClient({
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Type a reply…"
                     rows={2}
-                    className="flex-1 resize-none rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                    className="flex-1 resize-none rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
                   />
                   <button
                     onClick={handleReply}
                     disabled={sending || !replyText.trim()}
-                    className="flex-shrink-0 rounded-md bg-brown-900 p-2.5 text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+                    className="flex-shrink-0 rounded-md bg-rust-600 p-2.5 text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
                     aria-label="Send reply"
                   >
                     <Send size={16} />

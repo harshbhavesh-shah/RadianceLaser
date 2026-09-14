@@ -79,7 +79,7 @@ export default function PatientImportModal({ onClose }: { onClose: () => void })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-6 shadow-card">
         <h2 className="font-display text-lg font-medium text-brown-900">Import Patients</h2>
         <p className="mt-1 text-sm text-brown-400">From a CSV or Excel file, matched to your patient fields.</p>
         <div className="mb-5 mt-3 h-[2px] w-8 bg-rust-600" />

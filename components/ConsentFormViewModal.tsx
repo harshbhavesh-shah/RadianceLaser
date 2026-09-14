@@ -48,7 +48,7 @@ export default function ConsentFormViewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4 print:static print:block print:bg-white print:px-0">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-surface p-6 shadow-card print:max-h-none print:w-auto print:max-w-none print:overflow-visible print:rounded-none print:p-0 print:shadow-none">
+      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-beige-300 bg-surface p-6 shadow-card print:max-h-none print:w-auto print:max-w-none print:overflow-visible print:rounded-none print:border-none print:p-0 print:shadow-none">
         <div className="print-consent print-area">
           <div className="mb-4 flex items-start justify-between print:hidden">
             <div>

@@ -13,7 +13,7 @@ export default function PatientDetailLoading() {
         <Skeleton className="h-7 w-28 rounded-full" />
       </div>
 
-      <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i}>

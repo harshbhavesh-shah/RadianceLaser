@@ -51,7 +51,7 @@ function StatusBadge({ access }: { access: ClinicAccess }) {
   }
   if (access.status === "trialing") {
     return (
-      <span className="rounded-full bg-gold-100 px-2.5 py-1 text-xs font-medium text-brown-800">
+      <span className="rounded-full bg-rust-100 px-2.5 py-1 text-xs font-medium text-rust-700">
         Trial · {access.daysRemaining}d left
       </span>
     );
@@ -206,14 +206,14 @@ function ClinicActions({
         <button
           onClick={handleViewAs}
           disabled={isPending}
-          className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600 disabled:opacity-50"
+          className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-rust-600 hover:text-rust-700 disabled:opacity-50"
         >
           View as
         </button>
         {ownerEmail ? (
           <Link
             href={`/admin/email?to=${encodeURIComponent(ownerEmail)}&subject=${encodeURIComponent(`Regarding ${clinic.name}`)}`}
-            className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600"
+            className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-rust-600 hover:text-rust-700"
           >
             Email
           </Link>
@@ -238,13 +238,13 @@ function ClinicActions({
             min={1}
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
-            className="w-14 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
+            className="w-14 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-rust-600"
           />
           <span className="text-xs text-brown-500">days</span>
           <button
             onClick={handleExtend}
             disabled={isPending}
-            className="rounded-md bg-brown-900 px-3 py-1.5 text-xs font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+            className="rounded-md bg-rust-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-50"
           >
             Extend
           </button>
@@ -262,7 +262,7 @@ function ClinicActions({
           <select
             value={planTier}
             onChange={(e) => setPlanTier(e.target.value as PlanTier)}
-            className="rounded-md border border-beige-300 bg-surface px-2 py-1.5 text-xs text-brown-900 outline-none focus:border-gold-500"
+            className="rounded-md border border-beige-300 bg-surface px-2 py-1.5 text-xs text-brown-900 outline-none focus:border-rust-600"
           >
             {PLAN_TIERS.map((t) => (
               <option key={t} value={t} className="capitalize">
@@ -278,13 +278,13 @@ function ClinicActions({
               value={enterpriseCenters}
               onChange={(e) => setEnterpriseCenters(Number(e.target.value))}
               title="Number of centers"
-              className="w-14 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
+              className="w-14 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-rust-600"
             />
           )}
           <button
             onClick={handleSetTier}
             disabled={isPending}
-            className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600 disabled:opacity-50"
+            className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-rust-600 hover:text-rust-700 disabled:opacity-50"
           >
             Set tier
           </button>
@@ -372,7 +372,7 @@ function ClinicCard({
 }) {
   const access = getClinicAccess(clinic);
   return (
-    <div className="rounded-xl bg-surface p-4 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-4 shadow-soft">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate font-medium text-brown-900">{clinic.name}</div>
@@ -420,14 +420,14 @@ export default function ClinicsTable({
           onClick={() => setAttentionOnly((v) => !v)}
           className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
             attentionOnly
-              ? "bg-brown-900 text-beige-200"
-              : "border border-beige-300 bg-surface text-brown-700 hover:border-gold-500 hover:text-gold-600"
+              ? "bg-rust-600 text-white"
+              : "border border-beige-300 bg-surface text-brown-700 hover:border-rust-600 hover:text-rust-700"
           }`}
         >
           Needs attention
           <span
             className={`rounded-full px-1.5 py-0.5 text-[11px] ${
-              attentionOnly ? "bg-beige-200/20" : "bg-beige-200 text-brown-700"
+              attentionOnly ? "bg-white/20 text-white" : "bg-beige-200 text-brown-700"
             }`}
           >
             {attentionCount}
@@ -455,7 +455,7 @@ export default function ClinicsTable({
           </div>
 
           {/* md+: the original table. */}
-          <div className="hidden overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300 md:block">
+          <div className="hidden overflow-x-auto rounded-2xl border border-beige-300 bg-surface shadow-soft md:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">
