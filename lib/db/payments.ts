@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/client";
 import { SUBSCRIPTION_LENGTH_DAYS } from "@/lib/subscription";
 import type { Payment as PrismaPaymentRow } from "@prisma/client";
 import type { Payment } from "@/types";
+import type { PlanTier } from "@/lib/entitlements";
 
 // Postgres migration, chunk 12 (post-launch cleanup, going Firestore-free
 // past the original 11-chunk migration) — Payment. Function names/
@@ -23,6 +24,8 @@ function toPayment(row: PrismaPaymentRow): Payment {
     ...(row.razorpayPaymentId ? { razorpayPaymentId: row.razorpayPaymentId } : {}),
     ...(row.razorpaySubscriptionId ? { razorpaySubscriptionId: row.razorpaySubscriptionId } : {}),
     ...(row.paidAt !== null ? { paidAt: Number(row.paidAt) } : {}),
+    ...(row.planTier ? { planTier: row.planTier as PlanTier } : {}),
+    ...(row.enterpriseCenters !== null ? { enterpriseCenters: row.enterpriseCenters } : {}),
   };
 }
 
@@ -31,6 +34,8 @@ export async function createPendingPayment(input: {
   razorpayOrderId: string;
   amount: number;
   currency: string;
+  planTier: PlanTier;
+  enterpriseCenters?: number;
 }): Promise<string> {
   const row = await prisma.payment.create({
     data: {
@@ -40,6 +45,8 @@ export async function createPendingPayment(input: {
       currency: input.currency,
       status: "created",
       createdAt: BigInt(Date.now()),
+      planTier: input.planTier,
+      ...(input.enterpriseCenters !== undefined ? { enterpriseCenters: input.enterpriseCenters } : {}),
     },
   });
   return row.id;
@@ -121,7 +128,17 @@ export async function confirmPayment(input: {
 
     await tx.clinic.update({
       where: { id: payment.clinicId },
-      data: { subscriptionStatus: "active", subscriptionRenewsAt: BigInt(newRenewsAt) },
+      data: {
+        subscriptionStatus: "active",
+        subscriptionRenewsAt: BigInt(newRenewsAt),
+        // What this payment was actually for (set at order-creation time,
+        // Chunk 1) — applied here so a self-serve purchase grants the
+        // purchased tier without any admin step. Old rows created before
+        // per-tier checkout existed have no planTier, so leave the
+        // clinic's tier untouched rather than blanking it to null/"free".
+        ...(payment.planTier ? { planTier: payment.planTier } : {}),
+        ...(payment.enterpriseCenters !== null ? { enterpriseCenters: payment.enterpriseCenters } : {}),
+      },
     });
   });
 
@@ -152,6 +169,8 @@ export async function recordSubscriptionCharge(input: {
   razorpaySubscriptionId: string;
   amount: number;
   currency: string;
+  planTier?: PlanTier;
+  enterpriseCenters?: number;
 }): Promise<{ alreadyRecorded: boolean }> {
   return prisma.$transaction(async (tx) => {
     const existing = await tx.payment.findFirst({
@@ -172,6 +191,8 @@ export async function recordSubscriptionCharge(input: {
         status: "paid",
         createdAt: now,
         paidAt: now,
+        ...(input.planTier ? { planTier: input.planTier } : {}),
+        ...(input.enterpriseCenters !== undefined ? { enterpriseCenters: input.enterpriseCenters } : {}),
       },
     });
 
@@ -184,7 +205,16 @@ export async function recordSubscriptionCharge(input: {
 
     await tx.clinic.update({
       where: { id: input.clinicId },
-      data: { subscriptionStatus: "active", subscriptionRenewsAt: BigInt(newRenewsAt) },
+      data: {
+        subscriptionStatus: "active",
+        subscriptionRenewsAt: BigInt(newRenewsAt),
+        // Reasserted on every renewal, not just the first charge (see
+        // Clinic.autoRenewPlanTier and the webhook caller in
+        // app/api/webhooks/razorpay/route.ts) — harmless no-op if it's
+        // already correct.
+        ...(input.planTier ? { planTier: input.planTier } : {}),
+        ...(input.enterpriseCenters !== undefined ? { enterpriseCenters: input.enterpriseCenters } : {}),
+      },
     });
 
     return { alreadyRecorded: false };

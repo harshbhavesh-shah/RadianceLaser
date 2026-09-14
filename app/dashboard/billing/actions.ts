@@ -14,7 +14,8 @@ import {
 } from "@/lib/razorpay";
 import { createPendingPayment, confirmPayment, recordSubscriptionCharge } from "@/lib/db/payments";
 import { clinicCacheTag, getClinic, getClinicAutoRenewInfo, updateClinicAutoRenew } from "@/lib/db/clinics";
-import { getAnnualPriceInr } from "@/lib/db/platformSettings";
+import { getAnnualPriceInr, getTierPricing } from "@/lib/db/platformSettings";
+import { PURCHASABLE_TIERS, ENTERPRISE_MIN_CENTERS, ENTERPRISE_MAX_CENTERS, getPurchaseTierPriceInr, type PurchasableTier } from "@/lib/pricing";
 import type { Session } from "@/types";
 
 async function requireOwner(): Promise<Session> {
@@ -24,18 +25,47 @@ async function requireOwner(): Promise<Session> {
   return session;
 }
 
+/** Shared by both checkout paths below — never trust a tier/center count
+ * from the client without checking it against this first, since both
+ * ultimately decide how much money gets charged. */
+function validateTierSelection(
+  tier: PurchasableTier,
+  enterpriseCenters: number | undefined
+): string | null {
+  if (!PURCHASABLE_TIERS.includes(tier)) return "That's not a valid plan.";
+  if (tier === "enterprise") {
+    if (
+      enterpriseCenters === undefined ||
+      !Number.isInteger(enterpriseCenters) ||
+      enterpriseCenters < ENTERPRISE_MIN_CENTERS ||
+      enterpriseCenters > ENTERPRISE_MAX_CENTERS
+    ) {
+      return `Enter a number of centers between ${ENTERPRISE_MIN_CENTERS} and ${ENTERPRISE_MAX_CENTERS}.`;
+    }
+  }
+  return null;
+}
+
 export interface CreateOrderResult {
   error?: string;
   order?: { orderId: string; amount: number; currency: string; keyId: string };
 }
 
-/** Starts a checkout: opens a Razorpay order for the flat annual price and
- * records a "created" payment doc so there's a record even if the customer
- * abandons checkout before paying. Called right before opening the Razorpay
- * Checkout widget client-side (components/settings/BillingSection.tsx). */
-export async function createRenewalOrderAction(): Promise<CreateOrderResult> {
+/** Starts a checkout: opens a Razorpay order for the selected tier's real
+ * price and records a "created" payment doc (carrying that tier) so there's
+ * a record even if the customer abandons checkout before paying, and so
+ * confirmPayment knows what to actually grant once they do. Called right
+ * before opening the Razorpay Checkout widget client-side
+ * (components/settings/BillingSection.tsx). */
+export async function createRenewalOrderAction(
+  tier: PurchasableTier,
+  enterpriseCenters?: number
+): Promise<CreateOrderResult> {
   try {
     const session = await requireOwner();
+
+    const validationError = validateTierSelection(tier, enterpriseCenters);
+    if (validationError) return { error: validationError };
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     if (!keyId) return { error: "Billing isn't configured yet. Contact support." };
@@ -43,10 +73,12 @@ export async function createRenewalOrderAction(): Promise<CreateOrderResult> {
     // Read fresh at checkout time, not cached at module load — a price
     // change from the admin panel should apply to the very next checkout,
     // not wait for a server restart.
-    const annualPricePaise = (await getAnnualPriceInr()) * 100;
+    const pricing = await getTierPricing();
+    const amountInr = getPurchaseTierPriceInr(tier, pricing, enterpriseCenters);
+    const amountPaise = amountInr * 100;
 
     const order = await createOrder({
-      amount: annualPricePaise,
+      amount: amountPaise,
       currency: "INR",
       receipt: `${session.clinicId}-${Date.now()}`,
     });
@@ -54,11 +86,13 @@ export async function createRenewalOrderAction(): Promise<CreateOrderResult> {
     await createPendingPayment({
       clinicId: session.clinicId,
       razorpayOrderId: order.id,
-      amount: annualPricePaise,
+      amount: amountPaise,
       currency: "INR",
+      planTier: tier,
+      ...(tier === "enterprise" ? { enterpriseCenters } : {}),
     });
 
-    return { order: { orderId: order.id, amount: annualPricePaise, currency: "INR", keyId } };
+    return { order: { orderId: order.id, amount: amountPaise, currency: "INR", keyId } };
   } catch (err) {
     console.error("Failed to create Razorpay order:", err);
     return { error: "Couldn't start checkout. Please try again." };
@@ -113,17 +147,28 @@ export interface CreateSubscriptionResult {
 
 /**
  * Starts the opt-in auto-renew flow — creates (or reuses) a Razorpay
- * Customer, a fresh annual Plan at the clinic's *current* price (locked in
- * for this subscription regardless of later admin price changes — see
- * Clinic.autoRenewPlanAmountInr), and a Subscription against it. The
- * customer still has to authorize the first charge through Razorpay
- * Checkout client-side (components/settings/BillingSection.tsx) before
- * anything is actually enabled — verifySubscriptionAction below is what
- * flips autoRenewEnabled on, once that's confirmed.
+ * Customer, a fresh annual Plan at the selected tier's *current* price
+ * (locked in for this subscription regardless of later admin price
+ * changes — see Clinic.autoRenewPlanAmountInr/autoRenewPlanTier), and a
+ * Subscription against it. If the clinic already has an active
+ * subscription (switching tier while auto-renew is on), that one is
+ * cancelled first — a Razorpay Plan's price is fixed at creation, so
+ * changing tier always means a new Plan and Subscription, never editing
+ * the existing one. The customer still has to authorize the first charge
+ * through Razorpay Checkout client-side
+ * (components/settings/BillingSection.tsx) before anything is actually
+ * enabled — verifySubscriptionAction below is what flips autoRenewEnabled
+ * on, once that's confirmed.
  */
-export async function createAutoRenewSubscriptionAction(): Promise<CreateSubscriptionResult> {
+export async function createAutoRenewSubscriptionAction(
+  tier: PurchasableTier,
+  enterpriseCenters?: number
+): Promise<CreateSubscriptionResult> {
   try {
     const session = await requireOwner();
+
+    const validationError = validateTierSelection(tier, enterpriseCenters);
+    if (validationError) return { error: validationError };
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     if (!keyId) return { error: "Billing isn't configured yet. Contact support." };
@@ -131,14 +176,25 @@ export async function createAutoRenewSubscriptionAction(): Promise<CreateSubscri
     const clinic = await getClinic(session.clinicId);
     if (!clinic) return { error: "Clinic not found." };
 
-    const annualPriceInr = await getAnnualPriceInr();
+    const pricing = await getTierPricing();
+    const tierPriceInr = getPurchaseTierPriceInr(tier, pricing, enterpriseCenters);
     const info = await getClinicAutoRenewInfo(session.clinicId);
+
+    if (info?.razorpaySubscriptionId && info.autoRenewEnabled) {
+      try {
+        await cancelSubscription(info.razorpaySubscriptionId);
+      } catch (err) {
+        // Best-effort — an already-cancelled/expired subscription errors
+        // here too, and that's fine, the new one below still gets created.
+        console.error("Failed to cancel previous subscription before switching tier:", err);
+      }
+    }
 
     const customer = info?.razorpayCustomerId
       ? { id: info.razorpayCustomerId }
       : await createOrGetCustomer({ name: clinic.name, email: session.email || "" });
 
-    const plan = await createAnnualPlan(annualPriceInr * 100);
+    const plan = await createAnnualPlan(tierPriceInr * 100);
     const subscription = await createSubscription({
       planId: plan.id,
       customerId: customer.id,
@@ -149,7 +205,9 @@ export async function createAutoRenewSubscriptionAction(): Promise<CreateSubscri
       razorpayCustomerId: customer.id,
       razorpaySubscriptionId: subscription.id,
       razorpaySubscriptionStatus: subscription.status,
-      autoRenewPlanAmountInr: annualPriceInr,
+      autoRenewPlanAmountInr: tierPriceInr,
+      autoRenewPlanTier: tier,
+      ...(tier === "enterprise" ? { enterpriseCenters } : {}),
     });
 
     return { subscription: { subscriptionId: subscription.id, keyId } };
@@ -199,6 +257,8 @@ export async function verifySubscriptionAction(input: {
       razorpaySubscriptionId: input.subscriptionId,
       amount: Number(payment.amount),
       currency: payment.currency,
+      ...(info.autoRenewPlanTier ? { planTier: info.autoRenewPlanTier } : {}),
+      ...(info.enterpriseCenters !== null ? { enterpriseCenters: info.enterpriseCenters } : {}),
     });
 
     await updateClinicAutoRenew(session.clinicId, {

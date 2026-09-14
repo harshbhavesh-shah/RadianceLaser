@@ -93,6 +93,8 @@ export interface Payment extends TenantScoped {
   status: "created" | "paid" | "failed";
   createdAt: number;
   paidAt?: number;
+  planTier?: PlanTier; // what this payment was actually for — see lib/db/payments.ts
+  enterpriseCenters?: number; // only meaningful alongside planTier "enterprise"
 }
 
 export type LedgerEntryType = "cost" | "profit";

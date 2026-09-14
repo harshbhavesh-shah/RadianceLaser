@@ -149,11 +149,21 @@ export async function getClinicAutoRenewInfo(clinicId: string): Promise<{
   razorpayCustomerId: string | null;
   razorpaySubscriptionId: string | null;
   autoRenewEnabled: boolean;
+  autoRenewPlanTier: PlanTier | null;
+  enterpriseCenters: number | null;
 } | null> {
-  return prisma.clinic.findUnique({
+  const row = await prisma.clinic.findUnique({
     where: { id: clinicId },
-    select: { razorpayCustomerId: true, razorpaySubscriptionId: true, autoRenewEnabled: true },
+    select: {
+      razorpayCustomerId: true,
+      razorpaySubscriptionId: true,
+      autoRenewEnabled: true,
+      autoRenewPlanTier: true,
+      enterpriseCenters: true,
+    },
   });
+  if (!row) return null;
+  return { ...row, autoRenewPlanTier: (row.autoRenewPlanTier as PlanTier | null) ?? null };
 }
 
 /** The one function every auto-renew-changing write path shares —
@@ -166,6 +176,11 @@ export interface UpdateAutoRenewInput {
   razorpaySubscriptionId?: string | null;
   razorpaySubscriptionStatus?: string | null;
   autoRenewPlanAmountInr?: number;
+  // The tier this subscription is for — see the schema comment on
+  // Clinic.autoRenewPlanTier. enterpriseCenters only meaningful alongside
+  // "enterprise", passed through as-is otherwise.
+  autoRenewPlanTier?: PlanTier;
+  enterpriseCenters?: number;
   dunningEmailSentForStatus?: string | null;
 }
 
@@ -180,6 +195,8 @@ export async function updateClinicAutoRenew(clinicId: string, input: UpdateAutoR
         ? { razorpaySubscriptionStatus: input.razorpaySubscriptionStatus }
         : {}),
       ...(input.autoRenewPlanAmountInr !== undefined ? { autoRenewPlanAmountInr: input.autoRenewPlanAmountInr } : {}),
+      ...(input.autoRenewPlanTier !== undefined ? { autoRenewPlanTier: input.autoRenewPlanTier } : {}),
+      ...(input.enterpriseCenters !== undefined ? { enterpriseCenters: input.enterpriseCenters } : {}),
       ...(input.dunningEmailSentForStatus !== undefined
         ? { dunningEmailSentForStatus: input.dunningEmailSentForStatus }
         : {}),
@@ -198,6 +215,27 @@ export async function getClinicIdByRazorpaySubscriptionId(subscriptionId: string
     select: { id: true },
   });
   return row?.id ?? null;
+}
+
+/** Same lookup as above, plus what tier this subscription's renewals
+ * should apply — the subscription.charged webhook (every renewal after the
+ * first) needs both, and this is the only place that tier is recorded
+ * (Clinic.autoRenewPlanTier), not Razorpay's own subscription object. */
+export async function getClinicAutoRenewSubscriptionInfo(subscriptionId: string): Promise<{
+  clinicId: string;
+  autoRenewPlanTier: PlanTier | null;
+  enterpriseCenters: number | null;
+} | null> {
+  const row = await prisma.clinic.findFirst({
+    where: { razorpaySubscriptionId: subscriptionId },
+    select: { id: true, autoRenewPlanTier: true, enterpriseCenters: true },
+  });
+  if (!row) return null;
+  return {
+    clinicId: row.id,
+    autoRenewPlanTier: (row.autoRenewPlanTier as PlanTier | null) ?? null,
+    enterpriseCenters: row.enterpriseCenters,
+  };
 }
 
 /**

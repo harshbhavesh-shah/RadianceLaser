@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { verifyWebhookSignature } from "@/lib/razorpay";
 import { confirmPayment, recordSubscriptionCharge } from "@/lib/db/payments";
-import { clinicCacheTag, getClinicIdByRazorpaySubscriptionId, updateClinicAutoRenew } from "@/lib/db/clinics";
+import {
+  clinicCacheTag,
+  getClinicAutoRenewSubscriptionInfo,
+  getClinicIdByRazorpaySubscriptionId,
+  updateClinicAutoRenew,
+} from "@/lib/db/clinics";
 import { getClinicOwnerEmails } from "@/lib/db/staff";
 import { sendEmail } from "@/lib/email/resend";
 import { autoRenewCancelledEmailHtml, autoRenewHaltedEmailHtml, paymentRetryingEmailHtml } from "@/lib/billingEmails";
@@ -87,11 +92,12 @@ async function handleSubscriptionCharged(payload?: {
   const subscriptionId = payload?.subscription?.entity?.id;
   if (!payment?.id || !payment.order_id || !subscriptionId) return;
 
-  const clinicId = await getClinicIdByRazorpaySubscriptionId(subscriptionId);
-  if (!clinicId) {
+  const info = await getClinicAutoRenewSubscriptionInfo(subscriptionId);
+  if (!info) {
     console.error(`subscription.charged for unknown subscription ${subscriptionId}`);
     return;
   }
+  const { clinicId, autoRenewPlanTier, enterpriseCenters } = info;
 
   try {
     await recordSubscriptionCharge({
@@ -101,6 +107,8 @@ async function handleSubscriptionCharged(payload?: {
       razorpaySubscriptionId: subscriptionId,
       amount: payment.amount ?? 0,
       currency: payment.currency ?? "INR",
+      ...(autoRenewPlanTier ? { planTier: autoRenewPlanTier } : {}),
+      ...(enterpriseCenters !== null ? { enterpriseCenters } : {}),
     });
     // A successful charge means things are healthy again — clear the
     // dunning dedupe so a future pending/halted cycle emails fresh, and

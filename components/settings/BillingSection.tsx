@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CreditCard, RefreshCw } from "lucide-react";
 import {
@@ -10,6 +10,15 @@ import {
   verifyPaymentAction,
   verifySubscriptionAction,
 } from "@/app/dashboard/billing/actions";
+import {
+  PURCHASABLE_TIERS,
+  ENTERPRISE_MIN_CENTERS,
+  ENTERPRISE_MAX_CENTERS,
+  getPurchaseTierPriceInr,
+  type PurchasableTier,
+} from "@/lib/pricing";
+import type { TierPricing } from "@/lib/db/platformSettings";
+import type { PlanTier } from "@/lib/entitlements";
 import type { ClinicAccess } from "@/lib/subscription";
 import type { Payment } from "@/types";
 
@@ -20,6 +29,13 @@ declare global {
 }
 
 const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+const TIER_LABELS: Record<PurchasableTier, string> = {
+  basic: "Basic",
+  standard: "Standard",
+  pro: "Pro",
+  enterprise: "Enterprise",
+};
 
 function loadRazorpayScript(): Promise<boolean> {
   if (typeof window !== "undefined" && window.Razorpay) return Promise.resolve(true);
@@ -40,6 +56,10 @@ function formatAmount(paise: number): string {
   return `₹${(paise / 100).toLocaleString("en-IN")}`;
 }
 
+function formatInr(inr: number): string {
+  return `₹${inr.toLocaleString("en-IN")}`;
+}
+
 const STATUS_LABEL: Record<Payment["status"], string> = {
   created: "Started",
   paid: "Paid",
@@ -53,6 +73,8 @@ export default function BillingSection({
   ownerEmail,
   payments,
   annualPriceInr,
+  tierPricing,
+  currentTier,
   autoRenewEnabled,
   razorpaySubscriptionStatus,
   autoRenewPlanAmountInr,
@@ -63,6 +85,8 @@ export default function BillingSection({
   ownerEmail: string;
   payments: Payment[];
   annualPriceInr: number;
+  tierPricing: TierPricing;
+  currentTier: PlanTier;
   autoRenewEnabled: boolean;
   razorpaySubscriptionStatus?: string;
   autoRenewPlanAmountInr?: number;
@@ -72,6 +96,18 @@ export default function BillingSection({
   const [error, setError] = useState<string | null>(null);
   const [isAutoRenewProcessing, setIsAutoRenewProcessing] = useState(false);
   const [autoRenewError, setAutoRenewError] = useState<string | null>(null);
+
+  // Defaults to the clinic's current paid tier if it has one, otherwise
+  // Basic — never Free, since Free isn't something you check out for.
+  const [selectedTier, setSelectedTier] = useState<PurchasableTier>(
+    currentTier === "free" ? "basic" : (currentTier as PurchasableTier)
+  );
+  const [enterpriseCenters, setEnterpriseCenters] = useState(ENTERPRISE_MIN_CENTERS);
+
+  const selectedPriceInr = useMemo(
+    () => getPurchaseTierPriceInr(selectedTier, tierPricing, enterpriseCenters),
+    [selectedTier, tierPricing, enterpriseCenters]
+  );
 
   async function handleSubscribe() {
     setIsProcessing(true);
@@ -84,7 +120,10 @@ export default function BillingSection({
         return;
       }
 
-      const result = await createRenewalOrderAction();
+      const result = await createRenewalOrderAction(
+        selectedTier,
+        selectedTier === "enterprise" ? enterpriseCenters : undefined
+      );
       if (result.error || !result.order) {
         setError(result.error || "Couldn't start checkout.");
         return;
@@ -97,7 +136,7 @@ export default function BillingSection({
         amount,
         currency,
         name: "Radiance Laser",
-        description: `${clinicName}: annual subscription`,
+        description: `${clinicName}: ${TIER_LABELS[selectedTier]} annual subscription`,
         prefill: { email: ownerEmail },
         theme: { color: "#b45309" },
         handler: async (response: {
@@ -140,7 +179,10 @@ export default function BillingSection({
         return;
       }
 
-      const result = await createAutoRenewSubscriptionAction();
+      const result = await createAutoRenewSubscriptionAction(
+        selectedTier,
+        selectedTier === "enterprise" ? enterpriseCenters : undefined
+      );
       if (result.error || !result.subscription) {
         setAutoRenewError(result.error || "Couldn't set up auto-renew.");
         return;
@@ -151,7 +193,7 @@ export default function BillingSection({
         key: keyId,
         subscription_id: subscriptionId,
         name: "Radiance Laser",
-        description: `${clinicName}: auto-renewing annual subscription`,
+        description: `${clinicName}: ${TIER_LABELS[selectedTier]}, auto-renewing annually`,
         prefill: { email: ownerEmail },
         theme: { color: "#b45309" },
         handler: async (response: {
@@ -205,7 +247,12 @@ export default function BillingSection({
 
   return (
     <div id="billing" className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-      <h2 className="font-display text-lg font-medium text-brown-900">Billing</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-lg font-medium text-brown-900">Billing</h2>
+        <span className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium capitalize text-brown-600">
+          {currentTier} plan
+        </span>
+      </div>
 
       <div className="mt-4 rounded-lg border border-beige-300 bg-canvas p-4">
         {access.status === "trialing" && (
@@ -226,8 +273,53 @@ export default function BillingSection({
             Access is currently locked. Renew to resume adding or changing anything.
           </p>
         )}
+      </div>
 
-        {isOwner && (
+      {isOwner && (
+        <div className="mt-3 rounded-lg border border-beige-300 bg-canvas p-4">
+          <div className="text-sm font-medium text-brown-900">Choose a plan</div>
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {PURCHASABLE_TIERS.map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => setSelectedTier(tier)}
+                className={`rounded-md border px-3 py-2 text-left text-xs font-semibold transition-colors ${
+                  selectedTier === tier
+                    ? "border-gold-500 bg-gold-50 text-brown-900"
+                    : "border-beige-300 bg-surface text-brown-600 hover:border-gold-400"
+                }`}
+              >
+                <div>{TIER_LABELS[tier]}</div>
+                <div className="mt-0.5 font-normal text-brown-500">
+                  {tier === "enterprise"
+                    ? `From ${formatInr(tierPricing.enterpriseMinPriceInr)}`
+                    : `${formatInr(getPurchaseTierPriceInr(tier, tierPricing))}/yr`}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {selectedTier === "enterprise" && (
+            <div className="mt-3 flex items-center gap-3">
+              <label className="text-xs text-brown-600" htmlFor="enterprise-centers">
+                Centers
+              </label>
+              <input
+                id="enterprise-centers"
+                type="number"
+                min={ENTERPRISE_MIN_CENTERS}
+                max={ENTERPRISE_MAX_CENTERS}
+                value={enterpriseCenters}
+                onChange={(e) => setEnterpriseCenters(Number(e.target.value))}
+                className="w-16 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
+              />
+              <span className="text-xs text-brown-400">
+                {ENTERPRISE_MIN_CENTERS}–{ENTERPRISE_MAX_CENTERS} locations
+              </span>
+            </div>
+          )}
+
           <div className="mt-3 flex items-center gap-3">
             <button
               onClick={handleSubscribe}
@@ -235,15 +327,17 @@ export default function BillingSection({
               className="flex items-center gap-2 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
             >
               <CreditCard size={16} />
-              {isProcessing ? "Opening checkout…" : `Subscribe: ₹${annualPriceInr.toLocaleString("en-IN")}/year`}
+              {isProcessing
+                ? "Opening checkout…"
+                : `Subscribe to ${TIER_LABELS[selectedTier]}: ${formatInr(selectedPriceInr)}/year`}
             </button>
             {error && <span className="text-sm text-red-700">{error}</span>}
           </div>
-        )}
-        {!isOwner && (
-          <p className="mt-2 text-xs text-brown-400">Only the clinic owner can manage billing.</p>
-        )}
-      </div>
+        </div>
+      )}
+      {!isOwner && (
+        <p className="mt-3 text-xs text-brown-400">Only the clinic owner can manage billing.</p>
+      )}
 
       {isOwner && (
         <div
@@ -263,11 +357,12 @@ export default function BillingSection({
                     ? "Payment retries failed. Auto-renew has stopped. Update your payment method or renew manually."
                     : razorpaySubscriptionStatus === "pending"
                       ? "A charge attempt failed. Razorpay is automatically retrying."
-                      : `On: ₹${(autoRenewPlanAmountInr ?? annualPriceInr).toLocaleString("en-IN")}/year, charged automatically.`}
+                      : `On: ${formatInr(autoRenewPlanAmountInr ?? annualPriceInr)}/year, charged automatically.`}
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-brown-400">
-                  Off. Renew manually each year using the button above, or turn this on to renew automatically.
+                  Off. Renew manually using the plan picker above, or turn this on to charge the
+                  selected plan automatically each year.
                 </p>
               )}
             </div>
@@ -299,7 +394,14 @@ export default function BillingSection({
                 className="flex items-center justify-between rounded-lg border border-beige-300 px-4 py-2.5 text-sm"
               >
                 <div>
-                  <div className="text-brown-900">{formatAmount(p.amount)}</div>
+                  <div className="flex items-center gap-2 text-brown-900">
+                    {formatAmount(p.amount)}
+                    {p.planTier && (
+                      <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[11px] font-medium capitalize text-brown-600">
+                        {p.planTier}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-brown-400">{formatDate(p.createdAt)}</div>
                 </div>
                 <span

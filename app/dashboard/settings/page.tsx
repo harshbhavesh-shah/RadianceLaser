@@ -7,7 +7,8 @@ import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { getClinicPayments } from "@/lib/db/payments";
 import { getAuditLogs } from "@/lib/db/auditLog";
 import { getClinicAccess } from "@/lib/subscription";
-import { getAnnualPriceInr } from "@/lib/db/platformSettings";
+import { getAnnualPriceInr, getTierPricing } from "@/lib/db/platformSettings";
+import { getClinicTier } from "@/lib/entitlements";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";
 import MachinesSection from "@/components/settings/MachinesSection";
@@ -23,18 +24,23 @@ export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
 
-  const [clinic, staff, machines, sessionTypeDefs, payments, annualPriceInr, auditLogEntries] = await Promise.all([
-    getClinic(session.clinicId),
-    getClinicStaff(session.clinicId),
-    getClinicMachines(session.clinicId),
-    getClinicSessionTypeDefs(session.clinicId),
-    getClinicPayments(session.clinicId),
-    getAnnualPriceInr(),
-    getAuditLogs(session.clinicId),
-  ]);
+  const [clinic, staff, machines, sessionTypeDefs, payments, annualPriceInr, tierPricing, auditLogEntries] =
+    await Promise.all([
+      getClinic(session.clinicId),
+      getClinicStaff(session.clinicId),
+      getClinicMachines(session.clinicId),
+      getClinicSessionTypeDefs(session.clinicId),
+      getClinicPayments(session.clinicId),
+      getAnnualPriceInr(),
+      getTierPricing(),
+      getAuditLogs(session.clinicId),
+    ]);
 
   const isOwner = session.role === "owner";
   const access = clinic ? getClinicAccess(clinic) : ({ status: "active" } as const);
+  const currentTier = getClinicTier(
+    clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
+  );
   const currentStaff = staff.find((s) => s.uid === session.uid);
 
   return (
@@ -62,6 +68,8 @@ export default async function SettingsPage() {
             ownerEmail={session.email || ""}
             payments={payments}
             annualPriceInr={annualPriceInr}
+            tierPricing={tierPricing}
+            currentTier={currentTier}
             autoRenewEnabled={clinic?.autoRenewEnabled ?? false}
             razorpaySubscriptionStatus={clinic?.razorpaySubscriptionStatus}
             autoRenewPlanAmountInr={clinic?.autoRenewPlanAmountInr}

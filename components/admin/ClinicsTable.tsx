@@ -61,11 +61,16 @@ function StatusBadge({ access }: { access: ClinicAccess }) {
   );
 }
 
-/** Plain text, not a colored badge like StatusBadge — this is Phase A's
- * manual tier assignment (see lib/entitlements.ts), not an access-status
- * signal, so it shouldn't visually compete with the real status badge. */
+/** A neutral pill, deliberately less saturated than StatusBadge — this is
+ * Phase A's manual tier assignment (see lib/entitlements.ts), not an
+ * access-status signal, so it reads as a calmer companion badge rather
+ * than competing with the real status pill next to it. */
 function PlanTierLabel({ tier }: { tier: PlanTier }) {
-  return <span className="text-xs font-medium capitalize text-brown-500">Plan: {tier}</span>;
+  return (
+    <span className="rounded-full bg-beige-200 px-2.5 py-1 text-xs font-medium capitalize text-brown-600">
+      {tier}
+    </span>
+  );
 }
 
 function deadlineLabel(clinic: Clinic): string {
@@ -181,8 +186,10 @@ function ClinicActions({
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex w-full max-w-sm flex-col gap-2">
+      {/* Lookup — the two things you'd reach for just to check on a clinic,
+          neither one changes anything. */}
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={handleViewAs}
           disabled={isPending}
@@ -205,75 +212,99 @@ function ClinicActions({
             Email
           </span>
         )}
-        <input
-          type="number"
-          min={1}
-          value={days}
-          onChange={(e) => setDays(Number(e.target.value))}
-          className="w-16 rounded-md border border-beige-300 bg-canvas px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
-        />
-        <span className="text-xs text-brown-400">days</span>
-        <button
-          onClick={handleExtend}
-          disabled={isPending}
-          className="rounded-md bg-brown-900 px-3 py-1.5 text-xs font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
-        >
-          Extend
-        </button>
-        <button
-          onClick={handleActivate}
-          disabled={isPending}
-          className="rounded-md bg-green-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-800 disabled:opacity-50"
-        >
-          Activate (1yr)
-        </button>
+      </div>
+
+      {/* Access — extending a deadline and a full manual activation are
+          both ways of granting time, grouped so they read as one family
+          of actions rather than two buttons that happen to sit near
+          each other. */}
+      <div className="rounded-lg border border-beige-300 bg-canvas/60 p-2.5">
+        <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-brown-400">Access</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-brown-500">Extend by</span>
+          <input
+            type="number"
+            min={1}
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+            className="w-14 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
+          />
+          <span className="text-xs text-brown-500">days</span>
+          <button
+            onClick={handleExtend}
+            disabled={isPending}
+            className="rounded-md bg-brown-900 px-3 py-1.5 text-xs font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+          >
+            Extend
+          </button>
+          <button
+            onClick={handleActivate}
+            disabled={isPending}
+            className="rounded-md bg-green-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-800 disabled:opacity-50"
+          >
+            Activate (1yr)
+          </button>
+        </div>
+      </div>
+
+      {/* Plan — the tier picker used to float disconnected below the
+          button row; it's its own decision, so it gets its own box. */}
+      <div className="rounded-lg border border-beige-300 bg-canvas/60 p-2.5">
+        <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-brown-400">Plan</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={planTier}
+            onChange={(e) => setPlanTier(e.target.value as PlanTier)}
+            className="rounded-md border border-beige-300 bg-surface px-2 py-1.5 text-xs text-brown-900 outline-none focus:border-gold-500"
+          >
+            {PLAN_TIERS.map((t) => (
+              <option key={t} value={t} className="capitalize">
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </option>
+            ))}
+          </select>
+          {planTier === "enterprise" && (
+            <input
+              type="number"
+              min={2}
+              max={10}
+              value={enterpriseCenters}
+              onChange={(e) => setEnterpriseCenters(Number(e.target.value))}
+              title="Number of centers"
+              className="w-14 rounded-md border border-beige-300 bg-surface px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
+            />
+          )}
+          <button
+            onClick={handleSetTier}
+            disabled={isPending}
+            className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600 disabled:opacity-50"
+          >
+            Set tier
+          </button>
+        </div>
+      </div>
+
+      {/* Danger zone — kept text-weight, not solid buttons, and separated
+          by a rule so Terminate/Delete stop visually competing with the
+          routine actions above for the eye's attention. */}
+      <div className="flex flex-wrap gap-4 border-t border-beige-200 pt-2">
         <button
           onClick={handleTerminate}
           disabled={isPending}
-          className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
+          className="text-xs font-semibold text-red-700 transition-colors hover:text-red-900 disabled:opacity-50"
         >
-          Terminate
+          Terminate access
         </button>
         <button
           onClick={handleDelete}
           disabled={isPending}
-          className="rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-800 disabled:opacity-50"
+          className="text-xs font-semibold text-red-700 transition-colors hover:text-red-900 disabled:opacity-50"
         >
-          Delete
+          Delete clinic
         </button>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <select
-          value={planTier}
-          onChange={(e) => setPlanTier(e.target.value as PlanTier)}
-          className="rounded-md border border-beige-300 bg-canvas px-2 py-1.5 text-xs text-brown-900 outline-none focus:border-gold-500"
-        >
-          {PLAN_TIERS.map((t) => (
-            <option key={t} value={t} className="capitalize">
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </option>
-          ))}
-        </select>
-        {planTier === "enterprise" && (
-          <input
-            type="number"
-            min={2}
-            max={10}
-            value={enterpriseCenters}
-            onChange={(e) => setEnterpriseCenters(Number(e.target.value))}
-            title="Number of centers"
-            className="w-16 rounded-md border border-beige-300 bg-canvas px-2 py-1 text-sm text-brown-900 outline-none focus:border-gold-500"
-          />
-        )}
-        <button
-          onClick={handleSetTier}
-          disabled={isPending}
-          className="rounded-md border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600 disabled:opacity-50"
-        >
-          Set tier
-        </button>
-      </div>
-      {error && <div className="mt-1 text-xs text-red-700">{error}</div>}
+
+      {error && <div className="text-xs text-red-700">{error}</div>}
     </div>
   );
 }
@@ -295,7 +326,7 @@ function ClinicRow({
         <div className="text-xs text-brown-400">{clinic.id}</div>
       </td>
       <td className="px-4 py-3">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <StatusBadge access={access} />
           <PlanTierLabel tier={(clinic.planTier as PlanTier) ?? "free"} />
         </div>
@@ -328,7 +359,7 @@ function ClinicCard({
           <div className="truncate font-medium text-brown-900">{clinic.name}</div>
           <div className="truncate text-xs text-brown-400">{clinic.id}</div>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1.5">
           <StatusBadge access={access} />
           <PlanTierLabel tier={(clinic.planTier as PlanTier) ?? "free"} />
         </div>

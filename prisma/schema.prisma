@@ -531,6 +531,12 @@ model Clinic {
   // (lib/db/platformSettings.ts) never silently reprices an existing
   // auto-renewing clinic.
   autoRenewPlanAmountInr Int?
+  // The tier this subscription is actually for — read by the
+  // subscription.charged webhook (app/api/webhooks/razorpay/route.ts) on
+  // every renewal so planTier below gets reasserted each time, not just on
+  // the first charge. Set alongside autoRenewPlanAmountInr at subscribe
+  // time (app/dashboard/billing/actions.ts), never derived from Razorpay.
+  autoRenewPlanTier String?
   // Same dedupe reasoning as renewalReminderSentForDeadline above, but
   // keyed on razorpaySubscriptionStatus instead of a deadline — so a
   // repeated "pending" webhook (Razorpay retries several times before
@@ -539,8 +545,9 @@ model Clinic {
   // fresh one.
   dunningEmailSentForStatus String?
 
-  // Manual Phase-A tier assignment (see lib/entitlements.ts) — set from the
-  // super-admin panel until real per-tier checkout exists. Null means
+  // Set either manually from the super-admin panel, or automatically by a
+  // real self-serve purchase (see lib/db/payments.ts confirmPayment /
+  // recordSubscriptionCharge, app/dashboard/billing/actions.ts). Null means
   // "free" at the code level, not "not yet decided" — every read goes
   // through getClinicTier(), so no backfill of existing rows is needed.
   planTier String?
@@ -681,6 +688,13 @@ model Payment {
   status            String // "created" | "paid" | "failed"
   createdAt         BigInt
   paidAt            BigInt?
+  // What this payment was actually for — set at order/subscription
+  // creation time (app/dashboard/billing/actions.ts) and applied to
+  // Clinic.planTier/enterpriseCenters once the payment is confirmed (see
+  // lib/db/payments.ts). Null for old rows created before per-tier
+  // checkout existed.
+  planTier          String?
+  enterpriseCenters Int?
 
   @@index([clinicId])
   @@index([clinicId, createdAt])
