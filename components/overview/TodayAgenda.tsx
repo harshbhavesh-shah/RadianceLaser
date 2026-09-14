@@ -8,6 +8,16 @@ import { STATUS_STYLES, STATUS_LABELS } from "@/components/appointments/statusSt
 import EmptyState from "@/components/ui/EmptyState";
 import type { Appointment } from "@/types";
 
+/** Dashboard-only status colors — "booked" gets the new rust accent here
+ * instead of Schedule's gold, everything else keeps the shared semantic
+ * colors from statusStyles.ts (completed/cancelled/no-show mean the same
+ * thing everywhere). Scoped to this component so Schedule's own calendar
+ * views are untouched. */
+const DASHBOARD_STATUS_STYLE = {
+  ...STATUS_STYLES,
+  booked: { bg: "bg-rust-100", text: "text-rust-700", dot: "bg-rust-600" },
+};
+
 /** The spine of the Overview page — today's appointments in order, one tap
  * away from the patient, with a pipeline action that carries a booked
  * appointment forward: "Log Visit" until a visit exists, then "Generate
@@ -38,10 +48,10 @@ export default function TodayAgenda({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+    <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
       {appointments.map((appt, i) => {
         const cfg = SESSION_TYPE_CONFIG[appt.sessionType];
-        const statusStyle = STATUS_STYLES[appt.status];
+        const statusStyle = DASHBOARD_STATUS_STYLE[appt.status];
         const linkedVisitId = visitIdByAppointmentId[appt.id];
         const hasReceipt = !!receiptedAppointmentIds[appt.id];
         // Online bookings from the public form arrive with no patientId —
@@ -65,7 +75,7 @@ export default function TodayAgenda({
           >
             <Link
               href={isLinked ? `/dashboard/patients/${appt.patientId}` : "/dashboard/appointments"}
-              className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-gold-600"
+              className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-rust-600"
             >
               <span className="w-20 flex-shrink-0 font-medium text-brown-900">
                 {formatTime12h(appt.time)}
@@ -88,7 +98,7 @@ export default function TodayAgenda({
               {isLinked && appt.status === "booked" && !linkedVisitId && (
                 <Link
                   href={logVisitHref}
-                  className="flex items-center gap-1 rounded-full border border-gold-500 px-2.5 py-1 text-[11px] font-medium text-gold-600 transition-colors hover:bg-gold-100"
+                  className="flex items-center gap-1 rounded-full border border-rust-600 px-2.5 py-1 text-[11px] font-medium text-rust-700 transition-colors hover:bg-rust-100"
                 >
                   <Stethoscope size={12} /> Log Visit
                 </Link>
@@ -96,7 +106,7 @@ export default function TodayAgenda({
               {isLinked && appt.status === "booked" && linkedVisitId && !hasReceipt && (
                 <Link
                   href={generateReceiptHref}
-                  className="flex items-center gap-1 rounded-full border border-gold-500 bg-gold-100 px-2.5 py-1 text-[11px] font-medium text-gold-600 transition-colors hover:bg-gold-100/70"
+                  className="flex items-center gap-1 rounded-full border border-rust-600 bg-rust-100 px-2.5 py-1 text-[11px] font-medium text-rust-700 transition-colors hover:bg-rust-100/70"
                 >
                   <ReceiptIcon size={12} /> Generate Receipt
                 </Link>

@@ -55,7 +55,7 @@ export default async function AnalyticsPage() {
 
   if (session.role !== "owner" && session.role !== "doctor") {
     return (
-      <div className="rounded-xl bg-surface p-8 text-center shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface p-8 text-center shadow-soft">
         <p className="text-sm text-brown-600">
           Analytics is only available to doctors and the clinic owner.
         </p>
@@ -85,7 +85,7 @@ export default async function AnalyticsPage() {
   const currentYear = new Date().getFullYear();
 
   const cashFlowRows = [
-    { label: "Cash", amount: cashFlow.cash, colorClass: "bg-gold-500" },
+    { label: "Cash", amount: cashFlow.cash, colorClass: "bg-rust-600" },
     { label: "Online", amount: cashFlow.online, colorClass: "bg-brown-700" },
     ...(cashFlow.unspecified > 0
       ? [{ label: "Unspecified", amount: cashFlow.unspecified, colorClass: "bg-beige-300" }]
@@ -94,16 +94,18 @@ export default async function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-medium text-brown-900">Analytics</h1>
-      <div className="mt-2 mb-8 h-[2px] w-8 bg-gold-500" />
+      <h1 className="inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
+        Analytics
+      </h1>
+      <div className="mb-8" />
 
       {/* Revenue hero — one prominent number (this month) instead of four
           equal boxes, with the other windows as a compact row underneath. */}
-      <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+      <div className="mt-6 rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
         <div className="text-xs font-medium uppercase tracking-wide text-brown-400">
           This Month&apos;s Revenue
         </div>
-        <div className="mt-1.5 font-display text-4xl font-medium text-gold-600">
+        <div className="mt-1.5 font-display text-4xl font-bold text-rust-700">
           {formatCurrency(revenue.month.total)}
         </div>
         <div className="mt-1 text-xs text-brown-400">
@@ -119,18 +121,18 @@ export default async function AnalyticsPage() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Yearly trend chart */}
-        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300 lg:col-span-2">
-          <h2 className="font-display text-lg font-medium text-brown-900">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft lg:col-span-2">
+          <h2 className="font-display text-lg font-semibold text-brown-900">
             Revenue Trend ({currentYear})
           </h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
           <YearlyRevenueChart data={yearlyTrend} />
         </div>
 
         {/* Revenue by treatment type — pie chart */}
-        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-          <h2 className="font-display text-lg font-medium text-brown-900">By Treatment Type</h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+          <h2 className="font-display text-lg font-semibold text-brown-900">By Treatment Type</h2>
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
           <PieChart
             segments={Object.keys(SESSION_TYPE_CONFIG).map((type) => ({
               label: SESSION_TYPE_CONFIG[type].label,
@@ -143,11 +145,11 @@ export default async function AnalyticsPage() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Cash flow — cash vs online, this year */}
-        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-          <h2 className="font-display text-lg font-medium text-brown-900">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+          <h2 className="font-display text-lg font-semibold text-brown-900">
             Cash Flow ({currentYear})
           </h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
 
           {cashFlow.total === 0 ? (
             <p className="text-sm text-brown-400">
@@ -187,11 +189,11 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* No-show / cancellation rate, this year */}
-        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-          <h2 className="font-display text-lg font-medium text-brown-900">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+          <h2 className="font-display text-lg font-semibold text-brown-900">
             Appointment Reliability ({currentYear})
           </h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
 
           {reliability.totalPast === 0 ? (
             <p className="text-sm text-brown-400">
@@ -223,9 +225,9 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* Package utilization / breakage */}
-      <div className="mt-8 rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-        <h2 className="font-display text-lg font-medium text-brown-900">Package Utilization</h2>
-        <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+      <div className="mt-8 rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+        <h2 className="font-display text-lg font-semibold text-brown-900">Package Utilization</h2>
+        <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
 
         {packageUtilization.sessionsSold === 0 ? (
           <p className="text-sm text-brown-400">No packages sold yet.</p>
@@ -247,7 +249,7 @@ export default async function AnalyticsPage() {
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-beige-200">
                 <div
-                  className="animate-grow-x h-full rounded-full bg-gold-500"
+                  className="animate-grow-x h-full rounded-full bg-rust-600"
                   style={{ width: `${packageUtilization.utilizationRate}%` }}
                 />
               </div>
@@ -264,9 +266,9 @@ export default async function AnalyticsPage() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Staff / machine / time breakdown */}
-        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-          <h2 className="font-display text-lg font-medium text-brown-900">Staff &amp; Machine Usage</h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+          <h2 className="font-display text-lg font-semibold text-brown-900">Staff &amp; Machine Usage</h2>
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
 
           {staffMachineStats.length === 0 ? (
             <p className="text-sm text-brown-400">
@@ -299,9 +301,9 @@ export default async function AnalyticsPage() {
         </div>
 
         {/* Most-treated body areas */}
-        <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-          <h2 className="font-display text-lg font-medium text-brown-900">Most-Treated Areas</h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-gold-500" />
+        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+          <h2 className="font-display text-lg font-semibold text-brown-900">Most-Treated Areas</h2>
+          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
 
           {areaStats.length === 0 ? (
             <p className="text-sm text-brown-400">No visits with an Area logged yet.</p>
@@ -315,7 +317,7 @@ export default async function AnalyticsPage() {
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-beige-200">
                     <div
-                      className="animate-grow-x h-full rounded-full bg-gold-500"
+                      className="animate-grow-x h-full rounded-full bg-rust-600"
                       style={{
                         width: `${(stat.count / maxAreaCount) * 100}%`,
                         animationDelay: `${i * 60}ms`,

@@ -49,10 +49,8 @@ export default function PatientVisitTabs({
               key={type}
               onClick={() => setActive(type)}
               className={[
-                "flex items-center gap-2 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-surface text-brown-900 shadow-soft ring-1 ring-beige-300"
-                  : "text-brown-600 hover:text-brown-900",
+                "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
+                isActive ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900",
               ].join(" ")}
             >
               <span

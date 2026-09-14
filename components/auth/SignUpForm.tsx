@@ -26,7 +26,7 @@ type Stage =
   | { name: "google-clinic-name"; idToken: string }
   | { name: "otp"; idToken: string };
 
-export default function SignUpForm({ annualPriceInr }: { annualPriceInr: number }) {
+export default function SignUpForm({ startingPriceInr }: { startingPriceInr: number }) {
   const router = useRouter();
   const [clinicName, setClinicName] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -170,8 +170,9 @@ export default function SignUpForm({ annualPriceInr }: { annualPriceInr: number 
               <p className="mb-2 text-center text-sm text-brown-600">Start your free trial</p>
               <p className="mb-7 text-center text-xs text-brown-400">
                 Free for {Math.round(TRIAL_LENGTH_DAYS / 30)} month
-                {Math.round(TRIAL_LENGTH_DAYS / 30) === 1 ? "" : "s"}, then ₹
-                {annualPriceInr.toLocaleString("en-IN")}/year. No card required to start.
+                {Math.round(TRIAL_LENGTH_DAYS / 30) === 1 ? "" : "s"}, full access. Settles onto our free plan
+                after, plans start at ₹{startingPriceInr.toLocaleString("en-IN")}/year. No card required to
+                start.
               </p>
 
               <button

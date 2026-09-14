@@ -61,15 +61,15 @@ export default function PatientReceipts({
   const sorted = [...receipts].sort((a, b) => b.createdAt - a.createdAt);
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-medium text-brown-900">Receipts</h2>
+          <h2 className="font-display text-lg font-semibold text-brown-900">Receipts</h2>
           <p className="mt-0.5 text-xs text-brown-400">Billing history for this patient.</p>
         </div>
         <button
           onClick={() => setFormOpen(true)}
-          className="flex-shrink-0 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+          className="flex-shrink-0 rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
         >
           + New Receipt
         </button>
@@ -87,7 +87,7 @@ export default function PatientReceipts({
               key={r.id}
               onClick={() => setViewingReceipt(r)}
               style={{ animationDelay: `${i * 30}ms` }}
-              className="animate-fade-up flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors hover:bg-gold-100/40"
+              className="animate-fade-up flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors hover:bg-rust-100/40"
             >
               <div>
                 <div className="text-sm font-medium text-brown-900">{r.receiptNumber}</div>

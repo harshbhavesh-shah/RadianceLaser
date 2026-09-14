@@ -7,7 +7,7 @@ import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { getClinicPayments } from "@/lib/db/payments";
 import { getAuditLogs } from "@/lib/db/auditLog";
 import { getClinicAccess } from "@/lib/subscription";
-import { getAnnualPriceInr, getTierPricing } from "@/lib/db/platformSettings";
+import { getTierPricing } from "@/lib/db/platformSettings";
 import { getClinicTier } from "@/lib/entitlements";
 import ClinicProfileSection from "@/components/settings/ClinicProfileSection";
 import StaffSection from "@/components/settings/StaffSection";
@@ -24,17 +24,15 @@ export default async function SettingsPage() {
   const session = await getSession();
   if (!session) redirect("/api/auth/force-logout");
 
-  const [clinic, staff, machines, sessionTypeDefs, payments, annualPriceInr, tierPricing, auditLogEntries] =
-    await Promise.all([
-      getClinic(session.clinicId),
-      getClinicStaff(session.clinicId),
-      getClinicMachines(session.clinicId),
-      getClinicSessionTypeDefs(session.clinicId),
-      getClinicPayments(session.clinicId),
-      getAnnualPriceInr(),
-      getTierPricing(),
-      getAuditLogs(session.clinicId),
-    ]);
+  const [clinic, staff, machines, sessionTypeDefs, payments, tierPricing, auditLogEntries] = await Promise.all([
+    getClinic(session.clinicId),
+    getClinicStaff(session.clinicId),
+    getClinicMachines(session.clinicId),
+    getClinicSessionTypeDefs(session.clinicId),
+    getClinicPayments(session.clinicId),
+    getTierPricing(),
+    getAuditLogs(session.clinicId),
+  ]);
 
   const isOwner = session.role === "owner";
   const access = clinic ? getClinicAccess(clinic) : ({ status: "active" } as const);
@@ -67,7 +65,6 @@ export default async function SettingsPage() {
             clinicName={clinic?.name || "Your Clinic"}
             ownerEmail={session.email || ""}
             payments={payments}
-            annualPriceInr={annualPriceInr}
             tierPricing={tierPricing}
             currentTier={currentTier}
             autoRenewEnabled={clinic?.autoRenewEnabled ?? false}

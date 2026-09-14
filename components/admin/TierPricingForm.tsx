@@ -66,7 +66,7 @@ export default function TierPricingForm({ initialSettings }: { initialSettings: 
   }
 
   return (
-    <div className="h-fit rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="h-fit max-w-2xl rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
       <div className="flex items-center gap-2">
         <Tag size={16} className="text-gold-600" />
         <h2 className="font-display text-base font-medium text-brown-900">Tier Pricing</h2>

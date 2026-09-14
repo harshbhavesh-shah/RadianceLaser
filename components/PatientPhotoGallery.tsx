@@ -127,10 +127,10 @@ export default function PatientPhotoGallery({
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-medium text-brown-900">Photos</h2>
+          <h2 className="font-display text-lg font-semibold text-brown-900">Photos</h2>
           <p className="mt-0.5 text-xs text-brown-400">
             Before/after progress, linked to sessions where relevant. Sensitive-area photos stay
             blurred until clicked.
@@ -140,10 +140,10 @@ export default function PatientPhotoGallery({
           {photos.length >= 2 && (
             <button
               onClick={toggleCompareMode}
-              className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 compareMode
-                  ? "bg-brown-900 text-beige-200"
-                  : "border border-beige-300 text-brown-700 hover:border-gold-500 hover:text-gold-600"
+                  ? "bg-rust-100 text-rust-700"
+                  : "border border-beige-300 text-brown-700 hover:border-rust-600 hover:text-rust-700"
               }`}
             >
               {compareMode ? "Cancel Compare" : "Compare"}
@@ -151,7 +151,7 @@ export default function PatientPhotoGallery({
           )}
           <button
             onClick={() => setUploadOpen(true)}
-            className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
           >
             + Add Photos
           </button>
@@ -159,7 +159,7 @@ export default function PatientPhotoGallery({
       </div>
 
       {compareMode && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-gold-500/40 bg-gold-100/50 px-4 py-2.5 text-sm">
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-rust-600/30 bg-rust-100/60 px-4 py-2.5 text-sm">
           <span className="text-brown-700">
             {selectedIds.length === 0
               ? "Pick any two photos to compare."
@@ -170,7 +170,7 @@ export default function PatientPhotoGallery({
           <button
             onClick={openCompare}
             disabled={selectedIds.length !== 2}
-            className="rounded-md bg-brown-900 px-3 py-1.5 text-xs font-semibold text-beige-200 disabled:opacity-40"
+            className="rounded-lg bg-rust-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
           >
             Compare Selected
           </button>
@@ -182,7 +182,7 @@ export default function PatientPhotoGallery({
           <select
             value={filterVisitId}
             onChange={(e) => setFilterVisitId(e.target.value)}
-            className="rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+            className="rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
           >
             <option value="all">All Photos ({photos.length})</option>
             {visitFilterOptions.map((opt) => (
@@ -213,7 +213,7 @@ export default function PatientPhotoGallery({
                 onClick={() => (compareMode ? toggleSelect(photo) : setLightboxPhoto(photo))}
                 style={{ animationDelay: `${i * 25}ms` }}
                 className={`animate-fade-up group relative aspect-square overflow-hidden rounded-md bg-beige-200 ring-2 transition-all ${
-                  isSelected ? "ring-gold-500" : "ring-transparent hover:ring-beige-300"
+                  isSelected ? "ring-rust-600" : "ring-transparent hover:ring-beige-300"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- embedded base64 data URL, not a remote asset */}
@@ -246,7 +246,7 @@ export default function PatientPhotoGallery({
                   <span
                     className={`absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] font-bold ${
                       isSelected
-                        ? "border-gold-500 bg-gold-500 text-white"
+                        ? "border-rust-600 bg-rust-600 text-white"
                         : "border-white bg-black/30 text-transparent"
                     }`}
                   >
@@ -323,7 +323,7 @@ export default function PatientPhotoGallery({
                 {lightboxPhoto.sensitive && (
                   <button
                     onClick={() => toggleReveal(lightboxPhoto.id)}
-                    className="ml-3 inline-flex items-center gap-1 text-gold-400 hover:underline"
+                    className="ml-3 inline-flex items-center gap-1 text-rust-100 hover:underline"
                   >
                     {revealedIds.has(lightboxPhoto.id) ? <EyeOff size={12} /> : <Eye size={12} />}
                     {revealedIds.has(lightboxPhoto.id) ? "Blur" : "Marked sensitive"}

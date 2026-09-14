@@ -74,7 +74,7 @@ export default function SessionTypePanel({
 
   return (
     <div>
-      <div className="mb-6 rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+      <div className="mb-6 rounded-2xl border border-beige-300 bg-surface shadow-soft">
         <button
           onClick={() => setPackagesExpanded((v) => !v)}
           className="flex w-full items-center justify-between px-5 py-4"
@@ -89,7 +89,7 @@ export default function SessionTypePanel({
               Packages
             </span>
             {packages.length > 0 && (
-              <span className="rounded-full bg-gold-100 px-2 py-0.5 text-xs font-medium text-gold-600">
+              <span className="rounded-full bg-rust-100 px-2 py-0.5 text-xs font-medium text-rust-700">
                 {activePackages.length} active
               </span>
             )}
@@ -104,7 +104,7 @@ export default function SessionTypePanel({
             <div className="mb-3 flex justify-end">
               <button
                 onClick={() => setPackageModalOpen(true)}
-                className="text-sm font-medium text-gold-600 hover:underline"
+                className="text-sm font-medium text-rust-700 hover:underline"
               >
                 + New Package
               </button>

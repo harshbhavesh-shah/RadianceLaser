@@ -11,7 +11,7 @@ import {
   toDateStr,
 } from "@/lib/calendar";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import { STATUS_STYLES } from "./statusStyles";
+import { SCHEDULE_STATUS_STYLE } from "./scheduleStatusStyles";
 import type { Appointment } from "@/types";
 
 const HOURS = Array.from(
@@ -47,7 +47,7 @@ export default function CalendarDayView({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+    <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
       <div className="flex">
         <div className="w-16 flex-shrink-0 border-r border-beige-300" />
         <div className="flex-1 px-4 py-3 text-center font-display text-base font-medium text-brown-900">
@@ -84,7 +84,7 @@ export default function CalendarDayView({
             const height = Math.max((appointment.durationMinutes / 60) * PIXELS_PER_HOUR, 22);
             const widthPct = 100 / totalColumns;
             const cfg = SESSION_TYPE_CONFIG[appointment.sessionType];
-            const statusStyle = STATUS_STYLES[appointment.status];
+            const statusStyle = SCHEDULE_STATUS_STYLE[appointment.status];
 
             return (
               <button
@@ -93,14 +93,14 @@ export default function CalendarDayView({
                   e.stopPropagation();
                   onEdit(appointment);
                 }}
-                className={`absolute overflow-hidden rounded-md border-l-2 px-2 py-1 text-left text-xs shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-gold-500 ${statusStyle.bg}`}
+                className={`absolute overflow-hidden rounded-md border-l-2 px-2 py-1 text-left text-xs shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
                 style={{
                   top,
                   height,
                   left: `${column * widthPct}%`,
                   width: `calc(${widthPct}% - 4px)`,
                   borderLeftColor:
-                    appointment.status === "cancelled" ? "#9C8672" : "#A9812F",
+                    appointment.status === "cancelled" ? "#9C8672" : "#C1442D",
                 }}
               >
                 <div className="flex items-center gap-1 truncate font-medium text-brown-900">

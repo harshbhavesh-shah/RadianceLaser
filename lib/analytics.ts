@@ -1,6 +1,72 @@
 import "server-only";
 import type { Package, SessionType, Visit } from "@/types";
 
+function revenueOnDate(visits: Visit[], packages: Package[], dateStr: string): number {
+  const dayVisits = visits.filter((v) => v.date === dateStr);
+  const dayPackages = packages.filter((p) => p.purchaseDate === dateStr);
+  return (
+    dayVisits.reduce((sum, v) => sum + feeOf(v), 0) + dayPackages.reduce((sum, p) => sum + p.totalAmount, 0)
+  );
+}
+
+export interface DailyRevenueSummary {
+  today: number;
+  yesterday: number;
+  // null rather than a fabricated number when yesterday was ₹0 — "up 400%"
+  // off a ₹0 base is noise, not a real trend, so the Dashboard card should
+  // just not show a percentage in that case.
+  changePct: number | null;
+  byType: Record<SessionType, number>;
+}
+
+/** Today-vs-yesterday revenue plus today's split by treatment type — backs
+ * the Dashboard's "Revenue Today" stat card and its breakdown list. Takes
+ * `visits`/`packages` already scoped to cover at least yesterday through
+ * today (see app/dashboard/page.tsx for the fetch window), not the whole
+ * month — a much smaller query than computeMonthlyRevenue needs. */
+export function computeDailyRevenueSummary(
+  visits: Visit[],
+  packages: Package[],
+  todayStr: string,
+  yesterdayStr: string
+): DailyRevenueSummary {
+  const today = revenueOnDate(visits, packages, todayStr);
+  const yesterday = revenueOnDate(visits, packages, yesterdayStr);
+  const changePct = yesterday > 0 ? Math.round(((today - yesterday) / yesterday) * 100) : null;
+
+  const byType: Record<SessionType, number> = {};
+  for (const v of visits.filter((v) => v.date === todayStr)) {
+    byType[v.sessionType] = (byType[v.sessionType] || 0) + feeOf(v);
+  }
+  for (const p of packages.filter((p) => p.purchaseDate === todayStr)) {
+    byType[p.sessionType] = (byType[p.sessionType] || 0) + p.totalAmount;
+  }
+
+  return { today, yesterday, changePct, byType };
+}
+
+export interface WeeklyRevenue {
+  total: number;
+  byDay: { dateStr: string; label: string; total: number }[];
+}
+
+/** One bar per day of the given week (Sunday–Saturday, matching
+ * lib/calendar.ts getWeekDays/startOfWeek) — backs the Dashboard's Weekly
+ * Revenue card. Same `visits`/`packages` window as
+ * computeDailyRevenueSummary covers this too, as long as the caller
+ * fetched since the earlier of the week's start or yesterday. */
+export function computeWeeklyRevenue(visits: Visit[], packages: Package[], weekDays: Date[]): WeeklyRevenue {
+  const byDay = weekDays.map((d) => {
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return {
+      dateStr,
+      label: d.toLocaleDateString("en-US", { weekday: "short" }),
+      total: revenueOnDate(visits, packages, dateStr),
+    };
+  });
+  return { total: byDay.reduce((sum, d) => sum + d.total, 0), byDay };
+}
+
 export function todayLocalStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

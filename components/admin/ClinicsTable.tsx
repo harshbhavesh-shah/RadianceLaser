@@ -13,6 +13,8 @@ import {
 } from "@/app/admin/actions";
 import { getClinicAccess, getClinicDeadline, type ClinicAccess } from "@/lib/subscription";
 import type { PlanTier } from "@/lib/entitlements";
+import { getPurchaseTierPriceInr, type PurchasableTier } from "@/lib/pricing";
+import type { TierPricing } from "@/lib/db/platformSettings";
 import type { Clinic } from "@/types";
 
 const PLAN_TIERS: PlanTier[] = ["free", "basic", "standard", "pro", "enterprise"];
@@ -85,11 +87,11 @@ function deadlineLabel(clinic: Clinic): string {
  * which is harmless since only one layout is ever visible at a time. */
 function ClinicActions({
   clinic,
-  annualPriceInr,
+  tierPricing,
   ownerEmail,
 }: {
   clinic: Clinic;
-  annualPriceInr: number;
+  tierPricing: TierPricing;
   ownerEmail: string | undefined;
 }) {
   const router = useRouter();
@@ -98,6 +100,11 @@ function ClinicActions({
   const [enterpriseCenters, setEnterpriseCenters] = useState(clinic.enterpriseCenters ?? 2);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isPurchasableTier = planTier !== "free";
+  const activatePriceInr = isPurchasableTier
+    ? getPurchaseTierPriceInr(planTier as PurchasableTier, tierPricing, enterpriseCenters)
+    : 0;
 
   async function handleSetTier() {
     setIsPending(true);
@@ -133,21 +140,27 @@ function ClinicActions({
   }
 
   // "Active" (not just "trial extended") — for a clinic that actually paid
-  // outside the app (bank transfer, cash, etc.). Also logs the sale on the
-  // Ledger at the current price, so it shows up there without your having
-  // to remember to add it separately — see activateAccountAction.
+  // outside the app (bank transfer, cash, etc.). Activates on whatever tier
+  // is currently selected in the Plan box below, and logs that tier's real
+  // price to the Ledger, so it shows up there without your having to
+  // remember to add it separately — see activateAccountAction.
   async function handleActivate() {
+    if (!isPurchasableTier) return;
     if (
       !confirm(
-        `Activate "${clinic.name}" for 1 year, as if they just paid ₹${annualPriceInr.toLocaleString("en-IN")}?\n\n` +
-          `This also logs ₹${annualPriceInr.toLocaleString("en-IN")} as profit in the Ledger.`
+        `Activate "${clinic.name}" on ${planTier} for 1 year, as if they just paid ₹${activatePriceInr.toLocaleString("en-IN")}?\n\n` +
+          `This also logs ₹${activatePriceInr.toLocaleString("en-IN")} as profit in the Ledger.`
       )
     ) {
       return;
     }
     setIsPending(true);
     setError(null);
-    const result = await activateAccountAction(clinic.id);
+    const result = await activateAccountAction(
+      clinic.id,
+      planTier as PurchasableTier,
+      planTier === "enterprise" ? enterpriseCenters : undefined
+    );
     setIsPending(false);
     if (result.error) setError(result.error);
     else router.refresh();
@@ -214,10 +227,8 @@ function ClinicActions({
         )}
       </div>
 
-      {/* Access — extending a deadline and a full manual activation are
-          both ways of granting time, grouped so they read as one family
-          of actions rather than two buttons that happen to sit near
-          each other. */}
+      {/* Access — just time, extending whichever deadline currently
+          governs this clinic. Doesn't touch tier or billing. */}
       <div className="rounded-lg border border-beige-300 bg-canvas/60 p-2.5">
         <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-brown-400">Access</div>
         <div className="flex flex-wrap items-center gap-2">
@@ -237,18 +248,14 @@ function ClinicActions({
           >
             Extend
           </button>
-          <button
-            onClick={handleActivate}
-            disabled={isPending}
-            className="rounded-md bg-green-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-800 disabled:opacity-50"
-          >
-            Activate (1yr)
-          </button>
         </div>
       </div>
 
-      {/* Plan — the tier picker used to float disconnected below the
-          button row; it's its own decision, so it gets its own box. */}
+      {/* Plan — tier and billing together, since Activate now charges
+          whatever tier is picked here. "Set tier" alone changes only the
+          tier (e.g. adjusting an already-paying clinic without touching
+          their renewal date); "Activate" grants a full paid year at that
+          tier's real price and logs it to the Ledger. */}
       <div className="rounded-lg border border-beige-300 bg-canvas/60 p-2.5">
         <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-brown-400">Plan</div>
         <div className="flex flex-wrap items-center gap-2">
@@ -282,6 +289,18 @@ function ClinicActions({
             Set tier
           </button>
         </div>
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            onClick={handleActivate}
+            disabled={isPending || !isPurchasableTier}
+            title={isPurchasableTier ? undefined : "Pick a paid tier above first — Free has no price to log."}
+            className="rounded-md bg-green-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPurchasableTier
+              ? `Activate for 1yr: ₹${activatePriceInr.toLocaleString("en-IN")}`
+              : "Activate for 1yr"}
+          </button>
+        </div>
       </div>
 
       {/* Danger zone — kept text-weight, not solid buttons, and separated
@@ -311,11 +330,11 @@ function ClinicActions({
 
 function ClinicRow({
   clinic,
-  annualPriceInr,
+  tierPricing,
   ownerEmail,
 }: {
   clinic: Clinic;
-  annualPriceInr: number;
+  tierPricing: TierPricing;
   ownerEmail: string | undefined;
 }) {
   const access = getClinicAccess(clinic);
@@ -333,7 +352,7 @@ function ClinicRow({
       </td>
       <td className="px-4 py-3 text-sm text-brown-600">{deadlineLabel(clinic)}</td>
       <td className="px-4 py-3">
-        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} ownerEmail={ownerEmail} />
+        <ClinicActions clinic={clinic} tierPricing={tierPricing} ownerEmail={ownerEmail} />
       </td>
     </tr>
   );
@@ -344,11 +363,11 @@ function ClinicRow({
  * narrower than the Status/Deadline/Actions columns need. */
 function ClinicCard({
   clinic,
-  annualPriceInr,
+  tierPricing,
   ownerEmail,
 }: {
   clinic: Clinic;
-  annualPriceInr: number;
+  tierPricing: TierPricing;
   ownerEmail: string | undefined;
 }) {
   const access = getClinicAccess(clinic);
@@ -366,7 +385,7 @@ function ClinicCard({
       </div>
       <div className="mt-2 text-sm text-brown-600">{deadlineLabel(clinic)}</div>
       <div className="mt-3 border-t border-beige-300 pt-3">
-        <ClinicActions clinic={clinic} annualPriceInr={annualPriceInr} ownerEmail={ownerEmail} />
+        <ClinicActions clinic={clinic} tierPricing={tierPricing} ownerEmail={ownerEmail} />
       </div>
     </div>
   );
@@ -374,11 +393,11 @@ function ClinicCard({
 
 export default function ClinicsTable({
   clinics,
-  annualPriceInr,
+  tierPricing,
   ownerEmails,
 }: {
   clinics: Clinic[];
-  annualPriceInr: number;
+  tierPricing: TierPricing;
   ownerEmails: Record<string, string>;
 }) {
   const [attentionOnly, setAttentionOnly] = useState(false);
@@ -429,7 +448,7 @@ export default function ClinicsTable({
               <ClinicCard
                 key={clinic.id}
                 clinic={clinic}
-                annualPriceInr={annualPriceInr}
+                tierPricing={tierPricing}
                 ownerEmail={ownerEmails[clinic.id]}
               />
             ))}
@@ -451,7 +470,7 @@ export default function ClinicsTable({
                   <ClinicRow
                     key={clinic.id}
                     clinic={clinic}
-                    annualPriceInr={annualPriceInr}
+                    tierPricing={tierPricing}
                     ownerEmail={ownerEmails[clinic.id]}
                   />
                 ))}

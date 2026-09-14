@@ -12,7 +12,7 @@ import {
   todayLocalStr,
 } from "@/lib/calendar";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import { STATUS_STYLES } from "./statusStyles";
+import { SCHEDULE_STATUS_STYLE } from "./scheduleStatusStyles";
 import type { Appointment } from "@/types";
 
 const HOURS = Array.from(
@@ -46,7 +46,7 @@ export default function CalendarWeekView({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+    <div className="overflow-x-auto rounded-2xl border border-beige-300 bg-surface shadow-soft">
       <div className="flex min-w-[720px]">
         <div className="w-16 flex-shrink-0 border-r border-beige-300" />
         {days.map((d) => {
@@ -55,13 +55,13 @@ export default function CalendarWeekView({
           return (
             <div
               key={dateStr}
-              className={`flex-1 border-r border-beige-300 py-3 text-center last:border-r-0 ${isToday ? "bg-gold-100/40" : ""}`}
+              className={`flex-1 border-r border-beige-300 py-3 text-center last:border-r-0 ${isToday ? "bg-rust-100" : ""}`}
             >
               <div className="text-xs uppercase tracking-wide text-brown-400">
                 {d.toLocaleDateString("en-US", { weekday: "short" })}
               </div>
               <div
-                className={`mt-0.5 font-display text-base font-medium ${isToday ? "text-gold-600" : "text-brown-900"}`}
+                className={`mt-0.5 font-display text-base font-bold ${isToday ? "text-rust-700" : "text-brown-900"}`}
               >
                 {d.getDate()}
               </div>
@@ -90,7 +90,7 @@ export default function CalendarWeekView({
           return (
             <div
               key={dateStr}
-              className={`relative flex-1 cursor-pointer border-l border-beige-300 ${isToday ? "bg-gold-100/10" : ""}`}
+              className={`relative flex-1 cursor-pointer border-l border-beige-300 ${isToday ? "bg-rust-100/30" : ""}`}
               style={{ height: GRID_HEIGHT }}
               onClick={(e) => handleGridClick(e, dateStr)}
             >
@@ -107,7 +107,7 @@ export default function CalendarWeekView({
                 const height = Math.max((appointment.durationMinutes / 60) * PIXELS_PER_HOUR, 20);
                 const widthPct = 100 / totalColumns;
                 const cfg = SESSION_TYPE_CONFIG[appointment.sessionType];
-                const statusStyle = STATUS_STYLES[appointment.status];
+                const statusStyle = SCHEDULE_STATUS_STYLE[appointment.status];
 
                 return (
                   <button
@@ -116,13 +116,13 @@ export default function CalendarWeekView({
                       e.stopPropagation();
                       onEdit(appointment);
                     }}
-                    className={`absolute overflow-hidden rounded border-l-2 px-1.5 py-0.5 text-left text-[10px] shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-gold-500 ${statusStyle.bg}`}
+                    className={`absolute overflow-hidden rounded border-l-2 px-1.5 py-0.5 text-left text-[10px] shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
                     style={{
                       top,
                       height,
                       left: `${column * widthPct}%`,
                       width: `calc(${widthPct}% - 2px)`,
-                      borderLeftColor: appointment.status === "cancelled" ? "#9C8672" : "#A9812F",
+                      borderLeftColor: appointment.status === "cancelled" ? "#9C8672" : "#C1442D",
                     }}
                   >
                     <div className="truncate font-medium text-brown-900">

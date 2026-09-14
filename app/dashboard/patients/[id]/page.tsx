@@ -52,29 +52,36 @@ export default async function PatientDetailPage({
 
   return (
     <div className="max-w-5xl">
-      <Link href="/dashboard/patients" className="text-sm text-brown-600 hover:text-gold-600">
+      <Link href="/dashboard/patients" className="text-sm text-brown-600 hover:text-rust-700">
         ← Back to Patients
       </Link>
 
-      <div className="mt-3 mb-8 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-medium text-brown-900">{patient.name}</h1>
-          <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+      <div className="mt-3 mb-8 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-rust-100 font-display text-lg font-bold text-rust-700">
+            {patient.name
+              .split(" ")
+              .map((n) => n[0])
+              .slice(0, 2)
+              .join("")
+              .toUpperCase()}
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-brown-900">{patient.name}</h1>
+            <span className="mt-1 inline-block rounded-full bg-beige-200 px-3 py-1 font-mono text-xs text-brown-600">
+              {patient.patientCode}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-beige-200 px-3 py-1 font-mono text-xs text-brown-600">
-            {patient.patientCode}
-          </span>
-          <Link
-            href={`/dashboard/patients/${patient.id}/edit`}
-            className="rounded-md border border-beige-300 px-3 py-1 text-xs font-medium text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600"
-          >
-            Edit
-          </Link>
-        </div>
+        <Link
+          href={`/dashboard/patients/${patient.id}/edit`}
+          className="rounded-lg border border-beige-300 bg-surface px-3 py-1.5 text-xs font-semibold text-brown-700 transition-colors hover:border-rust-600 hover:text-rust-700"
+        >
+          Edit
+        </Link>
       </div>
 
-      <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <InfoField label="Contact" value={patient.phone} />
           <InfoField label="Email" value={patient.email || "—"} />
@@ -85,8 +92,8 @@ export default async function PatientDetailPage({
         </div>
 
         {patient.contraindications && (
-          <div className="mt-6 rounded-lg border border-gold-500/40 bg-gold-100/50 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gold-600">
+          <div className="mt-6 rounded-lg border border-rust-600/30 bg-rust-100/60 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-rust-700">
               Contraindications / Notes
             </div>
             <p className="mt-1 text-sm text-brown-700">{patient.contraindications}</p>
@@ -95,8 +102,8 @@ export default async function PatientDetailPage({
       </div>
 
       <div className="mt-8">
-        <h2 className="font-display text-lg font-medium text-brown-900">Visit History</h2>
-        <div className="mt-2 mb-4 h-[2px] w-8 bg-gold-500" />
+        <h2 className="font-display text-lg font-semibold text-brown-900">Visit History</h2>
+        <div className="mt-2 mb-4 h-[2px] w-8 bg-rust-600" />
         <PatientVisitTabs
           clinicId={session.clinicId}
           patientId={patient.id}

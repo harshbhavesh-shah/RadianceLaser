@@ -27,7 +27,7 @@ export default function YearlyRevenueChart({ data }: { data: MonthPoint[] }) {
             className="group flex-1"
           >
             <div
-              className="animate-grow-y w-full rounded-t-sm bg-gold-500 transition-colors group-hover:bg-gold-600"
+              className="animate-grow-y w-full rounded-t-sm bg-rust-600 transition-colors group-hover:bg-rust-700"
               style={{
                 height: `${Math.max((point.total / max) * CHART_HEIGHT_PX, point.total > 0 ? 4 : 1)}px`,
                 animationDelay: `${i * 40}ms`,

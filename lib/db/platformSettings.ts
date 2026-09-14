@@ -7,13 +7,9 @@ import { prisma } from "@/lib/db/client";
 const SETTINGS_ID = "global";
 
 // Only used if the row is somehow missing (a fresh database before the
-// first admin save) — never blocks the landing/signup/billing pages from
-// rendering a price just because this hasn't been set yet.
-const DEFAULT_ANNUAL_PRICE_INR = 20000;
-
-// Same idea, one per tier — these are also the numbers the landing page
-// showed as plain hardcoded copy before tier pricing became admin-editable,
-// so a fresh database renders exactly what it always did.
+// first admin save) — these are also the numbers the landing page showed
+// as plain hardcoded copy before tier pricing became admin-editable, so a
+// fresh database renders exactly what it always did.
 const DEFAULT_BASIC_PRICE_INR = 15000;
 const DEFAULT_STANDARD_PRICE_INR = 25000;
 const DEFAULT_PRO_PRICE_INR = 30000;
@@ -21,36 +17,6 @@ const DEFAULT_ENTERPRISE_MIN_PRICE_INR = 50000;
 const DEFAULT_ENTERPRISE_MAX_PRICE_INR = 200000;
 
 export const PLATFORM_SETTINGS_CACHE_TAG = "platform-settings";
-
-async function fetchAnnualPriceInr(): Promise<number> {
-  const row = await prisma.platformSettings.findUnique({ where: { id: SETTINGS_ID } });
-  return row?.annualPriceInr ?? DEFAULT_ANNUAL_PRICE_INR;
-}
-
-/**
- * The single source of truth for the software's annual price — read by the
- * landing page, signup page, dashboard billing section, and the Razorpay
- * order creation action, so changing it in one place (the super admin
- * panel) changes what every one of those shows and actually charges.
- * Cached across requests since it changes rarely; updatePlatformPricing
- * below invalidates it immediately via revalidateTag rather than waiting
- * out the revalidate window.
- */
-export function getAnnualPriceInr(): Promise<number> {
-  return unstable_cache(fetchAnnualPriceInr, ["annual-price-inr"], {
-    tags: [PLATFORM_SETTINGS_CACHE_TAG],
-    revalidate: 300,
-  })();
-}
-
-export async function updatePlatformPricing(annualPriceInr: number, updatedByEmail: string): Promise<void> {
-  const now = BigInt(Date.now());
-  await prisma.platformSettings.upsert({
-    where: { id: SETTINGS_ID },
-    create: { id: SETTINGS_ID, annualPriceInr, updatedAt: now, updatedByEmail },
-    update: { annualPriceInr, updatedAt: now, updatedByEmail },
-  });
-}
 
 export interface TierPricing {
   basicPriceInr: number;
@@ -72,11 +38,12 @@ async function fetchTierPricing(): Promise<TierPricing> {
 }
 
 /**
- * The public pricing ladder's advertised Basic/Standard/Pro/Enterprise
- * prices — read by the landing page's pricing section. Free is always ₹0
- * and isn't stored. Separate cache tag key from getAnnualPriceInr's so
- * either can be revalidated independently, but both share
- * PLATFORM_SETTINGS_CACHE_TAG since they live on the same row.
+ * The single source of truth for what every paid tier actually costs —
+ * read by the landing page's pricing section, real checkout
+ * (app/dashboard/billing/actions.ts), and the admin's manual activation
+ * flow. Free is always ₹0 and isn't stored. Cached across requests since it
+ * changes rarely; updateTierPricing below invalidates it immediately via
+ * revalidateTag rather than waiting out the revalidate window.
  */
 export function getTierPricing(): Promise<TierPricing> {
   return unstable_cache(fetchTierPricing, ["tier-pricing"], {
@@ -89,13 +56,12 @@ export async function updateTierPricing(pricing: TierPricing, updatedByEmail: st
   const now = BigInt(Date.now());
   await prisma.platformSettings.upsert({
     where: { id: SETTINGS_ID },
-    create: { id: SETTINGS_ID, annualPriceInr: DEFAULT_ANNUAL_PRICE_INR, ...pricing, updatedAt: now, updatedByEmail },
+    create: { id: SETTINGS_ID, ...pricing, updatedAt: now, updatedByEmail },
     update: { ...pricing, updatedAt: now, updatedByEmail },
   });
 }
 
 export interface PlatformSettingsInfo extends TierPricing {
-  annualPriceInr: number;
   updatedAt: number | null;
   updatedByEmail: string | null;
 }
@@ -105,7 +71,6 @@ export interface PlatformSettingsInfo extends TierPricing {
 export async function getPlatformSettingsInfo(): Promise<PlatformSettingsInfo> {
   const row = await prisma.platformSettings.findUnique({ where: { id: SETTINGS_ID } });
   return {
-    annualPriceInr: row?.annualPriceInr ?? DEFAULT_ANNUAL_PRICE_INR,
     basicPriceInr: row?.basicPriceInr ?? DEFAULT_BASIC_PRICE_INR,
     standardPriceInr: row?.standardPriceInr ?? DEFAULT_STANDARD_PRICE_INR,
     proPriceInr: row?.proPriceInr ?? DEFAULT_PRO_PRICE_INR,

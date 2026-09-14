@@ -41,14 +41,14 @@ export default function VisitTimeline({
       <div className="mb-4 flex justify-end">
         <button
           onClick={onAddNew}
-          className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+          className="rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
         >
           + Log New Visit
         </button>
       </div>
 
       {sorted.length === 0 ? (
-        <div className="rounded-xl bg-surface p-10 text-center shadow-soft ring-1 ring-beige-300">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-10 text-center shadow-soft">
           <p className="text-sm text-brown-600">No {config.label} visits logged yet.</p>
         </div>
       ) : (
@@ -85,15 +85,15 @@ export default function VisitTimeline({
               <button
                 key={visit.id}
                 onClick={() => onEdit(visit)}
-                className="group block w-full rounded-xl bg-surface p-4 text-left shadow-soft ring-1 ring-beige-300 transition-shadow hover:shadow-card"
+                className="group block w-full rounded-2xl border border-beige-300 bg-surface p-4 text-left shadow-soft transition-shadow hover:shadow-card"
               >
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <span className="font-display text-base font-medium text-brown-900">
+                    <span className="font-display text-base font-semibold text-brown-900">
                       {formatDate(visit.date)}
                     </span>
                     {visit.packageId && (
-                      <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold-600">
+                      <span className="rounded-full bg-rust-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-rust-700">
                         Package
                       </span>
                     )}
@@ -126,7 +126,7 @@ export default function VisitTimeline({
                             i === 0
                               ? ""
                               : isNewAreaGroup[i]
-                                ? "border-t-2 border-gold-500"
+                                ? "border-t-2 border-rust-600"
                                 : "border-t border-beige-200";
                           return (
                             <tr key={i} className={topBorder}>

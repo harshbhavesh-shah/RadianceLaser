@@ -33,6 +33,15 @@ const config: Config = {
           400: "#C79A3E",
           100: "#F3E7CC",
         },
+        // The rust-on-cream redesign's one accent — introduced for the
+        // Dashboard page first (see app/dashboard/page.tsx), not yet used
+        // anywhere else. Additive: brown/gold/beige above are untouched, so
+        // every other page keeps its current look until it's redesigned too.
+        rust: {
+          700: "#A03A24",
+          600: "#C1442D",
+          100: "#FBEAE4",
+        },
       },
       fontFamily: {
         // Default heading face everywhere except the landing page — the

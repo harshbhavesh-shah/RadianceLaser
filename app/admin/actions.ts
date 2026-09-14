@@ -7,14 +7,8 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/db/client";
 import { clinicCacheTag, updateClinicSubscription, updateClinicPlanTier, deleteClinic } from "@/lib/db/clinics";
 import type { PlanTier } from "@/lib/entitlements";
-import {
-  updatePlatformPricing,
-  PLATFORM_SETTINGS_CACHE_TAG,
-  getAnnualPriceInr,
-  updateTierPricing,
-  getTierPricing,
-  type TierPricing,
-} from "@/lib/db/platformSettings";
+import { PLATFORM_SETTINGS_CACHE_TAG, updateTierPricing, getTierPricing, type TierPricing } from "@/lib/db/platformSettings";
+import { PURCHASABLE_TIERS, getPurchaseTierPriceInr, type PurchasableTier } from "@/lib/pricing";
 import { createLedgerEntry } from "@/lib/db/ledger";
 import { createAdminAuditLogEntry } from "@/lib/db/adminAuditLog";
 import { SUBSCRIPTION_LENGTH_DAYS } from "@/lib/subscription";
@@ -33,47 +27,10 @@ export interface AdminActionResult {
 }
 
 /**
- * The single knob that changes the software's price everywhere at once —
- * see lib/db/platformSettings.ts for the read side (landing page, signup
- * page, dashboard billing, and what Razorpay actually charges all read
- * this same row). revalidateTag makes existing pages pick it up
- * immediately rather than waiting out the cache's 5-minute window.
- */
-export async function updatePlatformPriceAction(annualPriceInr: number): Promise<AdminActionResult> {
-  try {
-    const session = await requireSuperAdmin();
-
-    if (!Number.isFinite(annualPriceInr) || annualPriceInr <= 0) {
-      return { error: "Enter a positive price." };
-    }
-    if (!Number.isInteger(annualPriceInr)) {
-      return { error: "Enter a whole number of rupees." };
-    }
-
-    const oldPriceInr = await getAnnualPriceInr();
-    await updatePlatformPricing(annualPriceInr, session.email || "unknown");
-    await createAdminAuditLogEntry({
-      action: "price_change",
-      detail: `₹${oldPriceInr.toLocaleString("en-IN")} → ₹${annualPriceInr.toLocaleString("en-IN")}`,
-      performedBy: session.email || "unknown",
-    });
-    revalidateTag(PLATFORM_SETTINGS_CACHE_TAG);
-    revalidatePath("/admin/pricing");
-    revalidatePath("/");
-    revalidatePath("/signup");
-    return {};
-  } catch (err) {
-    console.error("Failed to update platform pricing:", err);
-    return { error: "Couldn't save this price. Please try again." };
-  }
-}
-
-/**
- * The public pricing page's advertised Basic/Standard/Pro/Enterprise
- * prices — separate from updatePlatformPriceAction above, which is what
- * self-serve checkout actually charges today (real per-tier billing
- * hasn't shipped yet, see lib/entitlements.ts). Free is always ₹0 and
- * isn't editable here.
+ * The single knob that changes what every paid tier costs, everywhere at
+ * once — see lib/db/platformSettings.ts for the read side (landing page,
+ * real checkout, and the admin's own manual activation flow below all read
+ * this same row). Free is always ₹0 and isn't editable here.
  */
 export async function updateTierPricingAction(pricing: TierPricing): Promise<AdminActionResult> {
   try {
@@ -167,33 +124,49 @@ export async function extendAccessAction(clinicId: string, days: number): Promis
 }
 
 /**
- * Marks a clinic "active" for a full year, exactly as if they'd just paid
- * through Razorpay — for a clinic that actually paid you outside the app
- * (bank transfer, cash, etc.). Unlike extendAccessAction, this always
- * lands on "active" status even for a clinic that's still on/never left
- * its trial, rather than just adding days to whichever deadline currently
- * governs it. Also logs the sale in the Ledger (see app/admin/ledger) at
- * the current platform price, since a payment collected this way would
- * otherwise never show up anywhere in the platform's own bookkeeping —
- * Payment (prisma/schema.prisma) is Razorpay-specific (a required
+ * Marks a clinic "active" for a full year on the given tier, exactly as if
+ * they'd just paid through Razorpay — for a clinic that actually paid you
+ * outside the app (bank transfer, cash, etc.). Unlike extendAccessAction,
+ * this always lands on "active" status even for a clinic that's still
+ * on/never left its trial, rather than just adding days to whichever
+ * deadline currently governs it. Also sets the clinic's planTier (so this
+ * one click both grants access and records what it's for) and logs the
+ * sale in the Ledger (see app/admin/ledger) at that tier's real price,
+ * since a payment collected this way would otherwise never show up
+ * anywhere in the platform's own bookkeeping — Payment
+ * (prisma/schema.prisma) is Razorpay-specific (a required
  * razorpayOrderId), so this isn't recorded there.
  */
-export async function activateAccountAction(clinicId: string): Promise<AdminActionResult> {
+export async function activateAccountAction(
+  clinicId: string,
+  planTier: PurchasableTier,
+  enterpriseCenters?: number
+): Promise<AdminActionResult> {
   try {
     const session = await requireSuperAdmin();
+
+    if (!PURCHASABLE_TIERS.includes(planTier)) {
+      return { error: "Invalid plan tier." };
+    }
 
     const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
     if (!clinic) return { error: "Clinic not found." };
 
+    const pricing = await getTierPricing();
+    const priceInr = getPurchaseTierPriceInr(planTier, pricing, enterpriseCenters);
+
     const current = Number(clinic.subscriptionRenewsAt ?? 0);
     const newRenewsAt = Math.max(Date.now(), current) + SUBSCRIPTION_LENGTH_DAYS * DAY_MS;
     await updateClinicSubscription(clinicId, { subscriptionStatus: "active", subscriptionRenewsAt: newRenewsAt });
+    await updateClinicPlanTier(clinicId, {
+      planTier,
+      ...(planTier === "enterprise" && enterpriseCenters ? { enterpriseCenters } : {}),
+    });
 
-    const annualPriceInr = await getAnnualPriceInr();
     await createLedgerEntry({
       type: "profit",
-      amountInr: annualPriceInr,
-      description: `Manual activation for ${clinic.name} (1 year)`,
+      amountInr: priceInr,
+      description: `Manual activation for ${clinic.name} (${planTier}, 1 year)`,
       date: new Date().toISOString().slice(0, 10),
       createdByEmail: session.email || undefined,
     });
@@ -201,7 +174,7 @@ export async function activateAccountAction(clinicId: string): Promise<AdminActi
       clinicId,
       clinicName: clinic.name,
       action: "activate",
-      detail: `Activated for 1 year (₹${annualPriceInr.toLocaleString("en-IN")})`,
+      detail: `Activated on ${planTier} for 1 year (₹${priceInr.toLocaleString("en-IN")})`,
       performedBy: session.email || "unknown",
     });
 

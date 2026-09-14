@@ -8,6 +8,14 @@ import { STATUS_STYLES, STATUS_LABELS } from "@/components/appointments/statusSt
 import EmptyState from "@/components/ui/EmptyState";
 import type { Appointment } from "@/types";
 
+/** Dashboard-only status colors — see TodayAgenda.tsx for why "booked"
+ * gets the new rust accent here instead of Schedule's gold, scoped to this
+ * component so Schedule's own calendar views are untouched. */
+const DASHBOARD_STATUS_STYLE = {
+  ...STATUS_STYLES,
+  booked: { bg: "bg-rust-100", text: "text-rust-700", dot: "bg-rust-600" },
+};
+
 /** This week's appointments, grouped under each day of the week — a plain
  * read-only look at the week's shape (light days, heavy days), not another
  * place to work a booking forward. That stays Today's Appointments' job. */
@@ -44,7 +52,7 @@ export default function WeekAgenda({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+    <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
       {weekDays.map((day, dayIndex) => {
         const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
         const dayAppointments = byDate.get(dateStr) ?? [];
@@ -60,7 +68,7 @@ export default function WeekAgenda({
                 {day.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
               </span>
               {isToday && (
-                <span className="rounded-full bg-gold-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                <span className="rounded-full bg-rust-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                   Today
                 </span>
               )}
@@ -71,7 +79,7 @@ export default function WeekAgenda({
 
             {dayAppointments.map((appt) => {
               const cfg = SESSION_TYPE_CONFIG[appt.sessionType];
-              const statusStyle = STATUS_STYLES[appt.status];
+              const statusStyle = DASHBOARD_STATUS_STYLE[appt.status];
               return (
                 <Link
                   key={appt.id}

@@ -103,7 +103,7 @@ export default function PatientsTable({
         />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+          <div className="overflow-x-auto rounded-2xl border border-beige-300 bg-surface shadow-soft">
             <table className="w-full min-w-[600px] text-left text-sm">
               <thead>
                 <tr className="border-b border-beige-300 bg-beige-200/50 text-xs uppercase tracking-wide text-brown-600">
@@ -115,11 +115,11 @@ export default function PatientsTable({
               </thead>
               <tbody>
                 {displayed.map((patient) => (
-                  <tr key={patient.id} className="border-b border-beige-300 last:border-0 hover:bg-gold-100/40">
+                  <tr key={patient.id} className="border-b border-beige-300 last:border-0 hover:bg-rust-100/40">
                     <td className="px-5 py-3">
                       <Link
                         href={`/dashboard/patients/${patient.id}`}
-                        className="font-medium text-brown-900 hover:text-gold-600"
+                        className="font-medium text-brown-900 hover:text-rust-700"
                       >
                         {patient.name}
                       </Link>

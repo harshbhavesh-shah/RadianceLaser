@@ -2,7 +2,7 @@
 
 import { getMonthGridDays, toDateStr, todayLocalStr, formatTime12h } from "@/lib/calendar";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import { STATUS_STYLES } from "./statusStyles";
+import { SCHEDULE_STATUS_STYLE } from "./scheduleStatusStyles";
 import type { Appointment } from "@/types";
 
 const MAX_VISIBLE_PER_DAY = 3;
@@ -36,7 +36,7 @@ export default function CalendarMonthView({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+    <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
       <div className="grid grid-cols-7 border-b border-beige-300 bg-beige-200/50">
         {WEEKDAY_LABELS.map((label) => (
           <div
@@ -70,9 +70,9 @@ export default function CalendarMonthView({
                   e.stopPropagation();
                   onShowDay(d);
                 }}
-                className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors hover:bg-gold-100 ${
+                className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors hover:bg-rust-100 ${
                   isToday
-                    ? "bg-gold-500 text-white"
+                    ? "bg-rust-600 text-white"
                     : isCurrentMonth
                       ? "text-brown-900"
                       : "text-brown-400"
@@ -84,7 +84,7 @@ export default function CalendarMonthView({
               <div className="space-y-1">
                 {visible.map((appt) => {
                   const cfg = SESSION_TYPE_CONFIG[appt.sessionType];
-                  const statusStyle = STATUS_STYLES[appt.status];
+                  const statusStyle = SCHEDULE_STATUS_STYLE[appt.status];
                   return (
                     <button
                       key={appt.id}
@@ -92,7 +92,7 @@ export default function CalendarMonthView({
                         e.stopPropagation();
                         onEdit(appt);
                       }}
-                      className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-gold-500 ${statusStyle.bg} ${statusStyle.text}`}
+                      className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg} ${statusStyle.text}`}
                       title={`${formatTime12h(appt.time)}: ${appt.patientName}`}
                     >
                       <span className={`mr-1 rounded px-1 text-[8px] font-bold ${cfg.badgeClassName}`}>
@@ -108,7 +108,7 @@ export default function CalendarMonthView({
                       e.stopPropagation();
                       onShowDay(d);
                     }}
-                    className="block w-full truncate px-1.5 text-left text-[10px] font-medium text-brown-400 hover:text-gold-600"
+                    className="block w-full truncate px-1.5 text-left text-[10px] font-medium text-brown-400 hover:text-rust-700"
                   >
                     +{overflow} more
                   </button>

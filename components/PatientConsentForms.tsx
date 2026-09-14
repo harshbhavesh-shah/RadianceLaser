@@ -46,15 +46,15 @@ export default function PatientConsentForms({
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-medium text-brown-900">Consent Forms</h2>
+          <h2 className="font-display text-lg font-semibold text-brown-900">Consent Forms</h2>
           <p className="mt-0.5 text-xs text-brown-400">Signed with an e-signature, kept on file.</p>
         </div>
         <button
           onClick={() => setSignOpen(true)}
-          className="flex-shrink-0 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+          className="flex-shrink-0 rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
         >
           + New Consent Form
         </button>
@@ -72,13 +72,17 @@ export default function PatientConsentForms({
               key={form.id}
               onClick={() => setViewingForm(form)}
               style={{ animationDelay: `${i * 40}ms` }}
-              className="animate-fade-up flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors hover:bg-gold-100/40"
+              className="animate-fade-up flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors hover:bg-rust-100/40"
             >
               <div>
                 <div className="text-sm font-medium text-brown-900">{form.templateTitle}</div>
-                <div className="text-xs text-brown-400">Signed by {form.signedByName}</div>
+                <div className="text-xs text-brown-400">
+                  Signed by {form.signedByName} · {formatDate(form.signedAt)}
+                </div>
               </div>
-              <span className="text-xs text-brown-400">{formatDate(form.signedAt)}</span>
+              <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-green-700">
+                Signed
+              </span>
             </button>
           ))}
         </div>

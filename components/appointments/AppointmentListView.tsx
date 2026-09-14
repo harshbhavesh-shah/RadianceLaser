@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Receipt as ReceiptIcon, Stethoscope } from "lucide-react";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { formatTime12h, parseDateStr, timeToMinutes } from "@/lib/calendar";
-import { STATUS_STYLES, STATUS_LABELS } from "./statusStyles";
+import { STATUS_LABELS } from "./statusStyles";
+import { SCHEDULE_STATUS_STYLE } from "./scheduleStatusStyles";
 import type { Appointment } from "@/types";
 
 export default function AppointmentListView({
@@ -35,9 +36,9 @@ export default function AppointmentListView({
 
   if (sortedDates.length === 0) {
     return (
-      <div className="rounded-xl bg-surface p-10 text-center shadow-soft ring-1 ring-beige-300">
+      <div className="rounded-2xl border border-beige-300 bg-surface p-10 text-center shadow-soft">
         <p className="text-sm text-brown-600">No appointments found.</p>
-        <button onClick={onCreateNew} className="mt-2 text-sm font-medium text-gold-600 hover:underline">
+        <button onClick={onCreateNew} className="mt-2 text-sm font-medium text-rust-700 hover:underline">
           + Book one now
         </button>
       </div>
@@ -55,10 +56,10 @@ export default function AppointmentListView({
               day: "numeric",
             })}
           </h3>
-          <div className="overflow-hidden rounded-xl bg-surface shadow-soft ring-1 ring-beige-300">
+          <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
             {grouped.get(date)!.map((appt, i, arr) => {
               const cfg = SESSION_TYPE_CONFIG[appt.sessionType];
-              const statusStyle = STATUS_STYLES[appt.status];
+              const statusStyle = SCHEDULE_STATUS_STYLE[appt.status];
               const linkedVisitId = visitIdByAppointmentId[appt.id];
               const hasReceipt = !!receiptedAppointmentIds[appt.id];
               const logVisitHref = `/dashboard/patients/${appt.patientId}?logVisit=1&sessionType=${encodeURIComponent(appt.sessionType)}&appointmentId=${appt.id}`;
@@ -71,7 +72,7 @@ export default function AppointmentListView({
                   onClick={() => onEdit(appt)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onEdit(appt)}
                   className={[
-                    "flex w-full cursor-pointer flex-wrap items-center justify-between gap-2 px-5 py-3 text-left text-sm transition-colors hover:bg-gold-100/40",
+                    "flex w-full cursor-pointer flex-wrap items-center justify-between gap-2 px-5 py-3 text-left text-sm transition-colors hover:bg-rust-100/40",
                     i !== arr.length - 1 ? "border-b border-beige-300" : "",
                   ].join(" ")}
                 >
@@ -92,7 +93,7 @@ export default function AppointmentListView({
                       <Link
                         href={logVisitHref}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 rounded-full border border-gold-500 px-2.5 py-1 text-[11px] font-medium text-gold-600 transition-colors hover:bg-gold-100"
+                        className="flex items-center gap-1 rounded-full border border-rust-600 px-2.5 py-1 text-[11px] font-medium text-rust-700 transition-colors hover:bg-rust-100"
                       >
                         <Stethoscope size={12} /> Log Visit
                       </Link>
@@ -101,7 +102,7 @@ export default function AppointmentListView({
                       <Link
                         href={generateReceiptHref}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 rounded-full border border-gold-500 bg-gold-100 px-2.5 py-1 text-[11px] font-medium text-gold-600 transition-colors hover:bg-gold-100/70"
+                        className="flex items-center gap-1 rounded-full border border-rust-600 bg-rust-100 px-2.5 py-1 text-[11px] font-medium text-rust-700 transition-colors hover:bg-rust-100/70"
                       >
                         <ReceiptIcon size={12} /> Generate Receipt
                       </Link>

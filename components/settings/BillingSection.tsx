@@ -72,7 +72,6 @@ export default function BillingSection({
   clinicName,
   ownerEmail,
   payments,
-  annualPriceInr,
   tierPricing,
   currentTier,
   autoRenewEnabled,
@@ -84,7 +83,6 @@ export default function BillingSection({
   clinicName: string;
   ownerEmail: string;
   payments: Payment[];
-  annualPriceInr: number;
   tierPricing: TierPricing;
   currentTier: PlanTier;
   autoRenewEnabled: boolean;
@@ -357,7 +355,9 @@ export default function BillingSection({
                     ? "Payment retries failed. Auto-renew has stopped. Update your payment method or renew manually."
                     : razorpaySubscriptionStatus === "pending"
                       ? "A charge attempt failed. Razorpay is automatically retrying."
-                      : `On: ${formatInr(autoRenewPlanAmountInr ?? annualPriceInr)}/year, charged automatically.`}
+                      : autoRenewPlanAmountInr !== undefined
+                        ? `On: ${formatInr(autoRenewPlanAmountInr)}/year, charged automatically.`
+                        : "On, charged automatically each year."}
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-brown-400">

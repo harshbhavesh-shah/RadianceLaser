@@ -194,31 +194,32 @@ export default function AppointmentsClient({
       <div className="min-w-0 flex-1">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl font-medium text-brown-900">Schedule</h1>
-            <div className="mt-2 h-[2px] w-8 bg-gold-500" />
+            <h1 className="inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
+              Schedule
+            </h1>
           </div>
           <button
             onClick={() => setModalState({ mode: "create" })}
-            className="rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
           >
             + New Appointment
           </button>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1 rounded-lg bg-surface p-1 shadow-soft ring-1 ring-beige-300">
+          <div className="flex items-center gap-1 rounded-xl border border-beige-300 bg-surface p-1 shadow-soft">
             <button
               onClick={() => setViewMode("list")}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === "list" ? "bg-brown-900 text-beige-200" : "text-brown-600 hover:text-brown-900"
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "list" ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
               }`}
             >
               List
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === "calendar" ? "bg-brown-900 text-beige-200" : "text-brown-600 hover:text-brown-900"
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "calendar" ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
               }`}
             >
               Calendar
@@ -237,7 +238,7 @@ export default function AppointmentsClient({
                 </button>
                 <button
                   onClick={goToday}
-                  className="rounded-md border border-beige-300 px-3 py-1 text-sm font-medium text-brown-700 hover:border-gold-500 hover:text-gold-600"
+                  className="rounded-md border border-beige-300 px-3 py-1 text-sm font-medium text-brown-700 hover:border-rust-600 hover:text-rust-700"
                 >
                   Today
                 </button>
@@ -251,14 +252,14 @@ export default function AppointmentsClient({
                 <span className="ml-1 text-sm font-medium text-brown-900">{periodLabel}</span>
               </div>
 
-              <div className="flex items-center gap-1 rounded-lg bg-surface p-1 shadow-soft ring-1 ring-beige-300">
+              <div className="flex items-center gap-1 rounded-xl border border-beige-300 bg-surface p-1 shadow-soft">
                 {(["day", "week", "month"] as CalendarMode[]).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setCalendarMode(mode)}
-                    className={`rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
                       calendarMode === mode
-                        ? "bg-brown-900 text-beige-200"
+                        ? "bg-rust-100 text-rust-700"
                         : "text-brown-600 hover:text-brown-900"
                     }`}
                   >
