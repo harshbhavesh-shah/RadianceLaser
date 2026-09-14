@@ -41,7 +41,7 @@ interface LeafNavItem {
   minTier?: PlanTier; // omit = visible on every tier
 }
 
-// A non-clickable header (icon + label, no href) whose children render
+// A non-clickable header (label only, no href) whose children render
 // indented beneath it — "No Shows" and "Follow-Ups" are two distinct pages
 // (each keeps its own route, data, and tour target), just grouped under
 // one heading rather than two peer-level sidebar rows.
@@ -123,6 +123,14 @@ const NAV_ITEMS: NavItem[] = [
 // effect, same hydration-safe pattern as SidebarContext's collapsed state.
 const GROUP_STORAGE_KEY = "sidebar-collapsed-groups";
 
+function initialsOf(email: string | null): string {
+  if (!email) return "?";
+  const local = email.split("@")[0] || email;
+  const parts = local.split(/[._-]+/).filter(Boolean);
+  const chars = parts.length >= 2 ? [parts[0][0], parts[1][0]] : [local[0], local[1] ?? ""];
+  return chars.join("").toUpperCase();
+}
+
 export default function Sidebar({
   clinicName,
   session,
@@ -170,7 +178,7 @@ export default function Sidebar({
         <div
           key={item.href}
           title={showLabels ? undefined : `${item.label} (Soon)`}
-          className={`flex items-center rounded-md px-3 py-2.5 text-sm text-brown-400 ${
+          className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-brown-400 ${
             showLabels ? "justify-between" : "justify-center"
           }`}
         >
@@ -179,7 +187,7 @@ export default function Sidebar({
             {showLabels && <span>{item.label}</span>}
           </span>
           {showLabels && (
-            <span className="rounded-full bg-brown-700/50 px-2 py-0.5 text-[10px] uppercase tracking-wide">
+            <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brown-500">
               Soon
             </span>
           )}
@@ -199,11 +207,15 @@ export default function Sidebar({
         // the desktop, labeled render — the mobile drawer copy is
         // unmounted (closed) while the tour runs.
         data-tour={`nav-${item.href}`}
-        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
           showLabels ? "" : "justify-center"
-        } ${isActive ? "bg-brown-700/60 text-white" : "text-beige-200 hover:bg-brown-700/60 hover:text-white"}`}
+        } ${
+          isActive
+            ? "bg-rust-100 text-rust-700"
+            : "text-brown-600 hover:bg-beige-200 hover:text-brown-900"
+        }`}
       >
-        <Icon size={iconSize} className="flex-shrink-0" />
+        <Icon size={iconSize} className={`flex-shrink-0 ${isActive ? "" : "opacity-70"}`} />
         {showLabels && <span>{item.label}</span>}
       </Link>
     );
@@ -228,7 +240,6 @@ export default function Sidebar({
       <nav className="flex-1 space-y-0.5 px-3">
         {visibleItems.map((item) => {
           if (isGroup(item)) {
-            const GroupIcon = item.icon;
             // A group containing the active page always renders open,
             // regardless of the stored preference — collapsing away the
             // page you're actually on would be confusing, not tidy.
@@ -241,19 +252,22 @@ export default function Sidebar({
                     icon-only row could do there; just the children's own
                     icons show, same as before this was grouped. Since
                     there's no header to click there, groups always render
-                    fully open in icon-rail mode. */}
+                    fully open in icon-rail mode. A plain uppercase label
+                    (no leading icon) rather than a full nav-row — this is
+                    a section heading, not a destination. */}
                 {showLabels && (
                   <button
                     type="button"
                     onClick={() => toggleGroup(item.label)}
                     aria-expanded={open}
-                    className="flex w-full items-center gap-3 rounded-md px-3 pt-3 pb-1 text-sm text-beige-200/70 transition-colors hover:text-beige-200"
+                    className="flex w-full items-center gap-2 rounded-md px-3 pt-4 pb-1.5 text-left transition-colors"
                   >
-                    <GroupIcon size={18} className="flex-shrink-0" />
-                    <span className="flex-1 text-left">{item.label}</span>
+                    <span className="flex-1 text-[10.5px] font-bold uppercase tracking-wide text-brown-400">
+                      {item.label}
+                    </span>
                     <ChevronDown
-                      size={14}
-                      className={`flex-shrink-0 transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
+                      size={13}
+                      className={`flex-shrink-0 text-brown-400 transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
                     />
                   </button>
                 )}
@@ -262,12 +276,8 @@ export default function Sidebar({
                     showLabels && !open ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
                   }`}
                 >
-                  <div
-                    className={`overflow-hidden ${
-                      showLabels ? "ml-4 space-y-0.5 border-l border-brown-700/60 pl-2" : "space-y-0.5"
-                    }`}
-                  >
-                    {item.children.map((child) => renderLeaf(child, showLabels, 16))}
+                  <div className={`overflow-hidden ${showLabels ? "space-y-0.5" : "space-y-0.5"}`}>
+                    {item.children.map((child) => renderLeaf(child, showLabels, 17))}
                   </div>
                 </div>
               </div>
@@ -276,6 +286,27 @@ export default function Sidebar({
           return renderLeaf(item, showLabels);
         })}
       </nav>
+    );
+  }
+
+  function SidebarFoot({ showLabels }: { showLabels: boolean }) {
+    return (
+      <div className={`border-t border-beige-300 py-4 ${showLabels ? "px-4" : "px-2"}`}>
+        <div className={`flex items-center gap-2.5 ${showLabels ? "" : "justify-center"}`}>
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-rust-100 text-[11px] font-bold text-rust-700">
+            {initialsOf(session.email)}
+          </div>
+          {showLabels && (
+            <div className="min-w-0">
+              <div className="truncate text-xs font-bold text-brown-900">{session.email}</div>
+              <div className="text-[10.5px] uppercase tracking-wide text-brown-400">{session.role}</div>
+            </div>
+          )}
+        </div>
+        <div className={`mt-3 ${showLabels ? "" : "flex justify-center"}`}>
+          <LogoutButton />
+        </div>
+      </div>
     );
   }
 
@@ -291,8 +322,8 @@ export default function Sidebar({
           <Menu size={22} />
         </button>
         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="" width={28} height={28} />
-          <span className="font-display text-lg font-medium text-brown-900">{clinicName}</span>
+          <Image src="/logo.png" alt="" width={28} height={28} className="rounded-md" />
+          <span className="font-display text-lg font-extrabold tracking-tight text-brown-900">{clinicName}</span>
         </div>
         <div className="w-[34px]" /> {/* balances the hamburger button for centering */}
       </div>
@@ -305,68 +336,62 @@ export default function Sidebar({
         aria-hidden={!mobileOpen}
       >
         <div
-          className={`absolute inset-0 bg-brown-900/50 transition-opacity duration-300 ${
+          className={`absolute inset-0 bg-brown-900/40 transition-opacity duration-300 ${
             mobileOpen ? "opacity-100" : "opacity-0"
           }`}
           onClick={() => setMobileOpen(false)}
         />
         <aside
-          className={`relative flex h-full w-72 flex-col bg-brown-900 text-beige-200 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          className={`relative flex h-full w-72 flex-col bg-surface text-brown-900 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-            <div className="flex items-center justify-between px-6 pt-6 pb-6">
-              <div className="flex items-center gap-3">
-                <Image src="/logo.png" alt="" width={36} height={36} />
-                <div>
-                  <div className="font-display text-xl font-medium text-white">{clinicName}</div>
-                  <div className="mt-2 h-[2px] w-8 bg-gold-500" />
-                </div>
-              </div>
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="rounded-md p-1 text-beige-200 hover:text-white"
-                aria-label="Close menu"
+          <div className="flex items-center justify-between px-5 pt-6 pb-5">
+            <div className="flex items-center gap-2.5">
+              <Image src="/logo.png" alt="" width={32} height={32} className="flex-shrink-0 rounded-lg" />
+              <span className="font-display text-lg font-extrabold tracking-tight text-brown-900">{clinicName}</span>
+            </div>
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="rounded-md p-1 text-brown-500 hover:bg-beige-200 hover:text-brown-900"
+              aria-label="Close menu"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <NavLinks showLabels={true} />
+          {session.isSuperAdmin && (
+            <div className="px-3 pb-2">
+              <Link
+                href="/admin"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-brown-600 transition-colors hover:bg-beige-200 hover:text-brown-900"
               >
-                <X size={20} />
-              </button>
+                <ShieldCheck size={18} className="flex-shrink-0 opacity-70" />
+                <span>Admin Panel</span>
+              </Link>
             </div>
-            <NavLinks showLabels={true} />
-            {session.isSuperAdmin && (
-              <div className="px-3 pb-2">
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-beige-200 transition-colors hover:bg-brown-700/60 hover:text-white"
-                >
-                  <ShieldCheck size={18} className="flex-shrink-0" />
-                  <span>Admin Panel</span>
-                </Link>
-              </div>
-            )}
-            <div className="border-t border-brown-700/60 px-6 py-4">
-              <div className="truncate text-sm text-beige-200">{session.email}</div>
-              <div className="mb-3 text-xs uppercase tracking-wide text-brown-400">{session.role}</div>
-              <LogoutButton />
-            </div>
-          </aside>
-        </div>
+          )}
+          <SidebarFoot showLabels={true} />
+        </aside>
+      </div>
 
       {/* Desktop sidebar — hidden below md, collapsible between full/icon-rail */}
       <aside
-        className="hidden h-full flex-shrink-0 flex-col overflow-y-auto bg-brown-900 text-beige-200 md:flex"
-        style={{ width: collapsed ? 64 : 240, transition: "width 300ms ease-in-out" }}
+        className="hidden h-full flex-shrink-0 flex-col overflow-y-auto border-r border-beige-300 bg-surface md:flex"
+        style={{ width: collapsed ? 64 : 236, transition: "width 300ms ease-in-out" }}
       >
-        <div className={`flex items-center pt-7 pb-6 ${collapsed ? "justify-center px-2" : "gap-3 px-6"}`}>
-          {collapsed ? (
-            <Image src="/logo.png" alt="" width={32} height={32} />
-          ) : (
-            <>
-              <Image src="/logo.png" alt="" width={40} height={40} className="flex-shrink-0" />
-              <div>
-                <div className="font-display text-xl font-medium text-white">{clinicName}</div>
-                <div className="mt-2 h-[2px] w-8 bg-gold-500" />
-              </div>
-            </>
+        <div className={`flex items-center pt-6 pb-5 ${collapsed ? "justify-center px-2" : "gap-2.5 px-5"}`}>
+          <Image
+            src="/logo.png"
+            alt=""
+            width={collapsed ? 30 : 28}
+            height={collapsed ? 30 : 28}
+            className="flex-shrink-0 rounded-lg"
+          />
+          {!collapsed && (
+            <span className="font-display text-base font-extrabold tracking-tight text-brown-900">
+              {clinicName}
+            </span>
           )}
         </div>
 
@@ -377,11 +402,11 @@ export default function Sidebar({
             <Link
               href="/admin"
               title={collapsed ? "Admin Panel" : undefined}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-beige-200 transition-colors hover:bg-brown-700/60 hover:text-white ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-brown-600 transition-colors hover:bg-beige-200 hover:text-brown-900 ${
                 collapsed ? "justify-center" : ""
               }`}
             >
-              <ShieldCheck size={18} className="flex-shrink-0" />
+              <ShieldCheck size={18} className="flex-shrink-0 opacity-70" />
               {!collapsed && <span>Admin Panel</span>}
             </Link>
           </div>
@@ -391,26 +416,16 @@ export default function Sidebar({
           <button
             onClick={toggleUserPreference}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-brown-400 transition-colors hover:bg-brown-700/60 hover:text-white ${
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-brown-500 transition-colors hover:bg-beige-200 hover:text-brown-900 ${
               collapsed ? "justify-center" : ""
             }`}
           >
-            {collapsed ? <PanelLeft size={18} /> : <PanelLeftClose size={18} />}
+            {collapsed ? <PanelLeft size={18} className="opacity-70" /> : <PanelLeftClose size={18} className="opacity-70" />}
             {!collapsed && <span>Collapse</span>}
           </button>
         </div>
 
-        <div className={`border-t border-brown-700/60 py-4 ${collapsed ? "px-2" : "px-6"}`}>
-          {!collapsed && (
-            <>
-              <div className="truncate text-sm text-beige-200">{session.email}</div>
-              <div className="mb-3 text-xs uppercase tracking-wide text-brown-400">{session.role}</div>
-            </>
-          )}
-          <div className={collapsed ? "flex justify-center" : ""}>
-            <LogoutButton />
-          </div>
-        </div>
+        <SidebarFoot showLabels={!collapsed} />
       </aside>
     </>
   );
