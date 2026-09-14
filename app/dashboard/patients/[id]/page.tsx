@@ -11,10 +11,7 @@ import { getPatientPhotos } from "@/lib/db/patientPhotos";
 import { getClinic } from "@/lib/db/clinics";
 import { getClinicConsentTemplates, getPatientConsentForms } from "@/lib/db/consentForms";
 import { getPatientReceipts } from "@/lib/db/receipts";
-import PatientVisitTabs from "@/components/PatientVisitTabs";
-import PatientPhotoGallery from "@/components/PatientPhotoGallery";
-import PatientConsentForms from "@/components/PatientConsentForms";
-import PatientReceipts from "@/components/PatientReceipts";
+import PatientRecordTabs from "@/components/PatientRecordTabs";
 
 export default async function PatientDetailPage({
   params,
@@ -102,60 +99,49 @@ export default async function PatientDetailPage({
       </div>
 
       <div className="mt-8">
-        <h2 className="font-display text-lg font-semibold text-brown-900">Visit History</h2>
-        <div className="mt-2 mb-4 h-[2px] w-8 bg-rust-600" />
-        <PatientVisitTabs
-          clinicId={session.clinicId}
-          patientId={patient.id}
-          visits={visits}
-          packages={packages}
-          packageTypeDefs={packageTypeDefs}
-          machines={machines}
-          staff={staff}
-          initialActiveTab={searchParams.logVisit === "1" ? searchParams.sessionType : undefined}
-          autoOpenVisitForAppointmentId={searchParams.logVisit === "1" ? searchParams.appointmentId : undefined}
-        />
-      </div>
-
-      {/* Photos, consent forms, and receipts are all secondary records that
-          reference the clinical history above — kept below it rather than
-          competing with it for the first thing you see on the page. */}
-      <div className="mt-10">
-        <PatientPhotoGallery
-          clinicId={session.clinicId}
-          patientId={patient.id}
-          visits={visits}
-          initialPhotos={photos}
-          currentUid={session.uid}
-          currentName={currentName}
-        />
-      </div>
-
-      <div className="mt-8">
-        <PatientConsentForms
-          clinicId={session.clinicId}
-          patientId={patient.id}
-          patientName={patient.name}
-          clinicName={clinic?.name || "Your Clinic"}
-          templates={consentTemplates}
-          visits={visits}
-          initialForms={consentForms}
-          currentUid={session.uid}
-          currentName={currentName}
-        />
-      </div>
-
-      <div className="mt-8">
-        <PatientReceipts
-          clinicId={session.clinicId}
-          clinicName={clinic?.name || "Your Clinic"}
-          clinicAddress={clinic?.address}
-          patient={patient}
-          visits={visits}
-          packages={packages}
-          initialReceipts={receipts}
-          currentUid={session.uid}
-          currentName={currentName}
+        <PatientRecordTabs
+          visitTabs={{
+            clinicId: session.clinicId,
+            patientId: patient.id,
+            visits,
+            packages,
+            packageTypeDefs,
+            machines,
+            staff,
+            initialActiveTab: searchParams.logVisit === "1" ? searchParams.sessionType : undefined,
+            autoOpenVisitForAppointmentId:
+              searchParams.logVisit === "1" ? searchParams.appointmentId : undefined,
+          }}
+          photoGallery={{
+            clinicId: session.clinicId,
+            patientId: patient.id,
+            visits,
+            initialPhotos: photos,
+            currentUid: session.uid,
+            currentName,
+          }}
+          consentForms={{
+            clinicId: session.clinicId,
+            patientId: patient.id,
+            patientName: patient.name,
+            clinicName: clinic?.name || "Your Clinic",
+            templates: consentTemplates,
+            visits,
+            initialForms: consentForms,
+            currentUid: session.uid,
+            currentName,
+          }}
+          receipts={{
+            clinicId: session.clinicId,
+            clinicName: clinic?.name || "Your Clinic",
+            clinicAddress: clinic?.address,
+            patient,
+            visits,
+            packages,
+            initialReceipts: receipts,
+            currentUid: session.uid,
+            currentName,
+          }}
         />
       </div>
     </div>

@@ -47,7 +47,6 @@ export default function SessionTypePanel({
     autoOpenAppointmentId ? { mode: "create", presetAppointmentId: autoOpenAppointmentId } : { mode: "closed" }
   );
   const [packageModalOpen, setPackageModalOpen] = useState(false);
-  const [packagesExpanded, setPackagesExpanded] = useState(false);
 
   const activePackages = packages.filter(
     (p) => computePackageLedger(p, visits).status === "active"
@@ -69,71 +68,47 @@ export default function SessionTypePanel({
   function handlePackageCreated(pkg: Package) {
     setPackages((prev) => [pkg, ...prev]);
     setPackageModalOpen(false);
-    setPackagesExpanded(true);
   }
 
   return (
-    <div>
-      <div className="mb-6 rounded-2xl border border-beige-300 bg-surface shadow-soft">
-        <button
-          onClick={() => setPackagesExpanded((v) => !v)}
-          className="flex w-full items-center justify-between px-5 py-4"
-        >
-          <span className="flex items-center gap-2.5">
-            <span
-              className={`text-brown-400 transition-transform ${packagesExpanded ? "rotate-90" : ""}`}
-            >
-              ▸
-            </span>
-            <span className="text-sm font-semibold uppercase tracking-wide text-brown-600">
-              Packages
-            </span>
-            {packages.length > 0 && (
-              <span className="rounded-full bg-rust-100 px-2 py-0.5 text-xs font-medium text-rust-700">
-                {activePackages.length} active
-              </span>
-            )}
-          </span>
-          <span className="text-xs font-medium text-brown-400">
-            {packagesExpanded ? "Hide" : "Show"}
-          </span>
-        </button>
-
-        {packagesExpanded && (
-          <div className="border-t border-beige-300 px-5 py-4">
-            <div className="mb-3 flex justify-end">
-              <button
-                onClick={() => setPackageModalOpen(true)}
-                className="text-sm font-medium text-rust-700 hover:underline"
-              >
-                + New Package
-              </button>
-            </div>
-
-            {packages.length === 0 ? (
-              <p className="text-sm text-brown-400">No {config.label} packages purchased.</p>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {packages.map((pkg) => (
-                  <PackageCard
-                    key={pkg.id}
-                    pkg={pkg}
-                    visits={visits}
-                    onRedeem={() => setVisitModal({ mode: "create", presetPackageId: pkg.id })}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-start">
       <VisitTimeline
         sessionType={sessionType}
         visits={visits}
         onAddNew={() => setVisitModal({ mode: "create" })}
         onEdit={(visit) => setVisitModal({ mode: "edit", visit })}
       />
+
+      {/* Active Packages — always visible beside the timeline, matching the
+          new design's Treatment History layout, rather than the collapsed
+          accordion this used to be. Scoped to this session type only, same
+          as the timeline next to it — a package is always tied to one
+          type, so there's nothing to unify across tabs. */}
+      <div className="rounded-2xl border border-beige-300 bg-surface shadow-soft">
+        <div className="flex items-center justify-between px-5 py-4">
+          <span className="text-sm font-semibold text-brown-900">Active Packages</span>
+          <button
+            onClick={() => setPackageModalOpen(true)}
+            className="text-xs font-medium text-rust-700 hover:underline"
+          >
+            + New Package
+          </button>
+        </div>
+        <div className="space-y-4 border-t border-beige-300 px-5 py-4">
+          {packages.length === 0 ? (
+            <p className="text-sm text-brown-400">No {config.label} packages purchased.</p>
+          ) : (
+            packages.map((pkg) => (
+              <PackageCard
+                key={pkg.id}
+                pkg={pkg}
+                visits={visits}
+                onRedeem={() => setVisitModal({ mode: "create", presetPackageId: pkg.id })}
+              />
+            ))
+          )}
+        </div>
+      </div>
 
       {visitModal.mode !== "closed" && (
         <VisitFormModal

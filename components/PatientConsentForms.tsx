@@ -46,12 +46,9 @@ export default function PatientConsentForms({
   }
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+    <div>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-semibold text-brown-900">Consent Forms</h2>
-          <p className="mt-0.5 text-xs text-brown-400">Signed with an e-signature, kept on file.</p>
-        </div>
+        <p className="max-w-md text-sm text-brown-500">Signed with an e-signature, kept on file.</p>
         <button
           onClick={() => setSignOpen(true)}
           className="flex-shrink-0 rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"

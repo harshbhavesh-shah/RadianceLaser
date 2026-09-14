@@ -127,15 +127,12 @@ export default function PatientPhotoGallery({
   }
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+    <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-semibold text-brown-900">Photos</h2>
-          <p className="mt-0.5 text-xs text-brown-400">
-            Before/after progress, linked to sessions where relevant. Sensitive-area photos stay
-            blurred until clicked.
-          </p>
-        </div>
+        <p className="max-w-md text-sm text-brown-500">
+          Before/after progress, linked to sessions where relevant. Sensitive-area photos stay
+          blurred until clicked.
+        </p>
         <div className="flex flex-shrink-0 items-center gap-2">
           {photos.length >= 2 && (
             <button

@@ -2,6 +2,9 @@ interface PieSegment {
   label: string;
   value: number;
   color: string;
+  // Shown as the legend's second line under the count, e.g. "appointments"
+  // — omit for the plain currency-with-percentage legend style.
+  sublabel?: string;
 }
 
 function formatCurrency(n: number): string {
@@ -12,10 +15,18 @@ export default function PieChart({
   segments,
   size = 160,
   strokeWidth = 26,
+  formatValue = formatCurrency,
+  centerLabel,
 }: {
   segments: PieSegment[];
   size?: number;
   strokeWidth?: number;
+  // Defaults to currency (the "By Treatment Type" use case) — pass a plain
+  // integer formatter for a counts-based donut like Appointment Status.
+  formatValue?: (n: number) => string;
+  // Renders inside the donut's hole, e.g. { value: "167", caption: "TOTAL" }
+  // — omit for a plain ring with no center content.
+  centerLabel?: { value: string; caption: string };
 }) {
   const total = segments.reduce((sum, seg) => sum + seg.value, 0);
   const radius = (size - strokeWidth) / 2;
@@ -24,42 +35,52 @@ export default function PieChart({
 
   return (
     <div className="flex flex-wrap items-center gap-6">
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="animate-scale-in -rotate-90 flex-shrink-0"
-      >
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#E8DDC9"
-          strokeWidth={strokeWidth}
-        />
-        {total > 0 &&
-          segments.map((seg, i) => {
-            if (seg.value <= 0) return null;
-            const fraction = seg.value / total;
-            const dashLength = fraction * circumference;
-            const offset = -cumulative;
-            cumulative += dashLength;
-            return (
-              <circle
-                key={i}
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={`${dashLength} ${circumference - dashLength}`}
-                strokeDashoffset={offset}
-              />
-            );
-          })}
-      </svg>
+      <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="animate-scale-in -rotate-90"
+        >
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#E8DDC9"
+            strokeWidth={strokeWidth}
+          />
+          {total > 0 &&
+            segments.map((seg, i) => {
+              if (seg.value <= 0) return null;
+              const fraction = seg.value / total;
+              const dashLength = fraction * circumference;
+              const offset = -cumulative;
+              cumulative += dashLength;
+              return (
+                <circle
+                  key={i}
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+                  strokeDashoffset={offset}
+                />
+              );
+            })}
+        </svg>
+        {centerLabel && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-display text-2xl font-bold text-brown-900">{centerLabel.value}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-brown-400">
+              {centerLabel.caption}
+            </span>
+          </div>
+        )}
+      </div>
       <div className="space-y-2.5">
         {segments.map((seg, i) => (
           <div
@@ -68,15 +89,13 @@ export default function PieChart({
             style={{ animationDelay: `${150 + i * 70}ms` }}
           >
             <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: seg.color }} />
-            <span className="text-brown-700">{seg.label}</span>
-            <span className="font-medium text-brown-900">
-              {formatCurrency(seg.value)}
-              {total > 0 && (
-                <span className="ml-1 text-brown-400">
-                  ({Math.round((seg.value / total) * 100)}%)
-                </span>
-              )}
-            </span>
+            <div>
+              <div className="text-brown-700">{seg.label}</div>
+              <div className="font-medium text-brown-900">
+                {formatValue(seg.value)}
+                {seg.sublabel ? ` ${seg.sublabel}` : total > 0 ? ` (${Math.round((seg.value / total) * 100)}%)` : ""}
+              </div>
+            </div>
           </div>
         ))}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle, PackageX, Boxes, IndianRupee } from "lucide-react";
 import InventoryList from "./InventoryList";
 import RecentActivity from "./RecentActivity";
 import { computeInventoryStats } from "@/lib/inventoryPage";
@@ -10,13 +11,13 @@ function formatCurrency(n: number): string {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
-/** Owns the item list's state so the stat banner above it can recompute
+/** Owns the item list's state so the stat cards above it can recompute
  * from the same data instead of going stale the moment someone adds an
- * item or adjusts stock. The banner itself is deliberately not a row of
- * four equal boxes — one hero number (how many items, always meaningful
- * even for a clinic that's never priced anything) with the other three
- * figures grouped alongside it, smaller, so the layout has a clear focal
- * point instead of four interchangeable tiles. */
+ * item or adjusts stock. Expiring Soon and Low Stock get their own
+ * icon-tile cards (same treatment as the Dashboard's StatCards) since
+ * those are the two numbers that actually call for attention; Total Items
+ * and Shelf Value are real but calmer, so they sit in a smaller strip
+ * alongside rather than competing for the same visual weight. */
 export default function InventoryDashboard({
   initialItems,
   recentLogs,
@@ -34,28 +35,44 @@ export default function InventoryDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl bg-surface p-8 shadow-soft ring-1 ring-beige-300">
-        <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
-          <div className="flex-shrink-0">
-            <div className="text-xs font-medium uppercase tracking-wide text-brown-400">Total Items</div>
-            <div className="mt-1.5 font-display text-5xl font-medium text-brown-900">{stats.totalItems}</div>
-            <div className="mt-1 text-sm text-brown-400">on hand right now</div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-beige-300 bg-surface p-5 shadow-soft">
+          <div className="flex items-center gap-2 text-xs font-semibold text-brown-400">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-rust-100 text-rust-700">
+              <AlertTriangle size={13} />
+            </span>
+            Expiring Soon
           </div>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="font-display text-3xl font-bold text-brown-900">{stats.expiringSoon}</span>
+            <span className="text-sm text-brown-400">within 30 days</span>
+          </div>
+        </div>
 
-          <div className="flex flex-wrap gap-x-10 gap-y-4 sm:border-l sm:border-beige-300 sm:pl-8">
-            <div>
-              <div className="font-display text-2xl font-medium text-brown-900">{stats.expiringSoon}</div>
-              <div className="text-xs text-brown-400">Expiring within 30 days</div>
-            </div>
-            <div>
-              <div className="font-display text-2xl font-medium text-brown-900">{stats.lowStock}</div>
-              <div className="text-xs text-brown-400">At or below reorder point</div>
-            </div>
-            <div>
-              <div className="font-display text-2xl font-medium text-gold-600">{formatCurrency(stats.totalValue)}</div>
-              <div className="text-xs text-brown-400">Shelf value, priced items</div>
-            </div>
+        <div className="rounded-2xl border border-beige-300 bg-surface p-5 shadow-soft">
+          <div className="flex items-center gap-2 text-xs font-semibold text-brown-400">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-rust-100 text-rust-700">
+              <PackageX size={13} />
+            </span>
+            Low Stock
           </div>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="font-display text-3xl font-bold text-brown-900">{stats.lowStock}</span>
+            <span className="text-sm text-brown-400">at or below reorder point</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-xl border border-beige-300 bg-surface px-5 py-3">
+        <div className="flex items-center gap-2 text-sm">
+          <Boxes size={14} className="text-brown-400" />
+          <span className="font-semibold text-brown-900">{stats.totalItems}</span>
+          <span className="text-brown-400">items on hand</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <IndianRupee size={14} className="text-brown-400" />
+          <span className="font-semibold text-brown-900">{formatCurrency(stats.totalValue)}</span>
+          <span className="text-brown-400">shelf value, priced items</span>
         </div>
       </div>
 

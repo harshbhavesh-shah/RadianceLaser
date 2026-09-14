@@ -25,6 +25,7 @@ export default function InventoryList({
   const [editing, setEditing] = useState<InventoryItem | null | "new">(null);
   const [adjusting, setAdjusting] = useState<AdjustState>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>("all");
 
   function handleSaved(item: InventoryItem) {
     onItemsChange((prev) => {
@@ -54,11 +55,26 @@ export default function InventoryList({
 
   const editingItem = editing && editing !== "new" ? editing : null;
 
+  const categories = [...new Set(items.map((i) => i.category).filter((c): c is string => !!c))].sort();
+  const filters = [
+    { key: "all", label: "All" },
+    { key: "expiring", label: "Expiring Soon" },
+    { key: "low", label: "Low Stock" },
+    ...categories.map((c) => ({ key: `category:${c}`, label: c })),
+  ];
+  const filteredItems = items.filter((item) => {
+    if (filter === "all") return true;
+    if (filter === "expiring") return isExpired(item, todayStr) || isExpiringSoon(item, todayStr);
+    if (filter === "low") return isLowStock(item);
+    if (filter.startsWith("category:")) return item.category === filter.slice("category:".length);
+    return true;
+  });
+
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-medium text-brown-900">Inventory</h2>
+          <h2 className="font-display text-lg font-semibold text-brown-900">Inventory</h2>
           <p className="mt-0.5 text-xs text-brown-400">
             Every consumable and perishable the clinic keeps on hand. Restock or use is open to
             anyone signed in; adding, editing, or removing an item stays owner-only.
@@ -67,7 +83,7 @@ export default function InventoryList({
         {canEdit && (
           <button
             onClick={() => setEditing("new")}
-            className="flex-shrink-0 rounded-md bg-brown-900 px-4 py-2 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600"
+            className="flex-shrink-0 rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
           >
             + New Item
           </button>
@@ -84,8 +100,28 @@ export default function InventoryList({
           />
         </div>
       ) : (
-        <div className="mt-4 space-y-2">
-          {items.map((item) => {
+        <>
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {filters.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  filter === f.key
+                    ? "bg-rust-600 text-white"
+                    : "bg-beige-200 text-brown-600 hover:bg-beige-300"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredItems.length === 0 ? (
+            <p className="mt-4 text-sm text-brown-400">No items match this filter.</p>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {filteredItems.map((item) => {
             const expired = isExpired(item, todayStr);
             const expiringSoon = !expired && isExpiringSoon(item, todayStr);
             const lowStock = isLowStock(item);
@@ -111,7 +147,7 @@ export default function InventoryList({
                         </span>
                       )}
                       {expiringSoon && (
-                        <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-600">
+                        <span className="rounded-full bg-rust-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rust-700">
                           Expiring Soon
                         </span>
                       )}
@@ -135,7 +171,7 @@ export default function InventoryList({
                   <div className="flex flex-shrink-0 items-center gap-1.5">
                     <button
                       onClick={() => setAdjusting({ item, type: "in" })}
-                      className="flex items-center gap-1 rounded-full border border-gold-500 px-2.5 py-1 text-[11px] font-medium text-gold-600 transition-colors hover:bg-gold-100"
+                      className="flex items-center gap-1 rounded-full border border-rust-600 px-2.5 py-1 text-[11px] font-medium text-rust-700 transition-colors hover:bg-rust-100"
                     >
                       <PackagePlus size={12} /> Restock
                     </button>
@@ -160,8 +196,10 @@ export default function InventoryList({
                 </div>
               </div>
             );
-          })}
-        </div>
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {editing === "new" && <InventoryItemFormModal onClose={() => setEditing(null)} onSaved={handleSaved} />}

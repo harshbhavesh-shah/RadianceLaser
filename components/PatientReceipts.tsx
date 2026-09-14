@@ -61,12 +61,9 @@ export default function PatientReceipts({
   const sorted = [...receipts].sort((a, b) => b.createdAt - a.createdAt);
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+    <div>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-semibold text-brown-900">Receipts</h2>
-          <p className="mt-0.5 text-xs text-brown-400">Billing history for this patient.</p>
-        </div>
+        <p className="max-w-md text-sm text-brown-500">Billing history for this patient.</p>
         <button
           onClick={() => setFormOpen(true)}
           className="flex-shrink-0 rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"

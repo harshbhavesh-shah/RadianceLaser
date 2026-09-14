@@ -4,22 +4,17 @@ import { getClinicVisits } from "@/lib/db/visits";
 import { getClinicPackages } from "@/lib/db/packages";
 import { getClinicMachines } from "@/lib/db/machines";
 import { getClinicAppointments } from "@/lib/db/appointments";
+import { getPatients } from "@/lib/db/patients";
 import {
-  computeRevenueSummary,
-  computeYearlyRevenueTrend,
-  computeRevenueByType,
   computeStaffMachineStats,
   computeAreaPopularity,
   computeCashFlowSummary,
   computeAppointmentReliability,
   computePackageUtilization,
 } from "@/lib/analyticsPage";
-import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
-import { buildSessionTypeConfig } from "@/lib/sessionTypes";
 import { getClinic } from "@/lib/db/clinics";
 import { getClinicTier, getEntitlements } from "@/lib/entitlements";
-import PieChart from "@/components/analytics/PieChart";
-import YearlyRevenueChart from "@/components/analytics/YearlyRevenueChart";
+import AnalyticsClient from "@/components/analytics/AnalyticsClientLoader";
 
 function formatCurrency(n: number): string {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
@@ -63,18 +58,14 @@ export default async function AnalyticsPage() {
     );
   }
 
-  const [visits, packages, machines, appointments, sessionTypeDefs] = await Promise.all([
+  const [visits, packages, machines, appointments, patients] = await Promise.all([
     getClinicVisits(session.clinicId),
     getClinicPackages(session.clinicId),
     getClinicMachines(session.clinicId),
     getClinicAppointments(session.clinicId),
-    getClinicSessionTypeDefs(session.clinicId),
+    getPatients(session.clinicId),
   ]);
-  const SESSION_TYPE_CONFIG = buildSessionTypeConfig(sessionTypeDefs);
 
-  const revenue = computeRevenueSummary(visits, packages);
-  const yearlyTrend = computeYearlyRevenueTrend(visits, packages);
-  const revenueByType = computeRevenueByType(visits, packages);
   const staffMachineStats = computeStaffMachineStats(visits, machines);
   const areaStats = computeAreaPopularity(visits);
   const maxAreaCount = Math.max(...areaStats.map((a) => a.count), 1);
@@ -94,56 +85,23 @@ export default async function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
-        Analytics
-      </h1>
-      <div className="mb-8" />
+      {/* The date-range-driven half — Total Revenue/Appointments/New
+          Patients, the revenue line, Top Treatments, and Appointment
+          Status all recompute together as the toggle changes (see
+          lib/analyticsRange.ts). Raw data is fetched once here, server
+          side, and handed down — no refetch per toggle click. */}
+      <AnalyticsClient visits={visits} packages={packages} appointments={appointments} patients={patients} />
 
-      {/* Revenue hero — one prominent number (this month) instead of four
-          equal boxes, with the other windows as a compact row underneath. */}
-      <div className="mt-6 rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
-        <div className="text-xs font-medium uppercase tracking-wide text-brown-400">
-          This Month&apos;s Revenue
-        </div>
-        <div className="mt-1.5 font-display text-4xl font-bold text-rust-700">
-          {formatCurrency(revenue.month.total)}
-        </div>
-        <div className="mt-1 text-xs text-brown-400">
-          {formatCurrency(revenue.month.directRevenue)} direct ·{" "}
-          {formatCurrency(revenue.month.packageRevenue)} via packages
-        </div>
-        <div className="mt-5 flex flex-wrap items-baseline gap-x-8 gap-y-2 border-t border-beige-300 pt-4">
-          <StatInline label="Today" value={formatCurrency(revenue.day.total)} />
-          <StatInline label="This Week" value={formatCurrency(revenue.week.total)} />
-          <StatInline label="This Year" value={formatCurrency(revenue.year.total)} />
-        </div>
+      {/* Whole-year / all-time detail the toggle above doesn't touch —
+          package breakage and staff/machine usage are genuinely not
+          "this week" questions, so these stay on their own natural
+          timeframe rather than being forced into the toggle. */}
+      <div className="mt-12">
+        <h2 className="font-display text-lg font-semibold text-brown-500">More Detail ({currentYear})</h2>
+        <div className="mt-2 mb-6 h-[2px] w-8 bg-beige-300" />
       </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Yearly trend chart */}
-        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft lg:col-span-2">
-          <h2 className="font-display text-lg font-semibold text-brown-900">
-            Revenue Trend ({currentYear})
-          </h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
-          <YearlyRevenueChart data={yearlyTrend} />
-        </div>
-
-        {/* Revenue by treatment type — pie chart */}
-        <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
-          <h2 className="font-display text-lg font-semibold text-brown-900">By Treatment Type</h2>
-          <div className="mt-2 mb-5 h-[2px] w-8 bg-rust-600" />
-          <PieChart
-            segments={Object.keys(SESSION_TYPE_CONFIG).map((type) => ({
-              label: SESSION_TYPE_CONFIG[type].label,
-              value: revenueByType[type] || 0,
-              color: SESSION_TYPE_CONFIG[type].chartColor,
-            }))}
-          />
-        </div>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Cash flow — cash vs online, this year */}
         <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
           <h2 className="font-display text-lg font-semibold text-brown-900">

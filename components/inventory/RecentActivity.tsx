@@ -13,8 +13,8 @@ export default function RecentActivity({
   if (logs.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-soft ring-1 ring-beige-300">
-      <h2 className="font-display text-lg font-medium text-brown-900">Recent Stock Activity</h2>
+    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+      <h2 className="font-display text-lg font-semibold text-brown-900">Recent Stock Activity</h2>
       <p className="mt-0.5 text-xs text-brown-400">Every restock and use, most recent first.</p>
 
       <div className="mt-4 divide-y divide-beige-300">

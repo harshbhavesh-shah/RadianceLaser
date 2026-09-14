@@ -1,7 +1,7 @@
 import "server-only";
 import { feeOf, todayLocalStr } from "@/lib/analytics";
 import { computePackageLedger } from "@/lib/packages";
-import type { Appointment, Machine, Package, SessionType, Visit } from "@/types";
+import type { Appointment, Machine, Package, Visit } from "@/types";
 
 type Window = "day" | "week" | "month" | "year";
 
@@ -21,89 +21,15 @@ function startDateForWindow(window: Window): string {
   return `${now.getFullYear()}-01-01`;
 }
 
-export interface RevenueSummaryEntry {
-  total: number;
-  packageRevenue: number; // package purchases made within this window
-  directRevenue: number; // pay-per-visit fees within this window
-}
-
-export interface RevenueSummary {
-  day: RevenueSummaryEntry;
-  week: RevenueSummaryEntry;
-  month: RevenueSummaryEntry;
-  year: RevenueSummaryEntry;
-}
-
-function summarizeWindow(visits: Visit[], packages: Package[], window: Window): RevenueSummaryEntry {
-  const start = startDateForWindow(window);
-  const directRevenue = visits
-    .filter((v) => v.date >= start && !v.packageId)
-    .reduce((sum, v) => sum + feeOf(v), 0);
-  const packageRevenue = packages
-    .filter((p) => p.purchaseDate >= start)
-    .reduce((sum, p) => sum + p.totalAmount, 0);
-  return { total: directRevenue + packageRevenue, packageRevenue, directRevenue };
-}
-
-/** Total/package/direct revenue for all four windows at once — the top-row
- * stat cards on the Analytics page. */
-export function computeRevenueSummary(visits: Visit[], packages: Package[]): RevenueSummary {
-  return {
-    day: summarizeWindow(visits, packages, "day"),
-    week: summarizeWindow(visits, packages, "week"),
-    month: summarizeWindow(visits, packages, "month"),
-    year: summarizeWindow(visits, packages, "year"),
-  };
-}
-
+// Shared with the admin panel's own charts (lib/platformAnalytics.ts,
+// components/admin/AdminBarChart.tsx) — a plain "one point per month" shape
+// with no clinic-analytics-specific logic left attached to it here since
+// computeYearlyRevenueTrend (the function that used to build this for the
+// Analytics page) was replaced by lib/analyticsRange.ts's range-aware
+// computeRevenueSeries.
 export interface MonthPoint {
   monthLabel: string;
   total: number;
-}
-
-/** 12-point revenue trend for the current calendar year — the main chart
- * on the Analytics page. */
-export function computeYearlyRevenueTrend(visits: Visit[], packages: Package[]): MonthPoint[] {
-  const now = new Date();
-  const year = now.getFullYear();
-  const totals = Array(12).fill(0);
-
-  for (const v of visits) {
-    if (!v.date?.startsWith(String(year)) || v.packageId) continue;
-    const month = Number(v.date.split("-")[1]) - 1;
-    totals[month] += feeOf(v);
-  }
-  for (const p of packages) {
-    if (!p.purchaseDate?.startsWith(String(year))) continue;
-    const month = Number(p.purchaseDate.split("-")[1]) - 1;
-    totals[month] += p.totalAmount;
-  }
-
-  return totals.map((total, i) => ({
-    monthLabel: new Date(year, i, 1).toLocaleDateString("en-US", { month: "short" }),
-    total,
-  }));
-}
-
-// Keyed by SessionType — built-in "qs"/"lhr" plus whatever clinic-defined
-// machine types (e.g. "co2") exist. A plain Record rather than a fixed
-// shape since the set of types is per-clinic and open-ended.
-export type RevenueByType = Record<SessionType, number>;
-
-/** Revenue split by treatment type, current year — feeds the pie chart. */
-export function computeRevenueByType(visits: Visit[], packages: Package[]): RevenueByType {
-  const year = new Date().getFullYear();
-  const byType: RevenueByType = {};
-
-  for (const v of visits) {
-    if (!v.date?.startsWith(String(year)) || v.packageId) continue;
-    byType[v.sessionType] = (byType[v.sessionType] || 0) + feeOf(v);
-  }
-  for (const p of packages) {
-    if (!p.purchaseDate?.startsWith(String(year))) continue;
-    byType[p.sessionType] = (byType[p.sessionType] || 0) + p.totalAmount;
-  }
-  return byType;
 }
 
 export interface StaffMachineStat {
