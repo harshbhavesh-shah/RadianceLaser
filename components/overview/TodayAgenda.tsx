@@ -69,7 +69,17 @@ export default function TodayAgenda({
             key={appt.id}
             style={{ animationDelay: `${i * 30}ms` }}
             className={[
-              "animate-fade-up flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 text-sm",
+              // Always two stacked rows, not a viewport-breakpoint escape —
+              // this card sits in the Dashboard's narrower grid column even
+              // on a wide desktop screen (see app/dashboard/page.tsx's
+              // lg:grid-cols-[1.5fr_1fr]), so a `sm:` breakpoint still fires
+              // there and the same bug comes right back: the actions pill
+              // (Log Visit/Generate Receipt) is a fixed-width flex-shrink-0
+              // sibling, so a single row squeezes the truncate'd patient
+              // name down to nothing rather than wrapping it (truncate lets
+              // its min-content width shrink to ~0, so flexbox never wraps
+              // on its own). Two full-width rows sidesteps that at any width.
+              "animate-fade-up flex flex-col gap-2 px-5 py-3.5 text-sm",
               i !== appointments.length - 1 ? "border-b border-beige-300" : "",
             ].join(" ")}
           >

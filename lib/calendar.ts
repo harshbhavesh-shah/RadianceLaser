@@ -138,10 +138,13 @@ export function formatWeekLabel(days: Date[]): string {
   const end = days[6];
   const sameMonth = start.getMonth() === end.getMonth();
   const startStr = start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const endStr = end.toLocaleDateString(
-    "en-US",
-    sameMonth ? { day: "numeric", year: "numeric" } : { month: "short", day: "numeric", year: "numeric" }
-  );
+  // Built by hand rather than via toLocaleDateString({ day, year }) — that
+  // "day + year, no month" combination isn't a real calendar skeleton, and
+  // at least one Intl implementation (Node 24's bundled ICU) renders it as
+  // literal garbage like "2026 (day: 19)" instead of "19, 2026".
+  const endStr = sameMonth
+    ? `${end.getDate()}, ${end.getFullYear()}`
+    : end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   return `${startStr} – ${endStr}`;
 }
 
