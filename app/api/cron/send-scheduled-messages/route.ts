@@ -63,7 +63,12 @@ function findTemplate(templates: MessageTemplate[], category: MessageTemplate["c
   return templates.find((t) => t.category === category);
 }
 
-async function processReminders(clinic: Clinic, templates: MessageTemplate[], connection: NonNullable<Awaited<ReturnType<typeof getWhatsAppConnection>>>): Promise<number> {
+// Exported (only) for route.test.ts — each function below already takes a
+// single clinic's data as input, so a test can call one directly against a
+// throwaway seeded clinic instead of through GET, which deliberately walks
+// every clinic in the database (see its own comment) and is therefore not
+// something a test should ever invoke against a real, shared database.
+export async function processReminders(clinic: Clinic, templates: MessageTemplate[], connection: NonNullable<Awaited<ReturnType<typeof getWhatsAppConnection>>>): Promise<number> {
   if (!clinic.reminderEnabled) return 0;
   const template = findTemplate(templates, "appointment_reminder");
   if (!template) return 0;
@@ -99,7 +104,7 @@ async function processReminders(clinic: Clinic, templates: MessageTemplate[], co
   return sent;
 }
 
-async function processFeedbackSurveys(clinic: Clinic, templates: MessageTemplate[], connection: NonNullable<Awaited<ReturnType<typeof getWhatsAppConnection>>>): Promise<number> {
+export async function processFeedbackSurveys(clinic: Clinic, templates: MessageTemplate[], connection: NonNullable<Awaited<ReturnType<typeof getWhatsAppConnection>>>): Promise<number> {
   if (!clinic.feedbackSurveyEnabled) return 0;
   const template = findTemplate(templates, "visit_feedback");
   if (!template) return 0;
@@ -133,7 +138,7 @@ async function processFeedbackSurveys(clinic: Clinic, templates: MessageTemplate
 }
 
 /** Pass 3. Runs for every clinic, no toggle. Returns how many appointments it flipped. */
-async function autoDetectNoShows(clinicId: string): Promise<number> {
+export async function autoDetectNoShows(clinicId: string): Promise<number> {
   const stale = await getStaleBookedAppointments(clinicId);
   for (const appt of stale) {
     await updateAppointmentStatus(appt.id, "no-show");
@@ -141,7 +146,7 @@ async function autoDetectNoShows(clinicId: string): Promise<number> {
   return stale.length;
 }
 
-async function processNoShowFollowUps(
+export async function processNoShowFollowUps(
   clinic: Clinic,
   followUps: NoShowFollowUp[],
   templates: MessageTemplate[],
@@ -172,17 +177,24 @@ async function processNoShowFollowUps(
       let secondVar = followUp.offerText || "";
       let surveyId: string | null = null;
 
-      if (followUp.kind === "survey") {
-        if (!appUrl) {
-          console.error("NEXT_PUBLIC_APP_URL is not set, skipping no show survey for", clinic.id);
-          continue;
-        }
-        const survey = await createNoShowSurveyResponse(clinic.id, appt.id, appt.patientName);
-        surveyId = survey.id;
-        secondVar = `${appUrl.replace(/\/$/, "")}/no-show-survey/${survey.token}`;
+      if (followUp.kind === "survey" && !appUrl) {
+        console.error("NEXT_PUBLIC_APP_URL is not set, skipping no show survey for", clinic.id);
+        continue;
       }
 
       try {
+        if (followUp.kind === "survey") {
+          // Inside the try, not above it — a failure here (a transient DB
+          // error; createNoShowSurveyResponse itself already handles the
+          // one-response-per-appointment race) must be caught the same as
+          // a failed send below, or it throws out of this whole function
+          // and skips every other appointment/follow-up still queued for
+          // this clinic in this poll, not just this one.
+          const survey = await createNoShowSurveyResponse(clinic.id, appt.id, appt.patientName);
+          surveyId = survey.id;
+          secondVar = `${appUrl!.replace(/\/$/, "")}/no-show-survey/${survey.token}`;
+        }
+
         await activeProvider.sendTemplateMessage(
           connection,
           phone,

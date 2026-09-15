@@ -64,20 +64,31 @@ export async function importPatientsAction(
   // overwrite. Updated as rows are processed, so two duplicate rows in the
   // same file are handled consistently against each other, not just against
   // what was already in Firestore before this import started.
+  //
+  // Values are Promise<string>, not string — a row's entry has to be
+  // reserved synchronously (before its `createPatient` call awaits) for a
+  // later duplicate in the same batch to see it; at that point the new
+  // patient's real id isn't known yet, so the entry is the in-flight
+  // promise that will eventually resolve to it. batch.map below runs each
+  // row's callback synchronously up to its first `await`, in order, so this
+  // reservation is what actually closes the race — resolving the id after
+  // the await (as a plain string map once did) is too late, since a second
+  // row's synchronous duplicate check would already have missed it.
+  //
   // Explicit [string, string] return types below are required, not
   // stylistic — without them, TS infers `.map()`'s array-literal return as
   // the widened `string[]` rather than a tuple, and chaining `.filter()`
   // afterward loses whatever contextual tuple typing `new Map()` might
   // otherwise have inferred. That mismatch (string[] vs. the tuple shape
   // Map's constructor expects) is exactly what broke the Vercel build.
-  const byPhone = new Map<string, string>(
+  const byPhone = new Map<string, Promise<string>>(
     existingPatients
       .filter((p) => normalizePhone(p.phone))
-      .map((p): [string, string] => [normalizePhone(p.phone), p.id])
+      .map((p): [string, Promise<string>] => [normalizePhone(p.phone), Promise.resolve(p.id)])
   );
-  const byCode = new Map<string, string>(
+  const byCode = new Map<string, Promise<string>>(
     existingPatients
-      .map((p): [string, string] => [p.patientCode.trim().toUpperCase(), p.id])
+      .map((p): [string, Promise<string>] => [p.patientCode.trim().toUpperCase(), Promise.resolve(p.id)])
       .filter(([code]) => code)
   );
 
@@ -93,26 +104,38 @@ export async function importPatientsAction(
       batch.map(async (row) => {
         const normalizedPhone = normalizePhone(row.phone);
         const normalizedCode = row.patientCode?.trim().toUpperCase();
-        const existingId =
+        const existingIdPromise =
           (normalizedPhone && byPhone.get(normalizedPhone)) ||
           (normalizedCode && byCode.get(normalizedCode)) ||
           undefined;
 
-        if (existingId) {
+        if (existingIdPromise) {
           if (duplicateAction === "skip") {
             return "duplicate" as const;
           }
+          // Awaits the reservation above if the "existing" match is
+          // actually an earlier row in this same batch still being
+          // created — resolves immediately if it's a patient that already
+          // existed before this import started.
+          const existingId = await existingIdPromise;
           await updatePatient(session.clinicId, existingId, row);
           return "updated" as const;
         }
 
-        // Marked as seen synchronously, before the create below actually
-        // awaits — safe because every row's map callback runs up to its
-        // first `await` in order, so two rows with the same phone number
-        // (or patient ID) within this batch can't both slip past the check.
+        // Reserved synchronously, before the create below actually awaits
+        // — every row's map callback runs up to its first `await` in
+        // order, so a later row with the same phone number (or patient ID)
+        // in this batch sees this reservation instead of slipping past the
+        // check above and creating a second patient for the same person.
+        let resolveNewId!: (id: string) => void;
+        const newIdPromise = new Promise<string>((resolve) => {
+          resolveNewId = resolve;
+        });
+        if (normalizedPhone) byPhone.set(normalizedPhone, newIdPromise);
+        if (normalizedCode) byCode.set(normalizedCode, newIdPromise);
+
         const newId = await createPatient({ clinicId: session.clinicId, ...row });
-        if (normalizedPhone) byPhone.set(normalizedPhone, newId);
-        if (normalizedCode) byCode.set(normalizedCode, newId);
+        resolveNewId(newId);
         return "imported" as const;
       })
     );

@@ -27,3 +27,10 @@ npm-debug.log*
 # Postgres connection on a fresh deploy (Vercel clones from git, this file
 # was never pushed) throws ENOENT the moment a request touches Prisma.
 !global-bundle.pem
+
+# Playwright — e2e/.auth holds a real (throwaway-clinic) session cookie
+# from the last local run; playwright-report/test-results are regenerated
+# every run.
+/e2e/.auth
+/playwright-report
+/test-results

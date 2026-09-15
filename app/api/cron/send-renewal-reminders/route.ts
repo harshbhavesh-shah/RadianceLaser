@@ -35,6 +35,72 @@ interface ReminderCandidate {
   isTrial: boolean;
 }
 
+interface ClinicForReminder {
+  id: string;
+  name: string;
+  subscriptionStatus: string;
+  trialEndsAt: bigint;
+  subscriptionRenewsAt: bigint | null;
+  renewalReminderSentForDeadline: bigint | null;
+}
+
+// Exported (only) for route.test.ts. Pure — no DB, no network — so a test
+// can exercise the actual selection logic (inside the reminder window, not
+// already sent for this exact deadline) against a fabricated list of
+// clinics instead of the real ones in the database, which GET below reads
+// via prisma.clinic.findMany() with no clinic filter at all.
+export function buildReminderCandidates(clinics: ClinicForReminder[], now: number): ReminderCandidate[] {
+  const candidates: ReminderCandidate[] = [];
+
+  for (const clinic of clinics) {
+    const deadline = getClinicDeadline({
+      subscriptionStatus: clinic.subscriptionStatus as SubscriptionStatus,
+      trialEndsAt: Number(clinic.trialEndsAt),
+      subscriptionRenewsAt: clinic.subscriptionRenewsAt !== null ? Number(clinic.subscriptionRenewsAt) : undefined,
+    });
+    if (deadline === null) continue; // locked/canceled — not a "coming due" case
+
+    const daysRemaining = Math.ceil((deadline - now) / DAY_MS);
+    if (daysRemaining > REMINDER_THRESHOLD_DAYS || daysRemaining <= 0) continue;
+
+    const alreadySentForThisDeadline =
+      clinic.renewalReminderSentForDeadline !== null && Number(clinic.renewalReminderSentForDeadline) === deadline;
+    if (alreadySentForThisDeadline) continue;
+
+    candidates.push({ id: clinic.id, name: clinic.name, deadline, isTrial: clinic.subscriptionStatus === "trialing" });
+  }
+
+  return candidates;
+}
+
+/** Exported (only) for route.test.ts, same reasoning as
+ * buildReminderCandidates above — sends and records one candidate at a
+ * time so a test can do that against a single seeded clinic. */
+export async function sendReminderForCandidate(
+  candidate: ReminderCandidate,
+  ownerEmail: string,
+  appUrl: string,
+  now: number
+): Promise<void> {
+  const daysRemaining = Math.ceil((candidate.deadline - now) / DAY_MS);
+  await sendEmail({
+    to: ownerEmail,
+    subject: candidate.isTrial
+      ? `Your Radiance Laser trial ends ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`
+      : `Your Radiance Laser subscription renews ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`,
+    html: renewalReminderEmailHtml({
+      clinicName: candidate.name,
+      daysRemaining,
+      isTrial: candidate.isTrial,
+      billingUrl: `${appUrl}/dashboard/settings#billing`,
+    }),
+  });
+  await prisma.clinic.update({
+    where: { id: candidate.id },
+    data: { renewalReminderSentForDeadline: BigInt(candidate.deadline) },
+  });
+}
+
 function renewalReminderEmailHtml(input: { clinicName: string; daysRemaining: number; isTrial: boolean; billingUrl: string }): string {
   const { clinicName, daysRemaining, isTrial, billingUrl } = input;
   const whatEnds = isTrial ? "free trial" : "subscription";
@@ -86,25 +152,7 @@ export async function GET(req: NextRequest) {
   });
 
   const now = Date.now();
-  const candidates: ReminderCandidate[] = [];
-
-  for (const clinic of clinics) {
-    const deadline = getClinicDeadline({
-      subscriptionStatus: clinic.subscriptionStatus as SubscriptionStatus,
-      trialEndsAt: Number(clinic.trialEndsAt),
-      subscriptionRenewsAt: clinic.subscriptionRenewsAt !== null ? Number(clinic.subscriptionRenewsAt) : undefined,
-    });
-    if (deadline === null) continue; // locked/canceled — not a "coming due" case
-
-    const daysRemaining = Math.ceil((deadline - now) / DAY_MS);
-    if (daysRemaining > REMINDER_THRESHOLD_DAYS || daysRemaining <= 0) continue;
-
-    const alreadySentForThisDeadline =
-      clinic.renewalReminderSentForDeadline !== null && Number(clinic.renewalReminderSentForDeadline) === deadline;
-    if (alreadySentForThisDeadline) continue;
-
-    candidates.push({ id: clinic.id, name: clinic.name, deadline, isTrial: clinic.subscriptionStatus === "trialing" });
-  }
+  const candidates = buildReminderCandidates(clinics, now);
 
   if (candidates.length === 0) {
     return NextResponse.json({ ok: true, remindersSent: 0 });
@@ -117,24 +165,8 @@ export async function GET(req: NextRequest) {
     const ownerEmail = ownerEmails[candidate.id];
     if (!ownerEmail) continue; // no owner on record — nothing to send to
 
-    const daysRemaining = Math.ceil((candidate.deadline - now) / DAY_MS);
     try {
-      await sendEmail({
-        to: ownerEmail,
-        subject: candidate.isTrial
-          ? `Your Radiance Laser trial ends ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`
-          : `Your Radiance Laser subscription renews ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`,
-        html: renewalReminderEmailHtml({
-          clinicName: candidate.name,
-          daysRemaining,
-          isTrial: candidate.isTrial,
-          billingUrl: `${appUrl}/dashboard/settings#billing`,
-        }),
-      });
-      await prisma.clinic.update({
-        where: { id: candidate.id },
-        data: { renewalReminderSentForDeadline: BigInt(candidate.deadline) },
-      });
+      await sendReminderForCandidate(candidate, ownerEmail, appUrl, now);
       remindersSent++;
     } catch (err) {
       console.error(`Renewal reminder failed for clinic ${candidate.id}:`, err);

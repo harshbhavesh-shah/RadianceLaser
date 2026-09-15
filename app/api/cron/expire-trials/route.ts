@@ -28,23 +28,37 @@ function requireCronAuth(req: NextRequest): boolean {
   return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
+// Exported (only) for route.test.ts — split out so a test can check one
+// seeded clinic's id shows up (or doesn't) among expired trials without
+// asserting anything about the full list, and can flip one clinic without
+// ever querying/mutating every clinic in the database. GET below is what
+// actually walks everything, and — like send-scheduled-messages' GET —
+// isn't something a test should call directly against a real, shared
+// database.
+export async function findExpiredTrialClinicIds(now: number): Promise<string[]> {
+  const expired = await prisma.clinic.findMany({
+    where: { subscriptionStatus: "trialing", trialEndsAt: { lte: BigInt(now) } },
+    select: { id: true },
+  });
+  return expired.map((c) => c.id);
+}
+
+export async function expireTrialClinic(clinicId: string): Promise<void> {
+  await prisma.clinic.update({
+    where: { id: clinicId },
+    data: { subscriptionStatus: "active", planTier: "free", subscriptionRenewsAt: null },
+  });
+}
+
 export async function GET(req: NextRequest) {
   if (!requireCronAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const now = Date.now();
-  const expired = await prisma.clinic.findMany({
-    where: { subscriptionStatus: "trialing", trialEndsAt: { lte: BigInt(now) } },
-    select: { id: true },
-  });
-
-  for (const clinic of expired) {
-    await prisma.clinic.update({
-      where: { id: clinic.id },
-      data: { subscriptionStatus: "active", planTier: "free", subscriptionRenewsAt: null },
-    });
+  const expiredIds = await findExpiredTrialClinicIds(Date.now());
+  for (const clinicId of expiredIds) {
+    await expireTrialClinic(clinicId);
   }
 
-  return NextResponse.json({ ok: true, expired: expired.length });
+  return NextResponse.json({ ok: true, expired: expiredIds.length });
 }

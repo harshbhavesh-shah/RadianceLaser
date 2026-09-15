@@ -27,16 +27,34 @@ function generateToken(): string {
 }
 
 /** Creates the survey row with a fresh token before sending. If the send
- * fails, the caller should delete it so it retries. */
+ * fails, the caller should delete it so it retries.
+ *
+ * Idempotent on appointmentId (unique in the schema) — a previous poll can
+ * have created this row and then crashed before either sending it or
+ * rolling it back (e.g. the cron job's own error, a transient DB blip on
+ * markNoShowSurveySent/logNoShowMessageSent). Without this, every later
+ * poll's plain `create` would throw a unique-constraint error that isn't
+ * caught anywhere upstream, permanently breaking no-show follow-up
+ * processing for the *whole clinic*, not just this one appointment, since
+ * the exception propagates out of the per-clinic loop in the cron route.
+ * Reusing the existing unsent row here is what actually lets that
+ * appointment's follow-up retry succeed on the next poll instead of
+ * failing the same way forever. */
 export async function createNoShowSurveyResponse(
   clinicId: string,
   appointmentId: string,
   patientName: string
 ): Promise<NoShowSurveyResponse> {
-  const row = await prisma.noShowSurveyResponse.create({
-    data: { clinicId, appointmentId, patientName, token: generateToken(), createdAt: BigInt(Date.now()) },
-  });
-  return toNoShowSurveyResponse(row);
+  try {
+    const row = await prisma.noShowSurveyResponse.create({
+      data: { clinicId, appointmentId, patientName, token: generateToken(), createdAt: BigInt(Date.now()) },
+    });
+    return toNoShowSurveyResponse(row);
+  } catch (err) {
+    const existing = await prisma.noShowSurveyResponse.findUnique({ where: { appointmentId } });
+    if (existing) return toNoShowSurveyResponse(existing);
+    throw err;
+  }
 }
 
 export async function markNoShowSurveySent(id: string): Promise<void> {

@@ -19,5 +19,9 @@ export default defineConfig({
     // would just test the mock) — sequential, not parallel workers, so two
     // test files can't race on the same ReceiptCounter row.
     fileParallelism: false,
+    // e2e/*.spec.ts are Playwright specs (run via `npm run test:e2e`, not
+    // vitest) — they import "@playwright/test", not vitest, so vitest's
+    // default *.spec.ts glob would otherwise try and fail to collect them.
+    exclude: ["**/node_modules/**", "**/e2e/**"],
   },
 });
