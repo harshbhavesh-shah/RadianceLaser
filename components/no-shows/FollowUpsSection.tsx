@@ -137,9 +137,9 @@ export default function FollowUpsSection({
                   disabled={!canEdit}
                   className="min-w-0 flex-1 text-left enabled:cursor-pointer"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-brown-900">{f.name}</span>
-                    <span className="rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold text-brown-600">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="min-w-0 truncate text-sm font-medium text-brown-900">{f.name}</span>
+                    <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold text-brown-600">
                       {KIND_LABELS[f.kind]}
                     </span>
                   </div>

@@ -85,11 +85,11 @@ export default function SessionTypePanel({
           as the timeline next to it — a package is always tied to one
           type, so there's nothing to unify across tabs. */}
       <div className="rounded-2xl border border-beige-300 bg-surface shadow-soft">
-        <div className="flex items-center justify-between px-5 py-4">
-          <span className="text-sm font-semibold text-brown-900">Active Packages</span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-4">
+          <span className="whitespace-nowrap text-sm font-semibold text-brown-900">Active Packages</span>
           <button
             onClick={() => setPackageModalOpen(true)}
-            className="text-xs font-medium text-rust-700 hover:underline"
+            className="whitespace-nowrap text-xs font-medium text-rust-700 hover:underline"
           >
             + New Package
           </button>

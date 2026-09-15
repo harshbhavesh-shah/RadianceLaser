@@ -110,12 +110,12 @@ export default function AnalyticsClient({
               />
             </div>
           )}
-          <div className="flex items-center gap-1 rounded-xl border border-beige-300 bg-surface p-1 shadow-soft">
+          <div className="flex flex-wrap items-center gap-1 rounded-xl border border-beige-300 bg-surface p-1 shadow-soft">
             {PRESETS.map((p) => (
               <button
                 key={p.key}
                 onClick={() => setPreset(p.key)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   preset === p.key ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
                 }`}
               >

@@ -40,7 +40,7 @@ export default function PatientVisitTabs({
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex gap-2 overflow-x-auto">
         {TABS.map((type) => {
           const cfg = SESSION_TYPE_CONFIG[type];
           const isActive = active === type;
@@ -49,7 +49,7 @@ export default function PatientVisitTabs({
               key={type}
               onClick={() => setActive(type)}
               className={[
-                "flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
+                "flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
                 isActive ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900",
               ].join(" ")}
             >

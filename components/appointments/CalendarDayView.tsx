@@ -103,13 +103,13 @@ export default function CalendarDayView({
                     appointment.status === "cancelled" ? "#9C8672" : "#C1442D",
                 }}
               >
-                <div className="flex items-center gap-1 truncate font-medium text-brown-900">
+                <div className="flex items-center gap-1 font-medium text-brown-900">
                   <span
-                    className={`rounded px-1 text-[9px] font-bold ${cfg.badgeClassName}`}
+                    className={`flex-shrink-0 rounded px-1 text-[9px] font-bold ${cfg.badgeClassName}`}
                   >
                     {cfg.badgeText}
                   </span>
-                  {appointment.patientName}
+                  <span className="min-w-0 truncate">{appointment.patientName}</span>
                 </div>
                 <div className="truncate text-brown-600">{formatTime12h(appointment.time)}</div>
               </button>

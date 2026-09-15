@@ -132,8 +132,8 @@ export default function ReceiptViewModal({
             </div>
           )}
 
-          <div className="mt-5 overflow-hidden rounded-md border border-brown-900/20">
-            <table className="w-full text-left text-sm">
+          <div className="mt-5 overflow-x-auto rounded-md border border-brown-900/20 print:overflow-visible">
+            <table className="w-full min-w-[420px] text-left text-sm">
               <thead>
                 <tr className="bg-rust-100 text-xs uppercase tracking-wide text-brown-700">
                   <th className="w-10 px-3 py-2 font-semibold">#</th>

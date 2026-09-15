@@ -46,12 +46,12 @@ export default function AreaDefsManager({ canEdit }: { canEdit: boolean }) {
           const areas = areaDefs.filter((a) => a.sessionType === key);
           return (
             <div key={key}>
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-brown-700">{label}</h3>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <h3 className="min-w-0 text-sm font-semibold text-brown-700">{label}</h3>
                 {canEdit && (
                   <button
                     onClick={() => setEditing({ sessionType: key, area: null })}
-                    className="text-xs font-semibold text-rust-700 hover:underline"
+                    className="flex-shrink-0 whitespace-nowrap text-xs font-semibold text-rust-700 hover:underline"
                   >
                     + Add Area
                   </button>

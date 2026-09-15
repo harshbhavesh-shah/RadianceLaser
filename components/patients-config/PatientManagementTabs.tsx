@@ -81,12 +81,12 @@ export default function PatientManagementTabs({
 
   return (
     <div>
-      <div className="mb-6 flex max-w-xl gap-1 rounded-lg border border-beige-300 bg-surface p-1 shadow-soft">
+      <div className="mb-6 flex max-w-xl gap-1 overflow-x-auto rounded-lg border border-beige-300 bg-surface p-1 shadow-soft">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium transition-colors ${
               tab === t.key ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
             }`}
           >

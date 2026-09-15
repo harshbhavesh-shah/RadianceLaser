@@ -171,7 +171,7 @@ export default function PatientMiniPanel({
                       {cfg.badgeText}
                     </span>
                     <span className="text-brown-600">{v.date || "No date"}</span>
-                    {area && <span className="truncate text-brown-400">· {area}</span>}
+                    {area && <span className="min-w-0 truncate text-brown-400">· {area}</span>}
                   </div>
                 );
               })}

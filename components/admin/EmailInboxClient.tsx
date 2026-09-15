@@ -161,7 +161,7 @@ export default function EmailInboxClient({
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`truncate text-sm ${thread.unread ? "font-semibold text-brown-900" : "font-medium text-brown-800"}`}>
+                  <span className={`min-w-0 flex-1 truncate text-sm ${thread.unread ? "font-semibold text-brown-900" : "font-medium text-brown-800"}`}>
                     {thread.participants.map(extractName).join(", ") || "(unknown sender)"}
                   </span>
                   {thread.unread && <span className="h-2 w-2 flex-shrink-0 rounded-full bg-rust-600" />}

@@ -41,11 +41,11 @@ export default function PackageCard({
       </div>
 
       <div className="mt-4">
-        <div className="mb-1.5 flex justify-between text-sm">
-          <span className="text-brown-600">
+        <div className="mb-1.5 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-sm">
+          <span className="whitespace-nowrap text-brown-600">
             {ledger.sessionsUsed} of {pkg.totalSessions} sessions used
           </span>
-          <span className="font-medium text-brown-900">
+          <span className="whitespace-nowrap font-medium text-brown-900">
             {ledger.sessionsRemaining} remaining
           </span>
         </div>
@@ -64,11 +64,11 @@ export default function PackageCard({
           </div>
           <div className="space-y-1">
             {ledger.entries.map((entry) => (
-              <div key={entry.visitId} className="flex justify-between text-sm">
+              <div key={entry.visitId} className="flex flex-wrap justify-between gap-x-3 text-sm">
                 <span className="text-brown-600">
                   Session {entry.sessionNumber} ({entry.date || "No date"})
                 </span>
-                <span className="text-brown-900">{formatCurrency(entry.amount)}</span>
+                <span className="whitespace-nowrap text-brown-900">{formatCurrency(entry.amount)}</span>
               </div>
             ))}
           </div>

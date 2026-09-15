@@ -89,17 +89,17 @@ export default function MachineTypesSection({
               key={key}
               onClick={() => canEdit && openEdit(key)}
               disabled={!canEdit}
-              className="flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-rust-100/40 disabled:cursor-default"
+              className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-rust-100/40 disabled:cursor-default"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <span
-                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}
+                  className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}
                 >
                   {cfg.badgeText}
                 </span>
                 <span className="text-sm font-medium text-brown-900">{cfg.label}</span>
               </div>
-              <span className="flex items-center gap-2 text-[10px] text-brown-400">
+              <span className="flex flex-shrink-0 items-center gap-2 whitespace-nowrap text-[10px] text-brown-400">
                 {cfg.columns.length} field{cfg.columns.length === 1 ? "" : "s"}
                 {isBuiltIn && (
                   <span className="font-medium uppercase tracking-wide">· Built-in</span>

@@ -128,7 +128,7 @@ export default function InventoryList({
 
             return (
               <div key={item.id} className="rounded-lg border border-beige-300 px-4 py-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <button
                     onClick={() => canEdit && setEditing(item)}
                     disabled={!canEdit}

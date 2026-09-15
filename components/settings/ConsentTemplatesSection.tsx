@@ -71,10 +71,10 @@ export default function ConsentTemplatesSection({
               key={template.id}
               onClick={() => canEdit && openEdit(template)}
               disabled={!canEdit}
-              className="flex w-full items-center justify-between gap-3 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-rust-100/40 disabled:cursor-default"
+              className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-beige-300 px-4 py-3 text-left transition-colors enabled:hover:bg-rust-100/40 disabled:cursor-default"
             >
               <span className="text-sm font-medium text-brown-900">{template.title}</span>
-              <span className="text-xs text-brown-400">
+              <span className="flex-shrink-0 text-xs text-brown-400">
                 {template.sessionType
                   ? SESSION_TYPE_CONFIG[template.sessionType]?.label || template.sessionType
                   : "General"}

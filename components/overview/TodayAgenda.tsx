@@ -69,23 +69,22 @@ export default function TodayAgenda({
             key={appt.id}
             style={{ animationDelay: `${i * 30}ms` }}
             className={[
-              // Always two stacked rows, not a viewport-breakpoint escape —
-              // this card sits in the Dashboard's narrower grid column even
-              // on a wide desktop screen (see app/dashboard/page.tsx's
-              // lg:grid-cols-[1.5fr_1fr]), so a `sm:` breakpoint still fires
-              // there and the same bug comes right back: the actions pill
-              // (Log Visit/Generate Receipt) is a fixed-width flex-shrink-0
-              // sibling, so a single row squeezes the truncate'd patient
-              // name down to nothing rather than wrapping it (truncate lets
-              // its min-content width shrink to ~0, so flexbox never wraps
-              // on its own). Two full-width rows sidesteps that at any width.
+              // Always a two-line stack — never try to fit the name, the
+              // pipeline action pill, and the status pill on one row via a
+              // breakpoint. This component can render inside a narrow grid
+              // column (see app/dashboard/page.tsx's lg:grid-cols) where a
+              // sm:/md: breakpoint (based on viewport width, not the
+              // column's actual rendered width) never kicks in, so a
+              // single flex-wrap row with a flex-1 truncate sibling next to
+              // fixed-width pills can squeeze the patient name down to
+              // nothing instead of wrapping.
               "animate-fade-up flex flex-col gap-2 px-5 py-3.5 text-sm",
               i !== appointments.length - 1 ? "border-b border-beige-300" : "",
             ].join(" ")}
           >
             <Link
               href={isLinked ? `/dashboard/patients/${appt.patientId}` : "/dashboard/appointments"}
-              className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-rust-600"
+              className="flex min-w-0 items-center gap-3 transition-colors hover:text-rust-600"
             >
               <span className="w-20 flex-shrink-0 font-medium text-brown-900">
                 {formatTime12h(appt.time)}
@@ -95,7 +94,7 @@ export default function TodayAgenda({
                   {cfg.badgeText}
                 </span>
               )}
-              <span className="truncate font-medium text-brown-900">{appt.patientName}</span>
+              <span className="min-w-0 truncate font-medium text-brown-900">{appt.patientName}</span>
               <span className="hidden flex-shrink-0 text-brown-400 sm:inline">{appt.patientPhone}</span>
               {!isLinked && (
                 <span className="flex-shrink-0 rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-medium text-brown-600">
@@ -104,7 +103,7 @@ export default function TodayAgenda({
               )}
             </Link>
 
-            <span className="flex flex-shrink-0 items-center gap-2">
+            <span className="flex flex-shrink-0 items-center justify-end gap-2">
               {isLinked && appt.status === "booked" && !linkedVisitId && (
                 <Link
                   href={logVisitHref}

@@ -56,9 +56,9 @@ export default function PackageTypesManager({
           const typeDefs = defs.filter((d) => d.sessionType === sessionType);
           return (
             <div key={sessionType}>
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-brown-700">
-                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${config.badgeClassName}`}>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-brown-700">
+                  <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${config.badgeClassName}`}>
                     {config.badgeText}
                   </span>
                   {config.label}
@@ -66,7 +66,7 @@ export default function PackageTypesManager({
                 {canEdit && (
                   <button
                     onClick={() => setEditing({ sessionType, def: null })}
-                    className="text-xs font-semibold text-rust-700 hover:underline"
+                    className="flex-shrink-0 whitespace-nowrap text-xs font-semibold text-rust-700 hover:underline"
                   >
                     + Add Package Type
                   </button>

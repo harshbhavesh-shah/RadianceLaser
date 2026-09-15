@@ -76,17 +76,17 @@ export default function AppointmentListView({
                     i !== arr.length - 1 ? "border-b border-beige-300" : "",
                   ].join(" ")}
                 >
-                  <span className="flex items-center gap-3">
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="w-20 flex-shrink-0 font-medium text-brown-900">
                       {formatTime12h(appt.time)}
                     </span>
                     <span
-                      className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}
+                      className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}
                     >
                       {cfg.badgeText}
                     </span>
                     <span className="font-medium text-brown-900">{appt.patientName}</span>
-                    <span className="text-brown-400">{appt.patientPhone}</span>
+                    <span className="flex-shrink-0 text-brown-400">{appt.patientPhone}</span>
                   </span>
                   <span className="flex items-center gap-2">
                     {appt.status === "booked" && !linkedVisitId && (

@@ -102,10 +102,10 @@ export default function PhotoCompareSlider({
             </div>
           </div>
 
-          <span className="pointer-events-none absolute left-2 top-2 rounded bg-black/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+          <span className="pointer-events-none absolute left-2 top-2 max-w-[45%] truncate rounded bg-black/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
             {before.label || "Before"} {formatPhotoDate(before)}
           </span>
-          <span className="pointer-events-none absolute right-2 top-2 rounded bg-black/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+          <span className="pointer-events-none absolute right-2 top-2 max-w-[45%] truncate rounded bg-black/50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
             {after.label || "After"} {formatPhotoDate(after)}
           </span>
         </div>
