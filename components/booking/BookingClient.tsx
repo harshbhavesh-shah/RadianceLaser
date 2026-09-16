@@ -1,40 +1,70 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCheck, ChevronLeft, RotateCcw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MapPin, RotateCcw } from "lucide-react";
 import { lookupPatientAction, submitBookingAction, type MatchedPatient } from "@/app/book/[clinicId]/actions";
-import { todayLocalStr, parseDateStr } from "@/lib/calendar";
+import { todayLocalStr, addDays, toDateStr, formatTime12h } from "@/lib/calendar";
 
-type Step = "lookup" | "book" | "success";
+type Step = "identify" | "datetime" | "success";
 
-const INPUT_CLASS =
-  "w-full rounded-md border border-beige-300 bg-canvas px-3.5 py-2.5 text-sm text-brown-900 outline-none focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500";
-const LABEL_CLASS = "mb-1.5 block text-sm font-medium text-brown-700";
-
-function formatVisitDate(dateStr: string): string {
-  if (!dateStr) return "";
-  return parseDateStr(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+// Matches CALENDAR_START_HOUR/END_HOUR in lib/calendar.ts (the same
+// clinic hours the staff-side Schedule view uses) — half-hour slots, none
+// past closing.
+function buildTimeSlots(): string[] {
+  const slots: string[] = [];
+  for (let hour = 9; hour < 21; hour++) {
+    slots.push(`${String(hour).padStart(2, "0")}:00`);
+    slots.push(`${String(hour).padStart(2, "0")}:30`);
+  }
+  return slots;
 }
+const TIME_SLOTS = buildTimeSlots();
+
+function buildNextDays(count: number): { dateStr: string; dayLabel: string; dayNum: string }[] {
+  const today = new Date();
+  return Array.from({ length: count }, (_, i) => {
+    const d = addDays(today, i);
+    return {
+      dateStr: toDateStr(d),
+      dayLabel: d.toLocaleDateString("en-US", { weekday: "short" }),
+      // Just the day number — the chip only has room for one line under
+      // the weekday label (see the button markup below).
+      dayNum: String(d.getDate()),
+    };
+  });
+}
+const NEXT_DAYS = buildNextDays(7);
 
 // This page only ever books a consultation — a visitor booking online
 // doesn't know which treatment they need yet, new patient or returning.
 // The doctor decides that at the consultation itself, so there's
 // deliberately no treatment picker anywhere in this flow (see
-// app/book/[clinicId]/actions.ts).
-export default function BookingClient({ clinicId }: { clinicId: string }) {
-  const [step, setStep] = useState<Step>("lookup");
+// app/book/[clinicId]/actions.ts). Matches the visual language of
+// design/DashboardOverviewDesign's Booking() mockup, adapted to this
+// app's real (simpler, no treatment-picker branch) booking backend.
+export default function BookingClient({
+  clinicId,
+  clinicName,
+  clinicAddress,
+  clinicPhone,
+}: {
+  clinicId: string;
+  clinicName: string;
+  clinicAddress?: string;
+  clinicPhone?: string;
+}) {
+  const [step, setStep] = useState<Step>("identify");
 
-  // Carried from the lookup step into the booking form.
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [matchedPatient, setMatchedPatient] = useState<MatchedPatient | null>(null);
-  const [checkedMatch, setCheckedMatch] = useState(false); // true once lookup has run, even if it found nothing
+  const [checkedMatch, setCheckedMatch] = useState(false);
 
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
 
   const [date, setDate] = useState(todayLocalStr());
-  const [time, setTime] = useState("10:00");
+  const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -52,11 +82,10 @@ export default function BookingClient({ clinicId }: { clinicId: string }) {
     }
     setCheckedMatch(true);
     setMatchedPatient(result.matched ? result.patient : null);
-    setStep("book");
+    setStep("datetime");
   }
 
-  async function handleBook(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleBook() {
     setBookingError(null);
     setBooking(true);
     const result = await submitBookingAction(clinicId, { name, phone, date, time, notes });
@@ -70,11 +99,13 @@ export default function BookingClient({ clinicId }: { clinicId: string }) {
   }
 
   function startOver() {
-    setStep("lookup");
+    setStep("identify");
     setName("");
     setPhone("");
     setMatchedPatient(null);
     setCheckedMatch(false);
+    setDate(todayLocalStr());
+    setTime("");
     setNotes("");
     setBookingError(null);
     setLookupError(null);
@@ -82,19 +113,30 @@ export default function BookingClient({ clinicId }: { clinicId: string }) {
 
   if (step === "success") {
     return (
-      <div className="rounded-xl bg-surface p-8 text-center shadow-card ring-1 ring-beige-300">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-100">
-          <CalendarCheck size={22} className="text-gold-600" />
+      <div className="mx-auto w-full max-w-md pt-4 text-center">
+        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-green-700/15">
+          <CheckCircle2 className="h-12 w-12 text-green-700" strokeWidth={2.5} />
         </div>
-        <h1 className="mt-4 font-display text-xl font-medium text-brown-900">You&apos;re booked!</h1>
-        <p className="mt-2 text-sm leading-relaxed text-brown-600">
-          Consultation on {formatVisitDate(date)} at {formatTimeLabel(time)}. We&apos;ll see you then. Call the
-          clinic if you need to reschedule.
+        <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-brown-900 sm:text-4xl">You&apos;re all set!</h1>
+        <p className="mb-8 text-base font-medium text-brown-400">
+          Your consultation is booked for {formatVisitDate(date)} at {formatTime12h(time)}.
         </p>
+
+        {(clinicAddress || clinicPhone) && (
+          <div className="mx-auto mb-8 flex max-w-sm items-start gap-4 rounded-[24px] border border-beige-300 bg-surface p-8 text-left shadow-soft">
+            <MapPin className="mt-1 h-6 w-6 flex-shrink-0 text-rust-600" />
+            <div>
+              <h3 className="mb-1 text-lg font-extrabold text-brown-900">{clinicName}</h3>
+              {clinicAddress && <p className="mb-3 text-sm font-medium text-brown-400">{clinicAddress}</p>}
+              {clinicPhone && <p className="text-sm font-bold text-brown-900">{clinicPhone}</p>}
+            </div>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={startOver}
-          className="mx-auto mt-6 flex items-center gap-1.5 text-sm font-medium text-gold-600 hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-bold text-rust-600 transition-colors hover:text-rust-600/80"
         >
           <RotateCcw size={14} />
           Book another appointment
@@ -103,111 +145,108 @@ export default function BookingClient({ clinicId }: { clinicId: string }) {
     );
   }
 
-  if (step === "book") {
+  if (step === "datetime") {
     return (
-      <div className="rounded-xl bg-surface p-6 shadow-card ring-1 ring-beige-300 sm:p-7">
+      <div className="mx-auto w-full max-w-2xl">
         <button
           type="button"
-          onClick={() => setStep("lookup")}
-          className="flex items-center gap-1 text-xs font-medium text-brown-400 hover:text-brown-700"
+          onClick={() => setStep("identify")}
+          className="mb-6 flex items-center gap-2 text-sm font-bold text-brown-400 transition-colors hover:text-brown-900"
         >
-          <ChevronLeft size={14} /> Back
+          <ArrowLeft className="h-4 w-4" /> Back
         </button>
 
-        {matchedPatient ? (
-          <>
-            <h1 className="mt-3 font-display text-lg font-medium text-brown-900">
-              Welcome back, {matchedPatient.patientName.split(" ")[0]}
-            </h1>
-            <p className="mt-1 text-sm text-brown-600">Let&apos;s get your next consultation booked.</p>
-          </>
-        ) : (
-          <>
-            <h1 className="mt-3 font-display text-lg font-medium text-brown-900">Book your consultation</h1>
-            <p className="mt-1 text-sm text-brown-600">
-              {checkedMatch
-                ? "We couldn't find you as an existing patient. No problem, book as a new patient below."
-                : "The doctor will assess you and recommend the right treatment, so there's nothing to choose here."}
-            </p>
-          </>
-        )}
+        <h2 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-brown-900">
+          {matchedPatient ? `Welcome back, ${matchedPatient.patientName.split(" ")[0]}` : "Pick a time that works for you"}
+        </h2>
+        <p className="mb-8 text-center text-base font-medium text-brown-400">
+          {checkedMatch && !matchedPatient
+            ? "We couldn't find you as an existing patient — no problem, this books you as a new one."
+            : "We'll confirm treatment details at the clinic."}
+        </p>
 
-        <form onSubmit={handleBook} className="mt-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={LABEL_CLASS}>Date</label>
-              <input
-                type="date"
-                value={date}
-                min={todayLocalStr()}
-                onChange={(e) => setDate(e.target.value)}
-                className={INPUT_CLASS}
-                required
-              />
-            </div>
-            <div>
-              <label className={LABEL_CLASS}>Time</label>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={INPUT_CLASS} required />
-            </div>
+        <div className="rounded-[24px] border border-beige-300 bg-surface p-6 shadow-soft md:p-8">
+          <div className="mb-6 flex gap-3 overflow-x-auto pb-1">
+            {NEXT_DAYS.map((d) => (
+              <button
+                key={d.dateStr}
+                type="button"
+                onClick={() => setDate(d.dateStr)}
+                className={`flex min-w-[80px] flex-col items-center rounded-2xl border-2 p-4 transition-all ${
+                  date === d.dateStr ? "border-rust-600 bg-white shadow-soft" : "border-transparent bg-beige-100 hover:bg-beige-200"
+                }`}
+              >
+                <span className={`text-xs font-bold uppercase ${date === d.dateStr ? "text-rust-600" : "text-brown-400"}`}>
+                  {d.dayLabel}
+                </span>
+                <span className="mt-1 text-lg font-extrabold text-brown-900">{d.dayNum}</span>
+              </button>
+            ))}
           </div>
 
-          <div>
-            <label className={LABEL_CLASS}>
-              Anything we should know? <span className="text-brown-400">(optional)</span>
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className={INPUT_CLASS}
-              placeholder="e.g. concerns you'd like the doctor to look at"
-            />
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {TIME_SLOTS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTime(t)}
+                className={`rounded-xl border py-3 text-sm font-bold transition-all ${
+                  time === t
+                    ? "border-rust-600 bg-rust-100 text-rust-600"
+                    : "border-beige-300 bg-white text-brown-900 hover:border-rust-600/50 hover:text-rust-600"
+                }`}
+              >
+                {formatTime12h(t)}
+              </button>
+            ))}
           </div>
 
-          {bookingError && <p className="text-sm text-red-700">{bookingError}</p>}
+          {bookingError && <p className="mb-4 text-sm text-red-700">{bookingError}</p>}
 
-          <button
-            type="submit"
-            disabled={booking}
-            className="w-full rounded-md bg-brown-900 px-5 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
-          >
-            {booking ? "Booking…" : "Confirm Consultation"}
-          </button>
-        </form>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleBook}
+              disabled={!date || !time || booking}
+              className="rounded-xl bg-rust-600 px-8 py-3.5 text-sm font-bold text-white shadow-soft transition-colors hover:bg-rust-600/90 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {booking ? "Booking…" : "Confirm Appointment"}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl bg-surface p-6 shadow-card ring-1 ring-beige-300 sm:p-7">
-      <h1 className="font-display text-lg font-medium text-brown-900">Book a Consultation</h1>
-      <p className="mt-1 text-sm text-brown-600">
-        Enter your details and we&apos;ll get you on the schedule. New or returning, this books a consultation with
-        the doctor, who&apos;ll recommend the right treatment for you.
+    <div className="mx-auto w-full max-w-md rounded-[24px] border border-beige-300 bg-surface p-8 shadow-soft md:p-12">
+      <h2 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-brown-900">Let&apos;s get you scheduled</h2>
+      <p className="mb-10 text-center font-medium text-brown-400">
+        New or returning, this books a consultation with the doctor, who&apos;ll recommend the right treatment for you.
       </p>
 
-      <form onSubmit={handleLookup} className="mt-5 space-y-4">
+      <form onSubmit={handleLookup} className="space-y-5">
         <div>
-          <label className={LABEL_CLASS}>Full name</label>
+          <label className="mb-2 block text-sm font-bold text-brown-900">Full Name</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Your full name"
+            placeholder="Jane Doe"
             autoFocus
-            className={INPUT_CLASS}
             required
+            className="w-full rounded-xl border border-beige-300 bg-beige-100/50 px-5 py-4 font-medium text-brown-900 outline-none transition-all focus:border-rust-600 focus:ring-1 focus:ring-rust-600"
           />
         </div>
         <div>
-          <label className={LABEL_CLASS}>Phone number</label>
+          <label className="mb-2 block text-sm font-bold text-brown-900">Phone Number</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+91 98765 43210"
-            className={INPUT_CLASS}
             required
+            className="w-full rounded-xl border border-beige-300 bg-beige-100/50 px-5 py-4 font-medium text-brown-900 outline-none transition-all focus:border-rust-600 focus:ring-1 focus:ring-rust-600"
           />
         </div>
 
@@ -216,18 +255,17 @@ export default function BookingClient({ clinicId }: { clinicId: string }) {
         <button
           type="submit"
           disabled={lookupLoading}
-          className="w-full rounded-md bg-brown-900 px-5 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-50"
+          className="mt-4 w-full rounded-xl bg-rust-600 py-4 text-lg font-bold text-white shadow-soft transition-all hover:bg-rust-600/90 disabled:opacity-50"
         >
-          {lookupLoading ? "Checking…" : "Continue"}
+          {lookupLoading ? "Checking…" : "Check Availability"}
         </button>
       </form>
     </div>
   );
 }
 
-function formatTimeLabel(time: string): string {
-  const [h, m] = time.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+function formatVisitDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }

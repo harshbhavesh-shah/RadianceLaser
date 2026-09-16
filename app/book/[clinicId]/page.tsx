@@ -23,8 +23,8 @@ function ClinicBrandHeader({ clinicName }: { clinicName: string }) {
   return (
     <div className="flex flex-col items-center pt-12 text-center sm:pt-16">
       <Image src="/logo.png" alt="" width={44} height={44} />
-      <p className="mt-4 font-display text-xl font-medium text-brown-900 sm:text-2xl">{clinicName}</p>
-      <div className="mt-3 h-[2px] w-10 bg-gold-500" />
+      <p className="mt-4 text-xl font-extrabold tracking-tight text-brown-900 sm:text-2xl">{clinicName}</p>
+      <div className="mt-3 h-[3px] w-10 rounded-full bg-rust-600" />
     </div>
   );
 }
@@ -39,9 +39,9 @@ export default async function BookingPage({ params }: { params: { clinicId: stri
     return (
       <div className="min-h-screen bg-canvas px-4">
         <ClinicBrandHeader clinicName={clinic.name} />
-        <div className="mx-auto mt-10 max-w-md rounded-xl bg-surface p-8 text-center shadow-card ring-1 ring-beige-300">
-          <h1 className="font-display text-lg font-medium text-brown-900">Online booking is unavailable</h1>
-          <p className="mt-2 text-sm text-brown-600">
+        <div className="mx-auto mt-10 max-w-md rounded-[24px] border border-beige-300 bg-surface p-8 text-center shadow-soft">
+          <h1 className="text-lg font-extrabold text-brown-900">Online booking is unavailable</h1>
+          <p className="mt-2 text-sm font-medium text-brown-400">
             {clinic.name} isn&apos;t taking online bookings right now. Please call the clinic directly to book your
             appointment.
           </p>
@@ -53,8 +53,8 @@ export default async function BookingPage({ params }: { params: { clinicId: stri
   return (
     <div className="min-h-screen bg-canvas pb-16">
       <ClinicBrandHeader clinicName={clinic.name} />
-      <div className="mx-auto mt-8 max-w-md px-4">
-        <BookingClient clinicId={clinic.id} />
+      <div className="mx-auto mt-10 max-w-3xl px-4">
+        <BookingClient clinicId={clinic.id} clinicName={clinic.name} clinicAddress={clinic.address} />
       </div>
     </div>
   );

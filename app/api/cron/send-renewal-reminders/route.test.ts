@@ -6,7 +6,8 @@ import { createClinic } from "@/lib/db/clinics";
 const sendEmail = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock("@/lib/email/resend", () => ({ sendEmail }));
 
-const { GET, buildReminderCandidates, sendReminderForCandidate } = await import("./route");
+const { GET } = await import("./route");
+const { buildReminderCandidates, sendReminderForCandidate } = await import("./logic");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -135,7 +136,6 @@ describe("send-renewal-reminders cron (integration, real Postgres; email mocked)
 
     // Re-running buildReminderCandidates against this clinic's now-updated
     // row must exclude it — the real dedupe path GET actually relies on.
-    const { buildReminderCandidates } = await import("./route");
     const stillCandidate = buildReminderCandidates(
       [
         {

@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { createClinic } from "@/lib/db/clinics";
-import { GET, findExpiredTrialClinicIds, expireTrialClinic } from "./route";
+import { GET } from "./route";
+import { findExpiredTrialClinicIds, expireTrialClinic } from "./logic";
 
 // Deliberately does not call GET against seeded-plus-real data the way the
 // original send-scheduled-messages test mistakenly did (see that file's

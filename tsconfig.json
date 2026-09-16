@@ -19,5 +19,10 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  // design/ holds cloned Figma Make reference projects (their own
+  // package.json/vite.config, no node_modules installed here) — used as a
+  // visual/code reference for matching a new design, never built or
+  // imported from the real app, so it must stay out of this project's own
+  // type-check.
+  "exclude": ["node_modules", "design"]
 }

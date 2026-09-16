@@ -46,8 +46,16 @@ vi.mock("next/cache", () => ({
       fn(...args),
 }));
 
-const { GET, processReminders, processFeedbackSurveys, autoDetectNoShows, processNoShowFollowUps } = await import(
-  "./route"
+// Each test does several sequential real-Postgres round trips (seed a
+// clinic, patient, appointment/visit, template, follow-up, then run the
+// job) — the default 5s per-test timeout is tuned for pure-logic tests,
+// not this, and was flaking under normal load (a different test timing
+// out each run, never an actual assertion failure).
+vi.setConfig({ testTimeout: 20_000 });
+
+const { GET } = await import("./route");
+const { processReminders, processFeedbackSurveys, autoDetectNoShows, processNoShowFollowUps } = await import(
+  "./logic"
 );
 
 const TEST_PREFIX = `_test_cron_${Date.now()}`;

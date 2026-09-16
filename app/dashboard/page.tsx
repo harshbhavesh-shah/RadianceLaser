@@ -10,8 +10,9 @@ import { computeTodayAppointments, computeAppointmentPipelineMaps } from "@/lib/
 import { todayLocalStr, toDateStr, getWeekDays, addDays } from "@/lib/calendar";
 import TodayAgenda from "@/components/overview/TodayAgenda";
 import WeekAgenda from "@/components/overview/WeekAgenda";
-import StatCards from "@/components/overview/StatCards";
+import { AppointmentsCard, RevenueTodayCard } from "@/components/overview/StatCards";
 import WeeklyRevenueCard from "@/components/overview/WeeklyRevenueCard";
+import QuickActionCard from "@/components/overview/QuickActionCard";
 
 // Reception gets today's and this week's appointments only, same as
 // before. Owner and doctor also get the at-a-glance stat cards and weekly
@@ -48,30 +49,32 @@ export default async function DashboardPage() {
     receiptsForToday
   );
 
+  // TodayAgenda now renders its own "Schedule" card header (matching the
+  // dashboard redesign), so this wrapper no longer needs a heading of its
+  // own — an outer one would just duplicate it.
   const todaySection = (
-    <div>
-      <h2 className="font-display text-lg font-medium text-brown-900">Today&apos;s Appointments</h2>
-      <div className="mt-2 mb-3 h-[2px] w-8 bg-rust-600" />
-      <TodayAgenda
-        appointments={todayAppointments}
-        visitIdByAppointmentId={visitIdByAppointmentId}
-        receiptedAppointmentIds={receiptedAppointmentIds}
-      />
-    </div>
+    <TodayAgenda
+      appointments={todayAppointments}
+      visitIdByAppointmentId={visitIdByAppointmentId}
+      receiptedAppointmentIds={receiptedAppointmentIds}
+    />
   );
 
   const weekSection = (
     <div>
-      <h2 className="font-display text-lg font-medium text-brown-900">This Week</h2>
-      <div className="mt-2 mb-3 h-[2px] w-8 bg-rust-600" />
+      <h2 className="text-xl font-extrabold text-brown-900">This Week</h2>
+      <div className="mt-1.5 mb-4 h-[3px] w-8 rounded-full bg-rust-600" />
       <WeekAgenda weekDays={weekDays} appointments={weekAppointments} todayStr={today} />
     </div>
   );
 
   if (session.role === "reception") {
     return (
-      <div className="space-y-10">
-        <h1 className="font-display text-2xl font-medium text-brown-900">Today</h1>
+      <div className="flex flex-col gap-8">
+        <div>
+          <h1 className="mt-0 text-3xl font-extrabold tracking-tight text-brown-900">Today</h1>
+          <div className="mt-1.5 h-[3px] w-16 bg-rust-600" />
+        </div>
         {todaySection}
         {weekSection}
       </div>
@@ -98,32 +101,43 @@ export default async function DashboardPage() {
     day: "numeric",
   });
 
+  const nextAppointmentSummary = nextAppointment
+    ? { patientName: nextAppointment.patientName, time: nextAppointment.time }
+    : null;
+
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
-          Today at a glance
-        </h1>
-        <p className="mt-2 text-sm text-brown-400">
-          {todayDateLabel} · {clinic?.name || "Your Clinic"}
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-12">
+        {/* Top row, left: page header + Appointments card side by side */}
+        <div className="flex w-full flex-col items-start justify-between gap-6 xl:col-span-8 xl:flex-row">
+          <div className="flex-shrink-0">
+            <h1 className="mt-0 text-3xl font-extrabold tracking-tight text-brown-900">Today at a glance</h1>
+            <div className="mt-1.5 h-[3px] w-full bg-rust-600" />
+            <p className="mt-3 text-sm font-medium text-brown-400">
+              {todayDateLabel} · {clinic?.name || "Your Clinic"}
+            </p>
+          </div>
+          <div className="w-full md:max-w-sm md:flex-1">
+            <AppointmentsCard appointmentCount={todayAppointments.length} nextAppointment={nextAppointmentSummary} />
+          </div>
+        </div>
 
-      <StatCards
-        appointmentCount={todayAppointments.length}
-        nextAppointment={nextAppointment ? { patientName: nextAppointment.patientName, time: nextAppointment.time } : null}
-        revenueToday={dailyRevenue.today}
-        changePct={dailyRevenue.changePct}
-      />
+        {/* Top row, right: Revenue Today card */}
+        <div className="w-full xl:col-span-4">
+          <RevenueTodayCard revenueToday={dailyRevenue.today} changePct={dailyRevenue.changePct} />
+        </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.5fr_1fr] lg:items-start">
-        {todaySection}
-        <div className="lg:mt-[38px]">
+        {/* Left column: Schedule (dominant) */}
+        <div className="w-full xl:col-span-8">{todaySection}</div>
+
+        {/* Right column: Weekly revenue + quick action */}
+        <div className="flex w-full flex-col gap-6 xl:col-span-4">
           <WeeklyRevenueCard weekly={weeklyRevenue} todayByType={dailyRevenue.byType} todayStr={today} />
+          <QuickActionCard />
         </div>
       </div>
 
-      <div className="mt-10">{weekSection}</div>
+      <div>{weekSection}</div>
     </div>
   );
 }

@@ -9,10 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "#FBF8F3",
+        // canvas/beige-300/brown-900/rust-* below match the exact hex
+        // values from the Figma Make dashboard design (design/
+        // DashboardOverviewDesign) as of the 2026-09-16 redesign pass —
+        // update all four together if that reference ever changes, not
+        // one at a time, since they're tuned to sit together (e.g.
+        // rust-600 against canvas/surface specifically).
+        canvas: "#FAF6F1",
         surface: "#FFFFFF",
         brown: {
-          900: "#2C1D14",
+          900: "#2C2A28",
           // A warmer, lighter espresso than 900 — the landing page hero's
           // dark ground. Reads as rich brown rather than near-black, on
           // purpose: it's a toned-down version of an earlier near-black
@@ -23,7 +29,7 @@ const config: Config = {
           400: "#9C8672",
         },
         beige: {
-          300: "#E8DDC9",
+          300: "#EAE5DE",
           200: "#F0E8D9",
           100: "#F7F0E3",
         },
@@ -38,16 +44,19 @@ const config: Config = {
         // anywhere else. Additive: brown/gold/beige above are untouched, so
         // every other page keeps its current look until it's redesigned too.
         rust: {
-          700: "#A03A24",
-          600: "#C1442D",
-          100: "#FBEAE4",
+          700: "#A8543A",
+          600: "#C1694F",
+          100: "#F7E4DC",
         },
       },
       fontFamily: {
         // Default heading face everywhere except the landing page — the
         // dashboard, /login, /signup, /contact, /compliance.
         display: ["var(--font-manrope)", "sans-serif"],
-        sans: ["var(--font-inter)", "sans-serif"],
+        // Body text follows the Figma Make dashboard design, which uses
+        // Manrope everywhere rather than pairing a separate body face —
+        // same variable as font-display above, not a coincidence.
+        sans: ["var(--font-manrope)", "sans-serif"],
         // Landing page only (app/page.tsx) — everywhere else uses
         // font-display/Manrope above instead.
         brand: ["var(--font-michroma)", "sans-serif"],

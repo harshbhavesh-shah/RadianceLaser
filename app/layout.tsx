@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Manrope, Michroma } from "next/font/google";
+import { Manrope, Michroma } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import NativeAppBridge from "@/components/native/NativeAppBridge";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
-
 // Default headline face everywhere except the landing page (font-display,
 // see tailwind.config.ts): the dashboard, /login, /signup, /contact,
-// /compliance. Kept as the site's "normal" heading type, with Michroma
-// reserved for the landing page alone.
+// /compliance. Also the body/sans face (font-sans) since the 2026-09-16
+// dashboard redesign — see tailwind.config.ts's fontFamily.sans comment —
+// so weight 400 is loaded here too, not just the heading weights.
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
-  weight: ["500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 // Landing-page-only headline face (font-brand — see app/page.tsx). Ships
@@ -49,7 +45,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${manrope.variable} ${michroma.variable} ${asimovian.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${michroma.variable} ${asimovian.variable}`}>
       <body className="bg-canvas font-sans text-brown-900 antialiased">
         <NativeAppBridge />
         {children}
