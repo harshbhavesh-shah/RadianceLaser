@@ -1,21 +1,33 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { getClinic } from "@/lib/db/clinics";
+import { getClinic, getClinicBySlug } from "@/lib/db/clinics";
 import { getClinicAccess } from "@/lib/subscription";
 import BookingClient from "@/components/booking/BookingClient";
 
 // The patient-facing counterpart to app/dashboard/appointments — no auth,
-// reached from a link the clinic shares (website, WhatsApp, a QR code at
-// reception). Branded with the clinic's own name today; the logo/wordmark
+// reached from a clinic's own booking subdomain
+// (https://{slug}.radiancelaser.in, rewritten here by middleware.ts) or,
+// for any link shared before subdomains existed, the old /book/{clinicId}
+// path directly — see resolveClinic() below for how both resolve to the
+// same page. Branded with the clinic's own name today; the logo/wordmark
 // stays Radiance Laser's until a client wants their own swapped in (see
 // ClinicBrandHeader below).
 //
 // Always books a consultation, never a specific treatment — see
-// components/booking/BookingClient.tsx and app/book/[clinicId]/actions.ts.
+// components/booking/BookingClient.tsx and app/book/[slug]/actions.ts.
 
-export async function generateMetadata({ params }: { params: { clinicId: string } }): Promise<Metadata> {
-  const clinic = await getClinic(params.clinicId);
+/** The dynamic segment is a clinic's slug when arriving via its subdomain
+ * (the normal, current path), but could also be a raw clinicId if someone
+ * still has an old /book/{clinicId} link saved from before subdomains —
+ * slugs and cuids never collide (different character sets), so trying
+ * slug first and falling back to id is unambiguous. */
+async function resolveClinic(slugOrId: string) {
+  return (await getClinicBySlug(slugOrId)) ?? (await getClinic(slugOrId));
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const clinic = await resolveClinic(params.slug);
   return { title: clinic ? `Book a Consultation: ${clinic.name}` : "Book a Consultation" };
 }
 
@@ -29,8 +41,8 @@ function ClinicBrandHeader({ clinicName }: { clinicName: string }) {
   );
 }
 
-export default async function BookingPage({ params }: { params: { clinicId: string } }) {
-  const clinic = await getClinic(params.clinicId);
+export default async function BookingPage({ params }: { params: { slug: string } }) {
+  const clinic = await resolveClinic(params.slug);
   if (!clinic) notFound();
 
   const access = getClinicAccess(clinic);

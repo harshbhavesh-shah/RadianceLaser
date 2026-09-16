@@ -1,11 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, CheckCircle2, MapPin, RotateCcw } from "lucide-react";
-import { lookupPatientAction, submitBookingAction, type MatchedPatient } from "@/app/book/[clinicId]/actions";
+import { ArrowLeft, CalendarCheck, CheckCircle2, MapPin, RotateCcw } from "lucide-react";
+import { lookupPatientAction, submitBookingAction, type MatchedPatient } from "@/app/book/[slug]/actions";
 import { todayLocalStr, addDays, toDateStr, formatTime12h } from "@/lib/calendar";
 
-type Step = "identify" | "datetime" | "success";
+// Two distinct screens after identify, matching design/
+// DashboardOverviewDesign's Booking() mockup — its renderStep2A (returning
+// client: "Welcome back" + "Book Again" cards for their last couple of
+// treatments) vs. renderStep2B (new client, straight to the date/time
+// picker). The cards use this patient's real visit history (see
+// MatchedPatient.recentTreatments in app/book/[slug]/actions.ts) —
+// but unlike the mockup, clicking one doesn't actually pick that
+// treatment for the new booking, since this app's real booking backend
+// has no treatment picker at all (see submitBookingAction's own comment):
+// every path here, "Book Again" or "book something else", ends up
+// booking the same consultation. The cards are recognition/reassurance
+// ("we know you, we know what you've had done"), not a real choice.
+type Step = "identify" | "welcome" | "datetime" | "success";
 
 // Matches CALENDAR_START_HOUR/END_HOUR in lib/calendar.ts (the same
 // clinic hours the staff-side Schedule view uses) — half-hour slots, none
@@ -39,7 +51,7 @@ const NEXT_DAYS = buildNextDays(7);
 // doesn't know which treatment they need yet, new patient or returning.
 // The doctor decides that at the consultation itself, so there's
 // deliberately no treatment picker anywhere in this flow (see
-// app/book/[clinicId]/actions.ts). Matches the visual language of
+// app/book/[slug]/actions.ts). Matches the visual language of
 // design/DashboardOverviewDesign's Booking() mockup, adapted to this
 // app's real (simpler, no treatment-picker branch) booking backend.
 export default function BookingClient({
@@ -81,8 +93,12 @@ export default function BookingClient({
       return;
     }
     setCheckedMatch(true);
-    setMatchedPatient(result.matched ? result.patient : null);
-    setStep("datetime");
+    const matched = result.matched ? result.patient : null;
+    setMatchedPatient(matched);
+    // Matched an existing patient → its own recognition screen first
+    // (design's renderStep2A). No match → straight to the date/time
+    // picker (renderStep2B), same as before.
+    setStep(matched ? "welcome" : "datetime");
   }
 
   async function handleBook() {
@@ -145,9 +161,10 @@ export default function BookingClient({
     );
   }
 
-  if (step === "datetime") {
+  if (step === "welcome" && matchedPatient) {
+    const hasHistory = matchedPatient.recentTreatments.length > 0;
     return (
-      <div className="mx-auto w-full max-w-2xl">
+      <div className={`mx-auto w-full ${hasHistory ? "max-w-2xl" : "max-w-md"}`}>
         <button
           type="button"
           onClick={() => setStep("identify")}
@@ -157,7 +174,84 @@ export default function BookingClient({
         </button>
 
         <h2 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-brown-900">
-          {matchedPatient ? `Welcome back, ${matchedPatient.patientName.split(" ")[0]}` : "Pick a time that works for you"}
+          Welcome back, {matchedPatient.patientName.split(" ")[0]}
+        </h2>
+        <p className="mb-8 text-center text-base font-medium text-brown-400">
+          {hasHistory
+            ? "Would you like to book one of your previous treatments?"
+            : "We found you in our records — ready to book your next consultation?"}
+        </p>
+
+        {hasHistory ? (
+          <>
+            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+              {matchedPatient.recentTreatments.map((t) => (
+                <div key={t.label} className="flex flex-col rounded-[24px] border border-beige-300 bg-surface p-6 shadow-soft">
+                  <h3 className="mb-1 text-xl font-extrabold text-brown-900">{t.label}</h3>
+                  <p className="mb-6 text-sm font-semibold text-brown-400">Last done: {formatShortDate(t.lastDate)}</p>
+                  <button
+                    type="button"
+                    onClick={() => setStep("datetime")}
+                    className="mt-auto w-full rounded-xl bg-rust-100 py-3 text-sm font-bold text-rust-600 transition-colors hover:bg-rust-100/70"
+                  >
+                    Book Again
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setStep("datetime")}
+                className="text-sm font-bold text-rust-600 transition-colors hover:text-rust-600/80"
+              >
+                Or book something else →
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-[24px] border border-beige-300 bg-surface p-8 text-center shadow-soft">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-rust-100">
+              <CalendarCheck className="h-6 w-6 text-rust-600" />
+            </div>
+            <p className="mb-1 text-lg font-extrabold text-brown-900">{matchedPatient.patientName}</p>
+            <p className="mb-6 text-sm font-medium text-brown-400">{phone}</p>
+            <button
+              type="button"
+              onClick={() => setStep("datetime")}
+              className="w-full rounded-xl bg-rust-600 py-3.5 text-sm font-bold text-white shadow-soft transition-colors hover:bg-rust-600/90"
+            >
+              Continue to booking
+            </button>
+          </div>
+        )}
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => setStep("identify")}
+            className="text-sm font-bold text-rust-600 transition-colors hover:text-rust-600/80"
+          >
+            Not you? Go back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "datetime") {
+    return (
+      <div className="mx-auto w-full max-w-2xl">
+        <button
+          type="button"
+          onClick={() => setStep(matchedPatient ? "welcome" : "identify")}
+          className="mb-6 flex items-center gap-2 text-sm font-bold text-brown-400 transition-colors hover:text-brown-900"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
+
+        <h2 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-brown-900">
+          Pick a time that works for you
         </h2>
         <p className="mb-8 text-center text-base font-medium text-brown-400">
           {checkedMatch && !matchedPatient
@@ -268,4 +362,12 @@ function formatVisitDate(dateStr: string): string {
   if (!dateStr) return "";
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+}
+
+// "Last done: Oct 12, 2024" on a Book Again card — shorter than
+// formatVisitDate above (no weekday), matching the design's own label.
+function formatShortDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }

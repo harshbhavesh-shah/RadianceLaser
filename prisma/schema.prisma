@@ -486,6 +486,12 @@ model NoShowSurveyResponse {
 model Clinic {
   id                   String  @id @default(cuid())
   name                 String
+  // URL-safe, unique per clinic — powers its public booking subdomain
+  // (https://{slug}.radiancelaser.in, see middleware.ts and lib/
+  // clinicSlug.ts). Every clinic gets one at creation time
+  // (createClinic() in lib/db/clinics.ts); pre-existing clinics were
+  // backfilled once via scripts/backfillClinicSlugs.mjs.
+  slug                 String  @unique
   address              String?
   statsWindow          String?
   subscriptionStatus   String

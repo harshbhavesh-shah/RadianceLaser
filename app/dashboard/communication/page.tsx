@@ -48,6 +48,7 @@ export default async function CommunicationPage({
 
       <CommunicationTabs
         clinicId={session.clinicId}
+        clinicSlug={clinic?.slug ?? ""}
         isOwner={isOwner}
         messageTemplates={messageTemplates}
         isConnected={isConnected}

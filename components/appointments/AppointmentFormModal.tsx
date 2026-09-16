@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { UserPlus } from "lucide-react";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import { pickableSessionTypeEntries } from "@/lib/sessionTypes";
 import { todayLocalStr } from "@/lib/calendar";
 import { quickCreatePatientAction } from "@/app/dashboard/appointments/actions";
 import { createAppointmentAction, updateAppointmentAction, deleteAppointmentAction } from "@/app/dashboard/appointments/appointmentActions";
@@ -43,6 +44,18 @@ export default function AppointmentFormModal({
   onPatientCreated?: (patient: Patient) => void;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
+  // Editing an appointment whose type is hidden-by-default (e.g. a
+  // "Consultation" booked through the public page) must still show its
+  // current type as a selectable option — otherwise the <select> below
+  // would silently coerce it to whatever pickable type happens to render
+  // first as soon as the modal opens.
+  const pickableTypes = pickableSessionTypeEntries(SESSION_TYPE_CONFIG);
+  const existingTypeCfg = appointment?.sessionType ? SESSION_TYPE_CONFIG[appointment.sessionType] : undefined;
+  const existingHiddenType =
+    appointment?.sessionType && existingTypeCfg && !pickableTypes.some(([key]) => key === appointment.sessionType)
+      ? ([appointment.sessionType, existingTypeCfg] as const)
+      : null;
+  const selectableTypes = existingHiddenType ? [existingHiddenType, ...pickableTypes] : pickableTypes;
   const isEditing = !!appointment;
 
   const [patientQuery, setPatientQuery] = useState(appointment?.patientName || "");
@@ -61,7 +74,9 @@ export default function AppointmentFormModal({
     null
   );
 
-  const [sessionType, setSessionType] = useState<SessionType>(appointment?.sessionType || "qs");
+  const [sessionType, setSessionType] = useState<SessionType>(
+    appointment?.sessionType || pickableTypes[0]?.[0] || "lhr"
+  );
   const [date, setDate] = useState(appointment?.date || presetDate || todayLocalStr());
   const [time, setTime] = useState(appointment?.time || presetTime || "10:00");
   const [durationMinutes, setDurationMinutes] = useState(appointment?.durationMinutes || 30);
@@ -321,9 +336,9 @@ export default function AppointmentFormModal({
               onChange={(e) => setSessionType(e.target.value as SessionType)}
               className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
             >
-              {(Object.keys(SESSION_TYPE_CONFIG) as SessionType[]).map((type) => (
+              {selectableTypes.map(([type, cfg]) => (
                 <option key={type} value={type}>
-                  {SESSION_TYPE_CONFIG[type].label}
+                  {cfg.label}
                 </option>
               ))}
             </select>

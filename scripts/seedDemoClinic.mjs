@@ -39,6 +39,36 @@ function createPrismaClient() {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEMO_PASSWORD = "LumiereDemo2026!";
 
+// Kept in sync with lib/clinicSlug.ts by hand (plain Node script, no
+// cross-import into Next's TypeScript/path-alias setup).
+const RESERVED_SLUGS = new Set([
+  "www", "app", "api", "admin", "mail", "ftp", "blog", "docs", "help",
+  "support", "status", "book", "booking", "static", "assets", "cdn",
+]);
+function slugifyClinicName(name) {
+  const base = name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return base || "clinic";
+}
+async function generateUniqueClinicSlug(prisma, name) {
+  const base = slugifyClinicName(name);
+  let candidate = base;
+  let suffix = 2;
+  for (;;) {
+    if (!RESERVED_SLUGS.has(candidate)) {
+      const existing = await prisma.clinic.findUnique({ where: { slug: candidate }, select: { id: true } });
+      if (!existing) return candidate;
+    }
+    candidate = `${base}-${suffix}`;
+    suffix++;
+  }
+}
+
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -147,9 +177,11 @@ async function main() {
   const prisma = createPrismaClient();
 
   console.log("=== 1. Creating clinic ===");
+  const clinicSlug = await generateUniqueClinicSlug(prisma, "Lumière Aesthétique");
   const clinic = await prisma.clinic.create({
     data: {
       name: "Lumière Aesthétique",
+      slug: clinicSlug,
       address: "14 Linking Road, Bandra West, Mumbai 400050",
       subscriptionStatus: "active",
       trialEndsAt: daysAgo(60), // long past — this account is "active", not trialing
@@ -158,6 +190,7 @@ async function main() {
     },
   });
   console.log(`✓ Clinic "${clinic.name}" (id: ${clinic.id})`);
+  console.log(`✓ Public booking subdomain: https://${clinicSlug}.radiancelaser.in`);
 
   console.log("\n=== 2. Creating staff (real Firebase Auth logins) ===");
   const staffDefs = [

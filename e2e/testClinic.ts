@@ -7,6 +7,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { generateUniqueClinicSlug } from "@/lib/clinicSlug";
 
 // A programmatic version of scripts/createClinic.mjs (plus a matching
 // full-teardown, which that script doesn't have) — Playwright's global
@@ -60,8 +61,9 @@ export async function createTestClinic(): Promise<TestClinic> {
   const password = "E2eTestPass123!";
 
   const trialEndsAt = Date.now() + TRIAL_LENGTH_DAYS * 24 * 60 * 60 * 1000;
+  const slug = await generateUniqueClinicSlug(clinicName);
   const clinic = await prisma.clinic.create({
-    data: { name: clinicName, subscriptionStatus: "trialing", trialEndsAt, createdAt: Date.now() },
+    data: { name: clinicName, slug, subscriptionStatus: "trialing", trialEndsAt, createdAt: Date.now() },
   });
   await db.collection("clinics").doc(clinic.id).set({ subscriptionStatus: "trialing", trialEndsAt }, { merge: true });
 

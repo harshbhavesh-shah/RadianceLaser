@@ -136,8 +136,6 @@ export default async function DashboardPage() {
           <QuickActionCard />
         </div>
       </div>
-
-      <div>{weekSection}</div>
     </div>
   );
 }

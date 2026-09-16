@@ -6,58 +6,22 @@ export interface SessionTypeConfig {
   badgeClassName: string; // Tailwind classes for the badge chip
   chartColor: string; // hex color, used in revenue-by-type charts (PieChart, RevenueChart)
   columns: SessionColumnDef[];
-  custom?: boolean; // true for clinic-defined machine types (vs. built-in QS/LHR)
+  custom?: boolean; // true for clinic-defined machine types (vs. built-in LHR)
+  // True for a type that resolves (badges/labels render correctly
+  // wherever it's already used) but is never offered as a choice — not in
+  // the Treatment/session-type pickers, Settings → Machine Types, or a
+  // patient's Visit tabs. See pickableSessionTypeEntries() below.
+  hiddenByDefault?: boolean;
 }
 
-// The treatment types every clinic starts with. Clinics can add their own
-// major machine types (e.g. "CO2 Laser") from Settings — see
+// The one treatment type every clinic starts with. Clinics can add their
+// own major machine types (e.g. "CO2 Laser") from Settings — see
 // SessionTypeDef in types/index.ts and buildSessionTypeConfig() below,
-// which merges those in alongside these built-ins.
-//
-// "consultation" is the one type the public booking page (app/book/
-// [clinicId]) is allowed to create — a new visitor doesn't know which
-// treatment they need yet, so that page never offers a treatment picker at
-// all, it always books this. No machine-data columns, since a consultation
-// is a doctor assessment, not a treatment session.
+// which merges those in alongside this built-in. Q-Switch used to be a
+// second built-in here too; it isn't a pre-defined default anymore — a
+// clinic that wants it now adds it themselves as a custom machine type,
+// same as any other.
 export const BUILT_IN_SESSION_TYPE_CONFIG: Record<string, SessionTypeConfig> = {
-  consultation: {
-    label: "Consultation",
-    badgeText: "CONSULT",
-    badgeClassName: "bg-beige-300 text-brown-800",
-    chartColor: "#8C7B6B",
-    columns: [],
-  },
-  qs: {
-    label: "Q-Switch",
-    badgeText: "QS",
-    badgeClassName: "bg-brown-900 text-beige-200",
-    chartColor: "#2C1D14",
-    columns: [
-      {
-        key: "area",
-        label: "Area",
-        type: "select",
-        options: [
-          "Full Face",
-          "Cheeks",
-          "Underarms",
-          "Neck",
-          "Hands",
-          "Back",
-          "Chest",
-          "Tattoo Removal",
-          "Full Body",
-        ],
-      },
-      { key: "carbon", label: "Carbon", type: "select", options: ["Yes", "No"] },
-      { key: "mode", label: "Mode", type: "text" },
-      { key: "hp", label: "HP", type: "text" },
-      { key: "eng", label: "Eng", type: "number" },
-      { key: "pass", label: "Pass", type: "number" },
-      { key: "repeat", label: "Repeat", type: "number" },
-      { key: "fee", label: "Fee", type: "number" },
-    ],
-  },
   lhr: {
     label: "Laser Hair Removal",
     badgeText: "LHR",
@@ -91,6 +55,24 @@ export const BUILT_IN_SESSION_TYPE_CONFIG: Record<string, SessionTypeConfig> = {
   },
 };
 
+// Not a "built-in default" — never merged into a picker (Treatment select,
+// Machine session-type select, Settings → Machine Types, a patient's Visit
+// tabs) — but still resolvable by exact key, since the public booking page
+// (app/book/[slug]) always creates appointments with this sessionType
+// (a new visitor doesn't know which treatment they need yet, so that page
+// never offers a treatment picker at all — it always books this) and needs
+// its badge to render correctly wherever those appointments show up. No
+// machine-data columns, since a consultation is a doctor assessment, not a
+// treatment session.
+const CONSULTATION_SESSION_TYPE_CONFIG: SessionTypeConfig = {
+  label: "Consultation",
+  badgeText: "CONSULT",
+  badgeClassName: "bg-beige-300 text-brown-800",
+  chartColor: "#8C7B6B",
+  columns: [],
+  hiddenByDefault: true,
+};
+
 /** Back-compat alias — built-ins only, no clinic-defined custom types.
  * Prefer buildSessionTypeConfig() (server) or useSessionTypeConfig() (client,
  * via lib/sessionTypeConfigContext.tsx) wherever a clinic's custom machine
@@ -108,18 +90,34 @@ export function sessionTypeDefToConfig(def: SessionTypeDef): SessionTypeConfig {
   };
 }
 
-/** Merges the built-in Q-Switch/LHR config with a clinic's own custom
- * machine types (see lib/db/sessionTypeDefs.ts) into the single lookup
- * table used everywhere a SessionType needs to be rendered or have its
- * data-entry columns resolved. */
+/** Merges the built-in LHR config, the always-resolvable-but-hidden
+ * consultation config, and a clinic's own custom machine types (see
+ * lib/db/sessionTypeDefs.ts) into the single lookup table used everywhere
+ * a SessionType needs to be rendered or have its data-entry columns
+ * resolved. */
 export function buildSessionTypeConfig(
   customTypes: SessionTypeDef[] = []
 ): Record<string, SessionTypeConfig> {
-  const merged: Record<string, SessionTypeConfig> = { ...BUILT_IN_SESSION_TYPE_CONFIG };
+  const merged: Record<string, SessionTypeConfig> = {
+    ...BUILT_IN_SESSION_TYPE_CONFIG,
+    consultation: CONSULTATION_SESSION_TYPE_CONFIG,
+  };
   for (const def of customTypes) {
     merged[def.key] = sessionTypeDefToConfig(def);
   }
   return merged;
+}
+
+/** The subset of a merged config that should actually be offered as a
+ * choice — everywhere except `hiddenByDefault` entries (currently just
+ * "consultation", see its own comment above). Use this instead of
+ * `Object.keys(config)`/`Object.entries(config)` wherever the UI is
+ * letting someone pick a session type, not just rendering one that's
+ * already set. */
+export function pickableSessionTypeEntries(
+  config: Record<string, SessionTypeConfig>
+): [string, SessionTypeConfig][] {
+  return Object.entries(config).filter(([, cfg]) => !cfg.hiddenByDefault);
 }
 
 export function numericFieldKeysFor(config: Record<string, SessionTypeConfig>): Set<string> {

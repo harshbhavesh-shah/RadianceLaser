@@ -39,6 +39,15 @@ const razorpay = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/razorpay", () => razorpay);
 
+// Each test does several sequential real-Postgres round trips (seed a
+// clinic, create an order/subscription, confirm it, assert the resulting
+// rows) — the default 5s test / 10s hook timeouts are tuned for
+// pure-logic tests, not this, and were flaking under normal load (a
+// different test/hook timing out each run, never an actual assertion
+// failure) — same fix already applied to the cron suites' own real-DB
+// tests.
+vi.setConfig({ testTimeout: 20_000, hookTimeout: 20_000 });
+
 const {
   createRenewalOrderAction,
   verifyPaymentAction,

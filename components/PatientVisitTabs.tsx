@@ -3,6 +3,7 @@
 import { useState } from "react";
 import SessionTypePanel from "@/components/SessionTypePanel";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import { pickableSessionTypeEntries } from "@/lib/sessionTypes";
 import type { Machine, Package, PackageTypeDef, SessionType, StaffMember, Visit } from "@/types";
 
 export default function PatientVisitTabs({
@@ -29,13 +30,14 @@ export default function PatientVisitTabs({
   initialActiveTab?: SessionType;
   autoOpenVisitForAppointmentId?: string;
 }) {
-  // Every session type the clinic has — the two built-ins plus any
+  // Every pickable session type the clinic has — the built-in LHR plus any
   // clinic-defined machine types (e.g. "CO2 Laser") — each gets its own tab
-  // here automatically, in the order they were created.
+  // here automatically, in the order they were created. Not "consultation"
+  // — it's never a real treatment tab (see lib/sessionTypes.ts).
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
-  const TABS: SessionType[] = Object.keys(SESSION_TYPE_CONFIG);
+  const TABS: SessionType[] = pickableSessionTypeEntries(SESSION_TYPE_CONFIG).map(([key]) => key);
   const [active, setActive] = useState<SessionType>(
-    (initialActiveTab && SESSION_TYPE_CONFIG[initialActiveTab] ? initialActiveTab : TABS[0]) || "qs"
+    (initialActiveTab && SESSION_TYPE_CONFIG[initialActiveTab] ? initialActiveTab : TABS[0]) || "lhr"
   );
 
   return (

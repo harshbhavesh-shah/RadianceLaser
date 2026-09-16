@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, Link2 } from "lucide-react";
 
+// The bare root domain the main app itself lives on — kept in sync by
+// hand with middleware.ts's own ROOT_DOMAIN (same env var, same default);
+// used here only to decide whether the current origin can build a real
+// {slug}.{root} subdomain URL (production) or should fall back to the
+// old /book/{id} path (local dev, a Vercel preview deploy — neither has
+// the wildcard subdomain set up).
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "radiancelaser.in";
+
 /** Surfaces the clinic's own public booking link — the thing to paste into
  * a website, Instagram bio, or WhatsApp broadcast. Client-only because the
- * full URL (protocol + host) isn't known until the page has actually
- * loaded in a browser; the path itself never changes. */
-export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
+ * current origin isn't known until the page has actually loaded in a
+ * browser. */
+export default function ClientLinksSection({ clinicId, clinicSlug }: { clinicId: string; clinicSlug: string }) {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -15,8 +23,22 @@ export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
     setOrigin(window.location.origin);
   }, []);
 
-  const bookingPath = `/book/${clinicId}`;
-  const bookingUrl = origin ? `${origin}${bookingPath}` : bookingPath;
+  let bookingUrl = `/book/${clinicId}`; // fallback before origin is known, or if this isn't the production host
+  if (origin) {
+    try {
+      const { protocol, hostname, port } = new URL(origin);
+      // Keep the port (":3000" in local dev) — dropping it would build a
+      // link that looks right but 404s the moment it's actually clicked.
+      const portSuffix = port ? `:${port}` : "";
+      if (clinicSlug && (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`)) {
+        bookingUrl = `${protocol}//${clinicSlug}.${ROOT_DOMAIN}${portSuffix}`;
+      } else {
+        bookingUrl = `${origin}/book/${clinicSlug || clinicId}`;
+      }
+    } catch {
+      bookingUrl = `${origin}/book/${clinicSlug || clinicId}`;
+    }
+  }
 
   async function handleCopy() {
     try {
@@ -54,7 +76,7 @@ export default function ClientLinksSection({ clinicId }: { clinicId: string }) {
       </div>
 
       <a
-        href={bookingPath}
+        href={bookingUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-brown-500 hover:text-rust-700"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
+import { pickableSessionTypeEntries } from "@/lib/sessionTypes";
 import { createMachineAction, updateMachineAction, deleteMachineAction } from "@/app/dashboard/settings/machineActions";
 import type { Machine, MachineStatus, SessionType } from "@/types";
 
@@ -25,10 +26,22 @@ export default function MachineFormModal({
   onDeleted?: (id: string) => void;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
+  const pickableTypes = pickableSessionTypeEntries(SESSION_TYPE_CONFIG);
+  // Editing a machine whose type is hidden-by-default must still show its
+  // current type as a selectable option, same reasoning as
+  // AppointmentFormModal's own selectableTypes.
+  const existingTypeCfg = machine?.sessionType ? SESSION_TYPE_CONFIG[machine.sessionType] : undefined;
+  const existingHiddenType =
+    machine?.sessionType && existingTypeCfg && !pickableTypes.some(([key]) => key === machine.sessionType)
+      ? ([machine.sessionType, existingTypeCfg] as const)
+      : null;
+  const selectableTypes = existingHiddenType ? [existingHiddenType, ...pickableTypes] : pickableTypes;
   const isEditing = !!machine;
 
   const [name, setName] = useState(machine?.name || "");
-  const [sessionType, setSessionType] = useState<SessionType>(machine?.sessionType || "qs");
+  const [sessionType, setSessionType] = useState<SessionType>(
+    machine?.sessionType || pickableTypes[0]?.[0] || "lhr"
+  );
   const [serialNumber, setSerialNumber] = useState(machine?.serialNumber || "");
   const [purchaseDate, setPurchaseDate] = useState(machine?.purchaseDate || "");
   const [status, setStatus] = useState<MachineStatus>(machine?.status || "active");
@@ -128,9 +141,9 @@ export default function MachineFormModal({
                 onChange={(e) => setSessionType(e.target.value as SessionType)}
                 className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
               >
-                {(Object.keys(SESSION_TYPE_CONFIG) as SessionType[]).map((type) => (
+                {selectableTypes.map(([type, cfg]) => (
                   <option key={type} value={type}>
-                    {SESSION_TYPE_CONFIG[type].label}
+                    {cfg.label}
                   </option>
                 ))}
               </select>

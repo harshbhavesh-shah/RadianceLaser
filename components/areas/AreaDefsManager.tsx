@@ -7,8 +7,10 @@ import { useAreaDefs, useAreaDefsActions } from "@/lib/areaDefsContext";
 import { deleteAreaDefAction } from "@/app/dashboard/areas/actions";
 import type { AreaDef, SessionType } from "@/types";
 
+// Q-Switch used to be listed here too; it isn't a pre-defined default
+// anymore (see lib/sessionTypes.ts) so this only manages Areas for the
+// one built-in a new clinic actually starts with.
 const SESSION_TYPES: { key: SessionType; label: string }[] = [
-  { key: "qs", label: "Q-Switch" },
   { key: "lhr", label: "Laser Hair Removal" },
 ];
 

@@ -27,6 +27,7 @@ type Tab = "whatsapp" | "inbox";
  * now disables just that tab instead of redirecting the whole page away. */
 export default function CommunicationTabs({
   clinicId,
+  clinicSlug,
   isOwner,
   messageTemplates,
   isConnected,
@@ -39,6 +40,7 @@ export default function CommunicationTabs({
   initialTab,
 }: {
   clinicId: string;
+  clinicSlug: string;
   isOwner: boolean;
   messageTemplates: MessageTemplate[];
   isConnected: boolean;
@@ -89,7 +91,7 @@ export default function CommunicationTabs({
           </div>
 
           <div className="min-w-0 space-y-6">
-            <ClientLinksSection clinicId={clinicId} />
+            <ClientLinksSection clinicId={clinicId} clinicSlug={clinicSlug} />
 
             <WhatsAppSection initialConnection={redactedConnection} canEdit={isOwner} />
 

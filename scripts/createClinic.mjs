@@ -31,6 +31,37 @@ import { getFirestore } from "firebase-admin/firestore";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
+// Kept in sync with lib/clinicSlug.ts by hand (same reasoning as
+// DEFAULT_AREA_DEFS below — a plain Node script, not compiled through
+// Next's TypeScript/path-alias setup, so no cross-import).
+const RESERVED_SLUGS = new Set([
+  "www", "app", "api", "admin", "mail", "ftp", "blog", "docs", "help",
+  "support", "status", "book", "booking", "static", "assets", "cdn",
+]);
+function slugifyClinicName(name) {
+  const base = name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return base || "clinic";
+}
+async function generateUniqueClinicSlug(prisma, name) {
+  const base = slugifyClinicName(name);
+  let candidate = base;
+  let suffix = 2;
+  for (;;) {
+    if (!RESERVED_SLUGS.has(candidate)) {
+      const existing = await prisma.clinic.findUnique({ where: { slug: candidate }, select: { id: true } });
+      if (!existing) return candidate;
+    }
+    candidate = `${base}-${suffix}`;
+    suffix++;
+  }
+}
+
 // Same driver-adapter setup as lib/db/client.ts, duplicated here since this
 // is a plain Node script, not compiled through Next's TypeScript/path-alias
 // setup (see the TRIAL_LENGTH_DAYS comment below for the same reasoning).
@@ -53,17 +84,6 @@ const TRIAL_LENGTH_DAYS = 30;
 // See prisma/schema.prisma's AreaDef model for why every new clinic starts
 // with its own real rows here instead of falling back to a hardcoded list.
 const DEFAULT_AREA_DEFS = {
-  qs: [
-    { name: "Full Face", defaultDurationMinutes: 30, gstApplicable: true },
-    { name: "Cheeks", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Underarms", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Neck", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Hands", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Back", defaultDurationMinutes: 30, gstApplicable: true },
-    { name: "Chest", defaultDurationMinutes: 20, gstApplicable: true },
-    { name: "Tattoo Removal", defaultDurationMinutes: 20, gstApplicable: true },
-    { name: "Full Body", defaultDurationMinutes: 60, gstApplicable: true },
-  ],
   lhr: [
     { name: "Upper Lip", defaultDurationMinutes: 10, gstApplicable: true },
     { name: "Chin", defaultDurationMinutes: 10, gstApplicable: true },
@@ -139,8 +159,9 @@ async function main() {
   //    that mirror is what firestore.rules' clinicIsActive() actually
   //    reads, since Firestore security rules can't query Postgres.
   const trialEndsAt = Date.now() + TRIAL_LENGTH_DAYS * 24 * 60 * 60 * 1000;
+  const slug = await generateUniqueClinicSlug(prisma, clinicName);
   const clinic = await prisma.clinic.create({
-    data: { name: clinicName, subscriptionStatus: "trialing", trialEndsAt, createdAt: Date.now() },
+    data: { name: clinicName, slug, subscriptionStatus: "trialing", trialEndsAt, createdAt: Date.now() },
   });
   const clinicId = clinic.id;
   await db.collection("clinics").doc(clinicId).set(
@@ -148,6 +169,7 @@ async function main() {
     { merge: true }
   );
   console.log(`✓ Created clinic "${clinicName}" (id: ${clinicId}), trial ends ${new Date(trialEndsAt).toDateString()}`);
+  console.log(`✓ Public booking subdomain: https://${slug}.radiancelaser.in`);
 
   // 1b. Seed starter treatment areas for the Q-Switch/LHR visit forms —
   //     see prisma/schema.prisma's AreaDef model.
@@ -162,7 +184,7 @@ async function main() {
       })),
     });
   }
-  console.log(`✓ Seeded starter treatment areas (Q-Switch + LHR)`);
+  console.log(`✓ Seeded starter treatment areas (${Object.keys(DEFAULT_AREA_DEFS).join(", ")})`);
 
   // 2. Create the Firebase Auth user for the first staff account.
   const userRecord = await auth.createUser({ email, password, displayName: staffName });

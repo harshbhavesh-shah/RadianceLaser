@@ -36,17 +36,6 @@ function createPrismaClient() {
 // areas, now with a starting default duration (minutes) and GST status
 // every clinic can go re-tune for themselves in Settings.
 export const DEFAULT_AREA_DEFS = {
-  qs: [
-    { name: "Full Face", defaultDurationMinutes: 30, gstApplicable: true },
-    { name: "Cheeks", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Underarms", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Neck", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Hands", defaultDurationMinutes: 15, gstApplicable: true },
-    { name: "Back", defaultDurationMinutes: 30, gstApplicable: true },
-    { name: "Chest", defaultDurationMinutes: 20, gstApplicable: true },
-    { name: "Tattoo Removal", defaultDurationMinutes: 20, gstApplicable: true },
-    { name: "Full Body", defaultDurationMinutes: 60, gstApplicable: true },
-  ],
   lhr: [
     { name: "Upper Lip", defaultDurationMinutes: 10, gstApplicable: true },
     { name: "Chin", defaultDurationMinutes: 10, gstApplicable: true },

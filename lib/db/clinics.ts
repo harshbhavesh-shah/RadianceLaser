@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db/client";
+import { generateUniqueClinicSlug } from "@/lib/clinicSlug";
 import type { Clinic as PrismaClinicRow } from "@prisma/client";
 import type { Clinic, StatsWindow, SubscriptionStatus } from "@/types";
 import type { PlanTier } from "@/lib/entitlements";
@@ -23,6 +24,7 @@ function toClinic(row: PrismaClinicRow): Clinic {
     id: row.id,
     name: row.name,
     createdAt: Number(row.createdAt),
+    slug: row.slug,
     subscriptionStatus: row.subscriptionStatus as SubscriptionStatus,
     trialEndsAt: Number(row.trialEndsAt),
     ...(row.address ? { address: row.address } : {}),
@@ -67,6 +69,15 @@ export async function getAllClinics(): Promise<Clinic[]> {
   return rows.map(toClinic);
 }
 
+/** Resolves the clinic behind a public booking subdomain
+ * (https://{slug}.radiancelaser.in, see middleware.ts) — not cached like
+ * getClinic() above, since this only runs on the low-traffic public
+ * booking page, not every dashboard navigation. */
+export async function getClinicBySlug(slug: string): Promise<Clinic | null> {
+  const row = await prisma.clinic.findUnique({ where: { slug } });
+  return row ? toClinic(row) : null;
+}
+
 export interface CreateClinicInput {
   name: string;
   subscriptionStatus: SubscriptionStatus;
@@ -75,11 +86,16 @@ export interface CreateClinicInput {
 
 /** Used by signup (app/signup/actions.ts, app/login/actions.ts's Google
  * path) and scripts/createClinic.mjs — a brand-new clinic always starts
- * "trialing". */
+ * "trialing". Generates its public-booking subdomain slug right here
+ * (see lib/clinicSlug.ts) so every clinic gets one from the moment it
+ * exists, not as an afterthought some staff member has to remember to
+ * set up later. */
 export async function createClinic(input: CreateClinicInput): Promise<Clinic> {
+  const slug = await generateUniqueClinicSlug(input.name);
   const row = await prisma.clinic.create({
     data: {
       name: input.name,
+      slug,
       subscriptionStatus: input.subscriptionStatus,
       trialEndsAt: BigInt(input.trialEndsAt),
       createdAt: BigInt(Date.now()),

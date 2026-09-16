@@ -29,6 +29,9 @@ export interface Clinic {
   id: string;
   name: string;
   createdAt: number; // ms epoch
+  // URL-safe subdomain slug — see lib/clinicSlug.ts. Always present (a
+  // one-time backfill covered every clinic that predates this field).
+  slug: string;
   address?: string; // shown on printed documents (receipts) — see Settings > Clinic Profile
   // Per-clinic preferences, editable from Settings — see app/dashboard/settings.
   statsWindow?: StatsWindow; // defaults to "today" if unset

@@ -22,17 +22,11 @@ export default async function InventoryPage() {
   ]);
 
   return (
-    <div className="max-w-6xl">
-      <h1 className="mb-8 inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
-        Inventory
-      </h1>
-
-      <InventoryDashboard
-        initialItems={items}
-        recentLogs={recentLogs}
-        todayStr={todayLocalStr()}
-        canEdit={session.role === "owner"}
-      />
-    </div>
+    <InventoryDashboard
+      initialItems={items}
+      recentLogs={recentLogs}
+      todayStr={todayLocalStr()}
+      canEdit={session.role === "owner"}
+    />
   );
 }

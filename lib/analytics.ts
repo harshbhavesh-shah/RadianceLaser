@@ -100,10 +100,12 @@ export function computeMonthlyRevenue(visits: Visit[], packages: Package[] = [])
   const monthPackages = packages.filter((p) => p.purchaseDate?.startsWith(monthPrefix));
 
   const byDayMap = new Map<number, number>();
-  // Seeded with the two built-ins so they always show in the "By Treatment
+  // Seeded with the one built-in so it always shows in the "By Treatment
   // Type" breakdown even with zero revenue; clinic-defined machine types
-  // (e.g. "co2") get added dynamically below as they show up in the data.
-  const byType: Record<SessionType, number> = { qs: 0, lhr: 0 };
+  // (e.g. "co2") get added dynamically below as they show up in the data —
+  // same reasoning previously applied to Q-Switch here too, back when it
+  // was still a built-in (see lib/sessionTypes.ts).
+  const byType: Record<SessionType, number> = { lhr: 0 };
 
   for (const v of monthVisits) {
     const fee = feeOf(v);

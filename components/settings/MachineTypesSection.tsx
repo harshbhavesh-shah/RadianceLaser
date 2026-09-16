@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import MachineTypeFormModal, { type EditableSessionType } from "./MachineTypeFormModal";
-import { BUILT_IN_SESSION_TYPE_CONFIG } from "@/lib/sessionTypes";
+import { BUILT_IN_SESSION_TYPE_CONFIG, pickableSessionTypeEntries } from "@/lib/sessionTypes";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import type { SessionTypeDef } from "@/types";
 
@@ -24,8 +24,12 @@ export default function MachineTypesSection({
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
   const builtInKeys = new Set(Object.keys(BUILT_IN_SESSION_TYPE_CONFIG));
-  const allKeys = Object.keys(SESSION_TYPE_CONFIG);
-  const existingKeys = new Set(allKeys);
+  // Not "consultation" — it's always resolvable (so historical public
+  // bookings still render correctly elsewhere) but was never a pre-defined
+  // default and isn't a real "machine type" a clinic configures, so it has
+  // no place in this list.
+  const allKeys = pickableSessionTypeEntries(SESSION_TYPE_CONFIG).map(([key]) => key);
+  const existingKeys = new Set(Object.keys(SESSION_TYPE_CONFIG));
 
   function defFor(key: string): SessionTypeDef | undefined {
     return defs.find((d) => d.key === key);
