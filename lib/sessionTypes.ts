@@ -73,6 +73,39 @@ const CONSULTATION_SESSION_TYPE_CONFIG: SessionTypeConfig = {
   hiddenByDefault: true,
 };
 
+// Same reasoning as CONSULTATION_SESSION_TYPE_CONFIG above: Q-Switch used
+// to be a built-in default (see BUILT_IN_SESSION_TYPE_CONFIG's own
+// comment), so a clinic that was already live before that change can have
+// real appointments/visits/packages with sessionType "qs" that predate
+// it. Without an entry here, SESSION_TYPE_CONFIG["qs"] is undefined for
+// any such clinic that never re-added it as its own custom machine type,
+// and every call site that reads `.badgeText`/`.label`/etc. off that
+// lookup throws — this restores exact resolution (same label, badge,
+// columns as the old built-in) without reintroducing it as a pickable
+// default for new clinics.
+const QS_SESSION_TYPE_CONFIG: SessionTypeConfig = {
+  label: "Q-Switch",
+  badgeText: "QS",
+  badgeClassName: "bg-brown-900 text-beige-200",
+  chartColor: "#2C1D14",
+  columns: [
+    {
+      key: "area",
+      label: "Area",
+      type: "select",
+      options: ["Full Face", "Cheeks", "Underarms", "Neck", "Hands", "Back", "Chest", "Tattoo Removal", "Full Body"],
+    },
+    { key: "carbon", label: "Carbon", type: "select", options: ["Yes", "No"] },
+    { key: "mode", label: "Mode", type: "text" },
+    { key: "hp", label: "HP", type: "text" },
+    { key: "eng", label: "Eng", type: "number" },
+    { key: "pass", label: "Pass", type: "number" },
+    { key: "repeat", label: "Repeat", type: "number" },
+    { key: "fee", label: "Fee", type: "number" },
+  ],
+  hiddenByDefault: true,
+};
+
 /** Back-compat alias — built-ins only, no clinic-defined custom types.
  * Prefer buildSessionTypeConfig() (server) or useSessionTypeConfig() (client,
  * via lib/sessionTypeConfigContext.tsx) wherever a clinic's custom machine
@@ -91,16 +124,18 @@ export function sessionTypeDefToConfig(def: SessionTypeDef): SessionTypeConfig {
 }
 
 /** Merges the built-in LHR config, the always-resolvable-but-hidden
- * consultation config, and a clinic's own custom machine types (see
- * lib/db/sessionTypeDefs.ts) into the single lookup table used everywhere
- * a SessionType needs to be rendered or have its data-entry columns
- * resolved. */
+ * consultation and Q-Switch configs, and a clinic's own custom machine
+ * types (see lib/db/sessionTypeDefs.ts) into the single lookup table used
+ * everywhere a SessionType needs to be rendered or have its data-entry
+ * columns resolved. A clinic that's since added its own real "qs" custom
+ * machine type overrides this fallback below, same as any other key. */
 export function buildSessionTypeConfig(
   customTypes: SessionTypeDef[] = []
 ): Record<string, SessionTypeConfig> {
   const merged: Record<string, SessionTypeConfig> = {
     ...BUILT_IN_SESSION_TYPE_CONFIG,
     consultation: CONSULTATION_SESSION_TYPE_CONFIG,
+    qs: QS_SESSION_TYPE_CONFIG,
   };
   for (const def of customTypes) {
     merged[def.key] = sessionTypeDefToConfig(def);
