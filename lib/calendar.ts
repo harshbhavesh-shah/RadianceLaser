@@ -71,6 +71,14 @@ export interface LayoutEvent {
   appointment: Appointment;
   column: number;
   totalColumns: number;
+  // Every appointment sharing this event's cluster (itself included), and
+  // the cluster's own overall time span in minutes-since-midnight — lets a
+  // view collapse a too-crowded cluster into one "N appointments" overflow
+  // indicator instead of rendering totalColumns illegibly-thin slivers,
+  // without having to re-derive cluster membership itself.
+  clusterAppointments: Appointment[];
+  clusterStart: number;
+  clusterEnd: number;
 }
 
 /**
@@ -107,8 +115,18 @@ export function layoutOverlappingEvents(appointments: Appointment[]): LayoutEven
     }
 
     const totalColumns = columnEnds.length;
+    const clusterAppointments = cluster.map((c) => c.appointment);
+    const spanStart = Math.min(...cluster.map((c) => c.start));
+    const spanEnd = Math.max(...cluster.map((c) => c.end));
     for (const a of assigned) {
-      results.push({ appointment: a.appointment, column: a.column, totalColumns });
+      results.push({
+        appointment: a.appointment,
+        column: a.column,
+        totalColumns,
+        clusterAppointments,
+        clusterStart: spanStart,
+        clusterEnd: spanEnd,
+      });
     }
     cluster = [];
   }

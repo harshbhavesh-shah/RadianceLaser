@@ -147,4 +147,30 @@ describe("layoutOverlappingEvents", () => {
     expect(inOrder.every((r) => r.totalColumns === 2)).toBe(true);
     expect(reversed.every((r) => r.totalColumns === 2)).toBe(true);
   });
+
+  it("gives every member of a cluster the same clusterAppointments list and overall time span, for the too-crowded-to-show-individually overflow indicator", () => {
+    const result = layoutOverlappingEvents([
+      makeAppt({ id: "a1", time: "10:00", durationMinutes: 60 }),
+      makeAppt({ id: "a2", time: "10:15", durationMinutes: 30 }),
+      makeAppt({ id: "a3", time: "10:45", durationMinutes: 15 }),
+    ]);
+    expect(result).toHaveLength(3);
+    for (const r of result) {
+      expect(r.clusterAppointments.map((a) => a.id).sort()).toEqual(["a1", "a2", "a3"]);
+      expect(r.clusterStart).toBe(timeToMinutes("10:00"));
+      expect(r.clusterEnd).toBe(timeToMinutes("11:00")); // a1 runs 10:00-11:00, the longest span
+    }
+  });
+
+  it("keeps separate clusters' clusterAppointments lists independent of each other", () => {
+    const result = layoutOverlappingEvents([
+      makeAppt({ id: "morning1", time: "09:00", durationMinutes: 30 }),
+      makeAppt({ id: "morning2", time: "09:00", durationMinutes: 30 }),
+      makeAppt({ id: "afternoon", time: "15:00", durationMinutes: 30 }),
+    ]);
+    const morning = result.find((r) => r.appointment.id === "morning1")!;
+    const afternoon = result.find((r) => r.appointment.id === "afternoon")!;
+    expect(morning.clusterAppointments.map((a) => a.id).sort()).toEqual(["morning1", "morning2"]);
+    expect(afternoon.clusterAppointments.map((a) => a.id)).toEqual(["afternoon"]);
+  });
 });

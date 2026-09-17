@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Users } from "lucide-react";
 import {
   CALENDAR_START_HOUR,
   CALENDAR_END_HOUR,
@@ -12,6 +14,7 @@ import {
 } from "@/lib/calendar";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { SCHEDULE_STATUS_STYLE } from "./scheduleStatusStyles";
+import OverlapPopover from "./OverlapPopover";
 import type { Appointment } from "@/types";
 
 const HOURS = Array.from(
@@ -19,6 +22,11 @@ const HOURS = Array.from(
   (_, i) => CALENDAR_START_HOUR + i
 );
 const GRID_HEIGHT = (CALENDAR_END_HOUR - CALENDAR_START_HOUR) * PIXELS_PER_HOUR;
+
+// Day view has a full-width column to work with (vs Week's 1/7th), so it
+// can comfortably fit one more side-by-side card before collapsing — see
+// CalendarWeekView's own copy of this comment for why this exists at all.
+const OVERLAP_COLLAPSE_THRESHOLD = 4;
 
 export default function CalendarDayView({
   date,
@@ -35,6 +43,7 @@ export default function CalendarDayView({
   const dateStr = toDateStr(date);
   const dayAppointments = appointments.filter((a) => a.date === dateStr);
   const laidOut = layoutOverlappingEvents(dayAppointments);
+  const [openCluster, setOpenCluster] = useState<number | null>(null);
 
   function handleGridClick(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -79,43 +88,82 @@ export default function CalendarDayView({
             />
           ))}
 
-          {laidOut.map(({ appointment, column, totalColumns }) => {
-            const top = minutesToTop(timeToMinutes(appointment.time));
-            const height = Math.max((appointment.durationMinutes / 60) * PIXELS_PER_HOUR, 22);
-            const widthPct = 100 / totalColumns;
-            const cfg = SESSION_TYPE_CONFIG[appointment.sessionType];
-            const statusStyle = SCHEDULE_STATUS_STYLE[appointment.status];
+          {(() => {
+            const renderedClusters = new Set<number>();
+            return laidOut.map(
+              ({ appointment, column, totalColumns, clusterAppointments, clusterStart, clusterEnd }) => {
+                if (totalColumns > OVERLAP_COLLAPSE_THRESHOLD) {
+                  if (renderedClusters.has(clusterStart)) return null;
+                  renderedClusters.add(clusterStart);
 
-            return (
-              <button
-                key={appointment.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(appointment);
-                }}
-                className={`absolute overflow-hidden rounded-lg border border-beige-300 px-2.5 py-1.5 text-left text-xs shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
-                style={{
-                  top,
-                  height,
-                  left: `${column * widthPct}%`,
-                  width: `calc(${widthPct}% - 4px)`,
-                  borderLeftWidth: 3,
-                  borderLeftColor:
-                    appointment.status === "cancelled" ? "#9C8672" : "#C1694F",
-                }}
-              >
-                <div className="flex items-center gap-1.5 font-extrabold text-brown-900">
-                  <span
-                    className={`flex-shrink-0 rounded px-1 text-[9px] font-bold ${cfg.badgeClassName}`}
+                  const top = minutesToTop(clusterStart);
+                  const height = Math.max(((clusterEnd - clusterStart) / 60) * PIXELS_PER_HOUR, 22);
+                  const isOpen = openCluster === clusterStart;
+
+                  return (
+                    <div key={clusterStart} className="absolute" style={{ top, height, left: 0, right: 4 }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenCluster(isOpen ? null : clusterStart);
+                        }}
+                        className="flex h-full w-full items-center justify-center gap-1.5 rounded-lg border border-beige-300 bg-beige-100 text-brown-700 shadow-sm transition-colors hover:bg-beige-200"
+                      >
+                        <Users size={14} />
+                        <span className="text-sm font-extrabold">{clusterAppointments.length} appointments</span>
+                      </button>
+                      {isOpen && (
+                        <OverlapPopover
+                          appointments={clusterAppointments}
+                          onSelect={(a) => {
+                            setOpenCluster(null);
+                            onEdit(a);
+                          }}
+                          onClose={() => setOpenCluster(null)}
+                        />
+                      )}
+                    </div>
+                  );
+                }
+
+                const top = minutesToTop(timeToMinutes(appointment.time));
+                const height = Math.max((appointment.durationMinutes / 60) * PIXELS_PER_HOUR, 22);
+                const widthPct = 100 / totalColumns;
+                const cfg = SESSION_TYPE_CONFIG[appointment.sessionType];
+                const statusStyle = SCHEDULE_STATUS_STYLE[appointment.status];
+
+                return (
+                  <button
+                    key={appointment.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(appointment);
+                    }}
+                    className={`absolute overflow-hidden rounded-lg border border-beige-300 px-2.5 py-1.5 text-left text-xs shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
+                    style={{
+                      top,
+                      height,
+                      left: `${column * widthPct}%`,
+                      width: `calc(${widthPct}% - 4px)`,
+                      borderLeftWidth: 3,
+                      borderLeftColor:
+                        appointment.status === "cancelled" ? "#9C8672" : "#C1694F",
+                    }}
                   >
-                    {cfg.badgeText}
-                  </span>
-                  <span className="min-w-0 truncate">{appointment.patientName}</span>
-                </div>
-                <div className="truncate font-semibold text-brown-600">{formatTime12h(appointment.time)}</div>
-              </button>
+                    <div className="flex items-center gap-1.5 font-extrabold text-brown-900">
+                      <span
+                        className={`flex-shrink-0 rounded px-1 text-[9px] font-bold ${cfg.badgeClassName}`}
+                      >
+                        {cfg.badgeText}
+                      </span>
+                      <span className="min-w-0 truncate">{appointment.patientName}</span>
+                    </div>
+                    <div className="truncate font-semibold text-brown-600">{formatTime12h(appointment.time)}</div>
+                  </button>
+                );
+              }
             );
-          })}
+          })()}
         </div>
       </div>
     </div>

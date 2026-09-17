@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Users } from "lucide-react";
 import {
   CALENDAR_START_HOUR,
   CALENDAR_END_HOUR,
@@ -13,6 +15,7 @@ import {
 } from "@/lib/calendar";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { SCHEDULE_STATUS_STYLE } from "./scheduleStatusStyles";
+import OverlapPopover from "./OverlapPopover";
 import type { Appointment } from "@/types";
 
 const HOURS = Array.from(
@@ -20,6 +23,12 @@ const HOURS = Array.from(
   (_, i) => CALENDAR_START_HOUR + i
 );
 const GRID_HEIGHT = (CALENDAR_END_HOUR - CALENDAR_START_HOUR) * PIXELS_PER_HOUR;
+
+// Above this many side-by-side columns, each appointment's slice of the
+// day column gets too narrow to show more than a letter or two of the
+// patient name — past that point, the whole overlapping cluster collapses
+// into one "N appointments" indicator instead (see OverlapPopover).
+const OVERLAP_COLLAPSE_THRESHOLD = 3;
 
 export default function CalendarWeekView({
   days,
@@ -34,6 +43,7 @@ export default function CalendarWeekView({
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const today = todayLocalStr();
+  const [openCluster, setOpenCluster] = useState<string | null>(null);
 
   function handleGridClick(e: React.MouseEvent<HTMLDivElement>, dateStr: string) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -81,11 +91,15 @@ export default function CalendarWeekView({
           ))}
         </div>
 
-        {days.map((d) => {
+        {days.map((d, dayIndex) => {
           const dateStr = toDateStr(d);
           const dayAppointments = appointments.filter((a) => a.date === dateStr);
           const laidOut = layoutOverlappingEvents(dayAppointments);
           const isToday = dateStr === today;
+          // The last couple of day columns are close enough to the grid's
+          // right edge that a rightward-opening popover would run off
+          // screen — open those leftward instead.
+          const popoverAlign = dayIndex >= days.length - 2 ? "right" : "left";
 
           return (
             <div
@@ -102,39 +116,80 @@ export default function CalendarWeekView({
                 />
               ))}
 
-              {laidOut.map(({ appointment, column, totalColumns }) => {
-                const top = minutesToTop(timeToMinutes(appointment.time));
-                const height = Math.max((appointment.durationMinutes / 60) * PIXELS_PER_HOUR, 20);
-                const widthPct = 100 / totalColumns;
-                const cfg = SESSION_TYPE_CONFIG[appointment.sessionType];
-                const statusStyle = SCHEDULE_STATUS_STYLE[appointment.status];
+              {(() => {
+                const renderedClusters = new Set<string>();
+                return laidOut.map(
+                  ({ appointment, column, totalColumns, clusterAppointments, clusterStart, clusterEnd }) => {
+                    if (totalColumns > OVERLAP_COLLAPSE_THRESHOLD) {
+                      const clusterKey = `${dateStr}-${clusterStart}`;
+                      if (renderedClusters.has(clusterKey)) return null;
+                      renderedClusters.add(clusterKey);
 
-                return (
-                  <button
-                    key={appointment.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(appointment);
-                    }}
-                    className={`absolute overflow-hidden rounded-lg border border-beige-300 px-2 py-1 text-left shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
-                    style={{
-                      top,
-                      height,
-                      left: `${column * widthPct}%`,
-                      width: `calc(${widthPct}% - 2px)`,
-                      borderLeftWidth: 3,
-                      borderLeftColor: appointment.status === "cancelled" ? "#9C8672" : "#C1694F",
-                    }}
-                  >
-                    <div className="truncate text-xs font-extrabold text-brown-900">
-                      {appointment.patientName}
-                    </div>
-                    <div className="truncate text-[11px] font-semibold text-brown-600">
-                      {cfg.badgeText} · {formatTime12h(appointment.time)}
-                    </div>
-                  </button>
+                      const top = minutesToTop(clusterStart);
+                      const height = Math.max(((clusterEnd - clusterStart) / 60) * PIXELS_PER_HOUR, 20);
+                      const isOpen = openCluster === clusterKey;
+
+                      return (
+                        <div key={clusterKey} className="absolute" style={{ top, height, left: 0, right: 2 }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenCluster(isOpen ? null : clusterKey);
+                            }}
+                            className="flex h-full w-full items-center justify-center gap-1 rounded-lg border border-beige-300 bg-beige-100 text-brown-700 shadow-sm transition-colors hover:bg-beige-200"
+                          >
+                            <Users size={13} />
+                            <span className="text-xs font-extrabold">{clusterAppointments.length}</span>
+                          </button>
+                          {isOpen && (
+                            <OverlapPopover
+                              appointments={clusterAppointments}
+                              align={popoverAlign}
+                              onSelect={(a) => {
+                                setOpenCluster(null);
+                                onEdit(a);
+                              }}
+                              onClose={() => setOpenCluster(null)}
+                            />
+                          )}
+                        </div>
+                      );
+                    }
+
+                    const top = minutesToTop(timeToMinutes(appointment.time));
+                    const height = Math.max((appointment.durationMinutes / 60) * PIXELS_PER_HOUR, 20);
+                    const widthPct = 100 / totalColumns;
+                    const cfg = SESSION_TYPE_CONFIG[appointment.sessionType];
+                    const statusStyle = SCHEDULE_STATUS_STYLE[appointment.status];
+
+                    return (
+                      <button
+                        key={appointment.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(appointment);
+                        }}
+                        className={`absolute overflow-hidden rounded-lg border border-beige-300 px-2 py-1 text-left shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
+                        style={{
+                          top,
+                          height,
+                          left: `${column * widthPct}%`,
+                          width: `calc(${widthPct}% - 2px)`,
+                          borderLeftWidth: 3,
+                          borderLeftColor: appointment.status === "cancelled" ? "#9C8672" : "#C1694F",
+                        }}
+                      >
+                        <div className="truncate text-xs font-extrabold text-brown-900">
+                          {appointment.patientName}
+                        </div>
+                        <div className="truncate text-[11px] font-semibold text-brown-600">
+                          {cfg.badgeText} · {formatTime12h(appointment.time)}
+                        </div>
+                      </button>
+                    );
+                  }
                 );
-              })}
+              })()}
             </div>
           );
         })}
