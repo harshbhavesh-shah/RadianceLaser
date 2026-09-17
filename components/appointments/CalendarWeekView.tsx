@@ -46,8 +46,8 @@ export default function CalendarWeekView({
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-beige-300 bg-surface shadow-soft">
-      <div className="flex min-w-[720px]">
+    <div className="overflow-x-auto rounded-[18px] border border-beige-300 bg-surface shadow-soft">
+      <div className="flex min-w-[720px] border-b border-beige-300 bg-beige-100/40">
         <div className="w-16 flex-shrink-0 border-r border-beige-300" />
         {days.map((d) => {
           const dateStr = toDateStr(d);
@@ -55,13 +55,13 @@ export default function CalendarWeekView({
           return (
             <div
               key={dateStr}
-              className={`flex-1 border-r border-beige-300 py-3 text-center last:border-r-0 ${isToday ? "bg-rust-100" : ""}`}
+              className={`flex-1 border-r border-beige-300/50 py-4 text-center last:border-r-0 ${isToday ? "bg-rust-600/5" : ""}`}
             >
-              <div className="text-xs uppercase tracking-wide text-brown-400">
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isToday ? "text-rust-600" : "text-brown-400"}`}>
                 {d.toLocaleDateString("en-US", { weekday: "short" })}
               </div>
               <div
-                className={`mt-0.5 font-display text-base font-bold ${isToday ? "text-rust-700" : "text-brown-900"}`}
+                className={`mt-1 text-xl font-extrabold ${isToday ? "text-rust-600" : "text-brown-900"}`}
               >
                 {d.getDate()}
               </div>
@@ -74,7 +74,7 @@ export default function CalendarWeekView({
         <div className="w-16 flex-shrink-0">
           {HOURS.map((h) => (
             <div key={h} style={{ height: PIXELS_PER_HOUR }} className="relative">
-              <span className="absolute -top-2 right-2 text-xs text-brown-400">
+              <span className="absolute -top-2 right-3 bg-surface px-1 text-[11px] font-extrabold text-brown-400">
                 {formatTime12h(`${String(h).padStart(2, "0")}:00`)}
               </span>
             </div>
@@ -90,7 +90,7 @@ export default function CalendarWeekView({
           return (
             <div
               key={dateStr}
-              className={`relative flex-1 cursor-pointer border-l border-beige-300 ${isToday ? "bg-rust-100/30" : ""}`}
+              className={`relative flex-1 cursor-pointer border-l border-beige-300 ${isToday ? "bg-rust-600/[0.03]" : ""}`}
               style={{ height: GRID_HEIGHT }}
               onClick={(e) => handleGridClick(e, dateStr)}
             >
@@ -116,19 +116,20 @@ export default function CalendarWeekView({
                       e.stopPropagation();
                       onEdit(appointment);
                     }}
-                    className={`absolute overflow-hidden rounded border-l-2 px-1.5 py-0.5 text-left text-[10px] shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
+                    className={`absolute overflow-hidden rounded-lg border border-beige-300 px-2 py-1 text-left shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
                     style={{
                       top,
                       height,
                       left: `${column * widthPct}%`,
                       width: `calc(${widthPct}% - 2px)`,
-                      borderLeftColor: appointment.status === "cancelled" ? "#9C8672" : "#C1442D",
+                      borderLeftWidth: 3,
+                      borderLeftColor: appointment.status === "cancelled" ? "#9C8672" : "#C1694F",
                     }}
                   >
-                    <div className="truncate font-medium text-brown-900">
+                    <div className="truncate text-xs font-extrabold text-brown-900">
                       {appointment.patientName}
                     </div>
-                    <div className="truncate text-brown-600">
+                    <div className="truncate text-[11px] font-semibold text-brown-600">
                       {cfg.badgeText} · {formatTime12h(appointment.time)}
                     </div>
                   </button>

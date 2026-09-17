@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import AppointmentListView from "./AppointmentListView";
 import CalendarDayView from "./CalendarDayView";
 import CalendarWeekView from "./CalendarWeekView";
@@ -192,34 +192,31 @@ export default function AppointmentsClient({
   return (
     <div className="flex items-stretch gap-5">
       <div className="min-w-0 flex-1">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
-              Schedule
-            </h1>
-          </div>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="m-0 text-3xl font-extrabold tracking-tight text-brown-900">Schedule</h1>
           <button
             onClick={() => setModalState({ mode: "create" })}
-            className="rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
+            className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-rust-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-rust-700"
           >
-            + New Appointment
+            <Plus size={16} strokeWidth={2.5} />
+            New Appointment
           </button>
         </div>
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1 rounded-xl border border-beige-300 bg-surface p-1 shadow-soft">
+        <div className="mb-6 flex flex-col items-center justify-between gap-4 rounded-[18px] border border-beige-300 bg-surface p-2 shadow-soft xl:flex-row">
+          <div className="flex w-full items-center rounded-2xl bg-beige-100 p-1 xl:w-auto">
             <button
               onClick={() => setViewMode("list")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === "list" ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
+              className={`flex-1 rounded-xl px-5 py-2 text-sm font-bold transition-colors xl:flex-none ${
+                viewMode === "list" ? "bg-surface text-rust-600 shadow-sm" : "text-brown-400 hover:text-brown-900"
               }`}
             >
               List
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === "calendar" ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
+              className={`flex-1 rounded-xl px-5 py-2 text-sm font-bold transition-colors xl:flex-none ${
+                viewMode === "calendar" ? "bg-surface text-rust-600 shadow-sm" : "text-brown-400 hover:text-brown-900"
               }`}
             >
               Calendar
@@ -228,39 +225,41 @@ export default function AppointmentsClient({
 
           {viewMode === "calendar" && (
             <>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={goPrev}
-                  className="rounded-md p-1.5 text-brown-600 hover:bg-beige-200"
+                  className="rounded-xl p-2 text-brown-400 transition-colors hover:bg-beige-100 hover:text-brown-900"
                   aria-label="Previous"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={goToday}
-                  className="rounded-md border border-beige-300 px-3 py-1 text-sm font-medium text-brown-700 hover:border-rust-600 hover:text-rust-700"
+                  className="rounded-xl bg-beige-100 px-4 py-2 text-sm font-bold text-brown-900 transition-colors hover:bg-beige-200"
                 >
                   Today
                 </button>
+                <span className="min-w-[150px] text-center text-sm font-extrabold text-brown-900">
+                  {periodLabel}
+                </span>
                 <button
                   onClick={goNext}
-                  className="rounded-md p-1.5 text-brown-600 hover:bg-beige-200"
+                  className="rounded-xl p-2 text-brown-400 transition-colors hover:bg-beige-100 hover:text-brown-900"
                   aria-label="Next"
                 >
                   <ChevronRight size={18} />
                 </button>
-                <span className="ml-1 text-sm font-medium text-brown-900">{periodLabel}</span>
               </div>
 
-              <div className="flex items-center gap-1 rounded-xl border border-beige-300 bg-surface p-1 shadow-soft">
+              <div className="flex w-full items-center rounded-2xl bg-beige-100 p-1 xl:w-auto">
                 {(["day", "week", "month"] as CalendarMode[]).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setCalendarMode(mode)}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+                    className={`flex-1 rounded-xl px-5 py-2 text-sm font-bold capitalize transition-colors xl:flex-none ${
                       calendarMode === mode
-                        ? "bg-rust-100 text-rust-700"
-                        : "text-brown-600 hover:text-brown-900"
+                        ? "bg-surface text-rust-600 shadow-sm"
+                        : "text-brown-400 hover:text-brown-900"
                     }`}
                   >
                     {mode}

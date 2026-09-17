@@ -36,12 +36,12 @@ export default function CalendarMonthView({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
-      <div className="grid grid-cols-7 border-b border-beige-300 bg-beige-200/50">
+    <div className="overflow-hidden rounded-[18px] border border-beige-300 bg-surface shadow-soft">
+      <div className="grid grid-cols-7 border-b border-beige-300 bg-beige-100/40">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="px-2 py-2 text-center text-xs font-medium uppercase tracking-wide text-brown-600"
+            className="px-2 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-brown-400"
           >
             {label}
           </div>

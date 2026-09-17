@@ -56,7 +56,7 @@ export default function AppointmentListView({
               day: "numeric",
             })}
           </h3>
-          <div className="overflow-hidden rounded-2xl border border-beige-300 bg-surface shadow-soft">
+          <div className="overflow-hidden rounded-[18px] border border-beige-300 bg-surface shadow-soft">
             {grouped.get(date)!.map((appt, i, arr) => {
               const cfg = SESSION_TYPE_CONFIG[appt.sessionType];
               const statusStyle = SCHEDULE_STATUS_STYLE[appt.status];
