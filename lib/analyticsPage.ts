@@ -267,6 +267,11 @@ export interface PackageUtilizationSummary {
   sessionsLostToExpiry: number; // "breakage" — paid for, never used, can't be anymore
   utilizationRate: number; // 0-100
   breakageRate: number; // 0-100
+  // sessionsLostToExpiry priced at each package's own per-session rate
+  // (totalAmount / totalSessions) rather than a clinic-wide average, so a
+  // breakage-heavy premium package isn't diluted by cheap ones — this is
+  // the ₹ figure the revenue tab actually cares about, not just a count.
+  breakageValue: number;
 }
 
 /** All-time package usage, not year-scoped — a package bought last year can
@@ -280,6 +285,7 @@ export function computePackageUtilization(packages: Package[], visits: Visit[]):
   let sessionsUsed = 0;
   let sessionsRemainingActive = 0;
   let sessionsLostToExpiry = 0;
+  let breakageValue = 0;
 
   for (const pkg of packages) {
     const ledger = computePackageLedger(pkg, visits);
@@ -287,6 +293,8 @@ export function computePackageUtilization(packages: Package[], visits: Visit[]):
     sessionsUsed += ledger.sessionsUsed;
     if (ledger.status === "expired") {
       sessionsLostToExpiry += ledger.sessionsRemaining;
+      const perSessionRate = pkg.totalSessions > 0 ? pkg.totalAmount / pkg.totalSessions : 0;
+      breakageValue += ledger.sessionsRemaining * perSessionRate;
     } else {
       sessionsRemainingActive += ledger.sessionsRemaining;
     }
@@ -300,5 +308,101 @@ export function computePackageUtilization(packages: Package[], visits: Visit[]):
     sessionsLostToExpiry,
     utilizationRate: sessionsSold > 0 ? (sessionsUsed / sessionsSold) * 100 : 0,
     breakageRate: sessionsSold > 0 ? (sessionsLostToExpiry / sessionsSold) * 100 : 0,
+    breakageValue,
+  };
+}
+
+export interface PatientRetentionStats {
+  treatedPatients: number; // distinct patients with at least one visit
+  avgVisitsPerPatient: number;
+  activePatients: number; // most recent visit within lapsedAfterDays
+  lapsedPatients: number; // has been treated, but not within lapsedAfterDays
+}
+
+// How long since a patient's last visit before they count as "lapsed"
+// rather than "active" — generous enough that a clinic's normal 4-8 week
+// treatment cadence (laser/IPL packages) doesn't misread as churn.
+const LAPSED_AFTER_DAYS = 60;
+
+// "consultation" is the hidden built-in session type the public booking
+// flow logs a first-touch visit under (see lib/sessionTypes.ts) — never a
+// real treatment, so it's excluded here and from computeConsultConversionStats
+// below. Kept in sync by hand with that file's own "consultation" key.
+const CONSULT_SESSION_TYPE = "consultation";
+
+/** All-time (not range-scoped, same reasoning as computePackageUtilization
+ * above) read on how often treated patients actually come back — average
+ * visits per patient, and how many of them haven't been seen recently.
+ * Patients with zero visits ever are leads/new signups, not "lapsed", so
+ * they're excluded from both counts rather than inflating lapsedPatients;
+ * same treatment for a patient whose only visit is a consultation — that's
+ * a lead who hasn't actually been treated yet, not a lapsed one. */
+export function computePatientRetentionStats(
+  visits: Visit[],
+  todayStr: string = todayLocalStr()
+): PatientRetentionStats {
+  const lastVisitByPatient = new Map<string, string>();
+  const visitCounts = new Map<string, number>();
+
+  for (const v of visits) {
+    if (!v.date || v.sessionType === CONSULT_SESSION_TYPE) continue;
+    visitCounts.set(v.patientId, (visitCounts.get(v.patientId) || 0) + 1);
+    const prev = lastVisitByPatient.get(v.patientId);
+    if (!prev || v.date > prev) lastVisitByPatient.set(v.patientId, v.date);
+  }
+
+  const cutoff = new Date(`${todayStr}T00:00:00`);
+  cutoff.setDate(cutoff.getDate() - LAPSED_AFTER_DAYS);
+  const cutoffStr = `${cutoff.getFullYear()}-${pad(cutoff.getMonth() + 1)}-${pad(cutoff.getDate())}`;
+
+  let activePatients = 0;
+  let lapsedPatients = 0;
+  for (const lastDate of lastVisitByPatient.values()) {
+    if (lastDate >= cutoffStr) activePatients++;
+    else lapsedPatients++;
+  }
+
+  const treatedPatients = lastVisitByPatient.size;
+  const totalVisits = [...visitCounts.values()].reduce((a, b) => a + b, 0);
+
+  return {
+    treatedPatients,
+    avgVisitsPerPatient: treatedPatients > 0 ? totalVisits / treatedPatients : 0,
+    activePatients,
+    lapsedPatients,
+  };
+}
+
+export interface ConsultConversionStats {
+  totalConsults: number; // distinct patients with at least one consultation visit
+  converted: number; // of those, how many also have a real (non-consultation) visit
+  conversionRate: number; // 0-100
+}
+
+/** What fraction of logged consultations actually turned into a real,
+ * paid treatment — all-time, same reasoning as computePatientRetentionStats
+ * above (a consult from last quarter can still convert this quarter). A
+ * patient counts as converted if they have any non-consultation visit at
+ * all, regardless of whether it landed before or after the consult visit
+ * itself — this app's booking flow always logs the consult first, but
+ * nothing here depends on that ordering holding for every clinic's data. */
+export function computeConsultConversionStats(visits: Visit[]): ConsultConversionStats {
+  const consultPatients = new Set<string>();
+  const treatedPatients = new Set<string>();
+
+  for (const v of visits) {
+    if (v.sessionType === CONSULT_SESSION_TYPE) consultPatients.add(v.patientId);
+    else treatedPatients.add(v.patientId);
+  }
+
+  let converted = 0;
+  for (const id of consultPatients) {
+    if (treatedPatients.has(id)) converted++;
+  }
+
+  return {
+    totalConsults: consultPatients.size,
+    converted,
+    conversionRate: consultPatients.size > 0 ? (converted / consultPatients.size) * 100 : 0,
   };
 }

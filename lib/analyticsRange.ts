@@ -78,16 +78,32 @@ export interface RangeStats {
   totalAppointments: number;
   newPatients: number;
   revenueByType: Record<SessionType, number>;
+  // Session/purchase counts per type, alongside revenueByType above — a
+  // high-volume, low-price treatment (underarms, say) can dominate the
+  // schedule without ever showing up in a revenue-weighted view, so the
+  // Procedural tab's "Top Treatments by volume" reads this instead.
+  countByType: Record<SessionType, number>;
   statusCounts: { completed: number; cancelled: number; noShow: number };
+  // Priced visits + package purchases in range — the denominator behind
+  // "Avg Revenue / Visit" (totalRevenue / revenueEventCount).
+  revenueEventCount: number;
+  // Distinct patients who generated any revenue in range.
+  payingPatientCount: number;
+  // totalRevenue split by whether the patient it came from was newly
+  // created within this same range ("new") or already existed before it
+  // started ("returning") — a repeat-business vs acquisition read on the
+  // same money, not a separate pool of it.
+  newPatientRevenue: number;
+  returningPatientRevenue: number;
 }
 
-/** Everything the stat row, "Top Treatments by Revenue" bars, and
- * "Appointment Status" donut need, all for one date range. "Resolved"
- * appointments (completed/cancelled/no-show, date already in range) is
- * the same definition lib/analyticsPage.ts computeAppointmentReliability
- * already uses for its year-scoped version — totalAppointments here is
- * that same count, just range-scoped, so it always equals the sum of the
- * three status counts (no separate "still booked" bucket to reconcile). */
+/** Everything the stat row, "Top Treatments" bars, and "Appointment
+ * Status" donut need, all for one date range. "Resolved" appointments
+ * (completed/cancelled/no-show, date already in range) is the same
+ * definition lib/analyticsPage.ts computeAppointmentReliability already
+ * uses for its year-scoped version — totalAppointments here is that same
+ * count, just range-scoped, so it always equals the sum of the three
+ * status counts (no separate "still booked" bucket to reconcile). */
 export function computeRangeStats(
   visits: Visit[],
   packages: Package[],
@@ -97,17 +113,39 @@ export function computeRangeStats(
 ): RangeStats {
   let totalRevenue = 0;
   const revenueByType: Record<SessionType, number> = {};
+  const countByType: Record<SessionType, number> = {};
+  let revenueEventCount = 0;
+  let newPatientRevenue = 0;
+  let returningPatientRevenue = 0;
+  const payingPatientIds = new Set<string>();
+  const patientCreatedAt = new Map(patients.map((p) => [p.id, toDateStr(new Date(p.createdAt))]));
+
+  function attributeRevenue(patientId: string, amount: number) {
+    payingPatientIds.add(patientId);
+    const createdStr = patientCreatedAt.get(patientId);
+    const isNew = !!createdStr && inRange(createdStr, range);
+    if (isNew) newPatientRevenue += amount;
+    else returningPatientRevenue += amount;
+  }
 
   for (const v of visits) {
     if (v.packageId || !inRange(v.date, range)) continue;
     const fee = feeOf(v);
     totalRevenue += fee;
     revenueByType[v.sessionType] = (revenueByType[v.sessionType] || 0) + fee;
+    countByType[v.sessionType] = (countByType[v.sessionType] || 0) + 1;
+    if (fee > 0) {
+      revenueEventCount++;
+      attributeRevenue(v.patientId, fee);
+    }
   }
   for (const p of packages) {
     if (!inRange(p.purchaseDate, range)) continue;
     totalRevenue += p.totalAmount;
     revenueByType[p.sessionType] = (revenueByType[p.sessionType] || 0) + p.totalAmount;
+    countByType[p.sessionType] = (countByType[p.sessionType] || 0) + 1;
+    revenueEventCount++;
+    attributeRevenue(p.patientId, p.totalAmount);
   }
 
   const today = toDateStr(new Date());
@@ -127,7 +165,12 @@ export function computeRangeStats(
     totalAppointments: resolved.length,
     newPatients,
     revenueByType,
+    countByType,
     statusCounts,
+    revenueEventCount,
+    payingPatientCount: payingPatientIds.size,
+    newPatientRevenue,
+    returningPatientRevenue,
   };
 }
 

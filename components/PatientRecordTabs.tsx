@@ -38,18 +38,19 @@ export default function PatientRecordTabs({
 
   return (
     <div>
-      <div className="mb-6 flex gap-6 border-b border-beige-300">
+      <div className="mb-6 flex gap-8 overflow-x-auto border-b border-beige-300 pb-px">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActive(tab.key)}
-            className={`-mb-px border-b-2 pb-3 text-sm font-semibold transition-colors ${
-              active === tab.key
-                ? "border-rust-600 text-brown-900"
-                : "border-transparent text-brown-500 hover:text-brown-900"
+            className={`relative whitespace-nowrap pb-4 text-sm font-extrabold transition-colors ${
+              active === tab.key ? "text-brown-900" : "text-brown-400 hover:text-brown-900"
             }`}
           >
             {tab.label}
+            {active === tab.key && (
+              <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full bg-rust-600" />
+            )}
           </button>
         ))}
       </div>
