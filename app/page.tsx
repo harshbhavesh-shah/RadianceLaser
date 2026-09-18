@@ -1,160 +1,16 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Check } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
-import { getTierPricing, type TierPricing } from "@/lib/db/platformSettings";
+import { getTierPricing } from "@/lib/db/platformSettings";
 import SiteHeader from "@/components/marketing/SiteHeader";
-
-// The five-tier ladder — see lib/entitlements.ts for the actual gating
-// logic these mirror, and the pricing playbook for the reasoning behind
-// the specific numbers (Apple-style: big jumps carry big justification,
-// small jumps are frictionless "why not"s). Kept as plain marketing copy
-// here rather than derived from TIER_ENTITLEMENTS, since a feature list
-// meant to persuade a prospect reads differently than one meant to gate
-// code — e.g. "Everything in Basic" is clearer to a buyer than repeating
-// every line item four times.
-interface PricingTier {
-  name: string;
-  price: string;
-  cadence?: string;
-  tagline: string;
-  features: string[];
-  cta: string;
-  href: string;
-  highlight?: boolean;
-  badge?: string;
-}
-
-// Basic/Standard/Pro/Enterprise's prices come from the admin-editable
-// platform settings (see app/admin/pricing) rather than being hardcoded
-// here, so a super admin can actually change what this page advertises.
-// Free is always ₹0, that one's fixed.
-function buildPricingTiers(pricing: TierPricing): PricingTier[] {
-  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
-
-  return [
-    {
-      name: "Free",
-      price: "₹0",
-      tagline: "Get a real clinic running, no card required.",
-      features: [
-        "Scheduling & appointments",
-        "Patient records & visit logging",
-        "Receipts & billing",
-        "E-signature consent forms",
-        "Up to 500 patients",
-        "2 staff logins",
-      ],
-      cta: "Start free",
-      href: "/signup",
-    },
-    {
-      name: "Basic",
-      price: inr(pricing.basicPriceInr),
-      cadence: "/year",
-      tagline: "For a clinic ready to run on more than the basics.",
-      features: [
-        "Everything in Free",
-        "Analytics dashboard",
-        "Inventory management",
-        "WhatsApp, connect and send",
-        "Before/after photo galleries",
-        "Custom treatment types",
-        "Unlimited patients",
-      ],
-      cta: "Start free trial",
-      href: "/signup",
-    },
-    {
-      name: "Standard",
-      price: inr(pricing.standardPriceInr),
-      cadence: "/year",
-      tagline: "Remove the staff ceiling and get organized.",
-      features: [
-        "Everything in Basic",
-        "No-show & follow-up tracking",
-        "Custom package types",
-        "Unlimited staff",
-      ],
-      cta: "Start free trial",
-      href: "/signup",
-    },
-    {
-      name: "Pro",
-      price: inr(pricing.proPriceInr),
-      cadence: "/year",
-      tagline: "Put your reminders and follow-ups on autopilot.",
-      features: [
-        "Everything in Standard",
-        "Two-way WhatsApp Inbox",
-        "Automated reminders & feedback surveys",
-        "Priority support",
-        "White-glove setup & data migration",
-      ],
-      cta: "Start free trial",
-      href: "/signup",
-      highlight: true,
-      badge: "Most popular",
-    },
-    {
-      name: "Enterprise",
-      price: `From ${inr(pricing.enterpriseMinPriceInr)}`,
-      cadence: "/year",
-      tagline: "For chains with 2 to 10 locations, one bill.",
-      features: [
-        "Everything in Pro",
-        "2–10 clinic locations",
-        "Per-center price drops as you add locations",
-        "Dedicated support",
-      ],
-      cta: "Talk to us",
-      href: "/contact",
-    },
-  ];
-}
-
-// Written after an actual line-by-line compliance review (see
-// docs/incident-response-runbook.md and the AuditLog/erasure work it
-// describes), not aspirational copy. Doesn't claim a certification
-// (HIPAA, SOC 2) that hasn't actually been obtained.
-const LAW_TABLE: { law: string; whatWeDo: string }[] = [
-  { law: "DPDP Act, 2023", whatWeDo: "Consent captured at intake. Patients can ask for correction or permanent erasure any time." },
-  { law: "IT Act, SPDI Rules", whatWeDo: "Data encrypted in transit. Two-factor sign-in available for every staff account." },
-  { law: "Per-clinic isolation", whatWeDo: "Every request checked against your clinic before anything loads. No shared views, ever." },
-  { law: "CERT-In Directions", whatWeDo: "Sensitive actions are logged with who did it and when, kept indefinitely." },
-  { law: "Medical records retention", whatWeDo: "A record can't be erased until 3 years after the patient's last visit, enforced automatically." },
-];
-
-// Real pixel dimensions vary shot to shot (a couple are non-retina crops,
-// not the standard 2880x1800 export), so each one gets its own true
-// width/height rather than a shared default — passing the wrong aspect
-// ratio here is what previously stretched no-shows-followups.png into a
-// half-empty box.
-function ShowcaseShot({
-  src,
-  alt,
-  width,
-  height,
-  sizes = "(min-width: 1024px) 640px, 100vw",
-  className = "",
-}: {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-  sizes?: string;
-  className?: string;
-}) {
-  return (
-    <div className={`overflow-hidden rounded-xl border border-beige-300 shadow-card ${className}`}>
-      <Image src={src} alt={alt} width={width} height={height} quality={90} className="h-auto w-full" sizes={sizes} />
-    </div>
-  );
-}
-
-const CONTAINER = "mx-auto max-w-6xl px-6";
+import LandingHero from "@/components/marketing/landing/LandingHero";
+import NoShowDemo from "@/components/marketing/landing/NoShowDemo";
+import DataMigrationSection from "@/components/marketing/landing/DataMigrationSection";
+import FeatureGrid from "@/components/marketing/landing/FeatureGrid";
+import SecuritySection from "@/components/marketing/landing/SecuritySection";
+import WhatsAppScrollSection from "@/components/marketing/landing/WhatsAppScrollSection";
+import PricingSection from "@/components/marketing/landing/PricingSection";
 
 export default async function HomePage() {
   const session = await getSession();
@@ -162,303 +18,35 @@ export default async function HomePage() {
 
   const trialMonths = Math.round(TRIAL_LENGTH_DAYS / 30);
   const trialLengthLabel = `${trialMonths} month${trialMonths === 1 ? "" : "s"}`;
-  const pricingTiers = buildPricingTiers(await getTierPricing());
+  const pricing = await getTierPricing();
 
   return (
-    <div className="bg-canvas">
+    <div className="flex min-h-screen flex-col bg-canvas selection:bg-rust-600/20">
       <SiteHeader />
 
-      {/* Hero + first showcase, combined: headline and the dashboard proof
-          share one row instead of a screenshot repeated lower down. Left
-          alignment throughout the page starts here, so nothing later reads
-          as a different layout system. Filling the full first screen (minus
-          the header) is deliberate — this is the one section that should
-          read as an arrival, not just another row in the scroll. */}
-      <section className="flex min-h-[calc(100vh-4rem)] items-center">
-        <div className={`${CONTAINER} grid w-full grid-cols-1 items-center gap-12 py-14 lg:grid-cols-2 lg:gap-14`}>
-          <div>
-            <h1 className="font-brand text-4xl font-extrabold leading-[1.1] tracking-tight text-brown-900 sm:text-5xl lg:text-6xl">
-              Run your clinic. Not a spreadsheet.
-            </h1>
-            <p className="mt-6 max-w-md text-lg leading-relaxed text-brown-600">
-              Open the dashboard and you&apos;re looking at today: who&apos;s booked, who&apos;s
-              already been seen, and who needs a callback. Revenue, new patients, and recent
-              activity update as the day happens, pulled from the same data automatically rather
-              than copied over from a spreadsheet.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/signup"
-                className="inline-flex items-center gap-2 rounded-md bg-brown-900 px-6 py-3 text-sm font-semibold text-beige-100 transition-colors hover:bg-gold-600"
-              >
-                Start your free trial
-                <ArrowRight size={16} />
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-md border border-brown-900/15 px-6 py-3 text-sm font-semibold text-brown-800 transition-colors hover:border-brown-900/30 hover:bg-brown-900/5"
-              >
-                Log in
-              </Link>
-            </div>
-            <p className="mt-4 text-sm text-brown-400">
-              Free for {trialLengthLabel} · No credit card required ·{" "}
-              <Link href="/compliance" className="underline decoration-beige-300 underline-offset-4 hover:text-gold-600">
-                data hosted in India
-              </Link>
-            </p>
-          </div>
+      <main className="flex-1">
+        <LandingHero trialLengthLabel={trialLengthLabel} />
+        <SecuritySection />
+        <WhatsAppScrollSection />
+        <NoShowDemo />
+        <DataMigrationSection />
+        <FeatureGrid />
+      </main>
 
-          <ShowcaseShot
-            src="/screenshots/dashboard-today.png"
-            alt="Today's schedule, business snapshot, and revenue chart on the Radiance Laser dashboard"
-            width={2880}
-            height={1800}
-          />
-        </div>
-      </section>
+      <PricingSection pricing={pricing} />
 
-      {/* Automation. */}
-      <section id="product" className="border-y border-beige-300 bg-beige-100/60">
-        <div className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
-          <div>
-            <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
-              Reminders and feedback that send themselves
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-brown-600">
-              Every appointment gets a WhatsApp reminder before it happens, and every visit gets a
-              short feedback survey after. Nobody at the front desk has to remember to send either.
-              It goes out automatically, from your own WhatsApp number, on the schedule you set.
-            </p>
-          </div>
-          <ShowcaseShot
-            src="/screenshots/communication-automation.png"
-            alt="Automated appointment reminders and post-visit feedback survey results on the Radiance Laser Communication page"
-            width={1440}
-            height={900}
-          />
-        </div>
-      </section>
-
-      {/* No-shows */}
-      <section className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
-        <div className="lg:order-2">
-          <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
-            See who&apos;s missing appointments, and do something about it
-          </h2>
-          <p className="mt-4 text-lg leading-relaxed text-brown-600">
-            The No Shows page tracks how often it&apos;s happening, by week and by month, so you
-            know whether it&apos;s actually getting better or worse. When someone misses an
-            appointment, Radiance can follow up on its own: a message asking why, an offer to win
-            them back, or a nudge to reschedule. Turn any of these on or off, or write your own.
-          </p>
-        </div>
-        <ShowcaseShot
-          className="lg:order-1"
-          src="/screenshots/no-shows.png"
-          alt="No-show stats, weekly trend, and configurable follow-up rules on the Radiance Laser No Shows page"
-          width={2880}
-          height={1800}
-        />
-      </section>
-
-      {/* Inbox */}
-      <section className="border-y border-beige-300 bg-beige-100/60">
-        <div className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
-          <div>
-            <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
-              Every WhatsApp conversation, in one place
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-brown-600">
-              Reminders and surveys go out automatically, but patients reply to a real number, and
-              those replies land here. See the full conversation with any patient, and reply
-              straight from the inbox. Nobody needs to pick up a phone to answer a question about
-              redness after a session, or a request to reschedule.
-            </p>
-          </div>
-          <ShowcaseShot
-            src="/screenshots/inbox-conversation.png"
-            alt="A two-way WhatsApp conversation with a patient in the Radiance Laser Inbox"
-            width={2880}
-            height={1800}
-          />
-        </div>
-      </section>
-
-      {/* Import */}
-      <section className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
-        <div>
-          <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
-            Bring in what you already have
-          </h2>
-          <p className="mt-4 text-lg leading-relaxed text-brown-600">
-            If you&apos;re already tracking patients in Excel, a register, or an old system, you
-            don&apos;t have to re-enter anything by hand. Bring in your patient list and their
-            session history from a spreadsheet, see exactly what&apos;s about to be added before
-            you confirm it, and skip or replace anything that looks like a duplicate. Most clinics
-            are fully switched over in an afternoon.
-          </p>
-          <p className="mt-4 text-lg leading-relaxed text-brown-600">
-            Radiance also handles the smaller things that add up over a week: day, week, and month
-            calendar views for scheduling, prepaid session packages that always show exactly how
-            many visits are left, a daily list of patients due for a follow-up call, consent forms
-            patients sign on screen tied to receipts with clean sequential numbers, before-and-after
-            photos kept blurred until you choose to view them, and separate views for owners,
-            doctors, and reception.
-          </p>
-        </div>
-        <ShowcaseShot
-          src="/screenshots/settings-import.png"
-          alt="Import Patients and Import Session History sections in Radiance Laser Settings"
-          width={2880}
-          height={1800}
-        />
-      </section>
-
-      {/* Inventory */}
-      <section className="border-y border-beige-300 bg-beige-100/60">
-        <div className={`${CONTAINER} grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
-          <div className="lg:order-2">
-            <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
-              Stock that tracks its own expiry date
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-brown-600">
-              Numbing cream, filler vials, needles: anything with a shelf life or a reorder point.
-              Radiance flags what&apos;s expiring soon and what&apos;s running low before you find
-              out the hard way, mid-treatment. Every restock and every use gets logged, so
-              there&apos;s a real record behind the number on the shelf, not just a guess.
-            </p>
-          </div>
-          <ShowcaseShot
-            className="lg:order-1"
-            src="/screenshots/inventory.png"
-            alt="Perishable and consumable stock, with expiry and reorder alerts, on the Radiance Laser Inventory page"
-            width={2880}
-            height={1800}
-          />
-        </div>
-      </section>
-
-      {/* Data privacy & security */}
-      <section id="security" className="border-t border-beige-300">
-        <div className={`${CONTAINER} grid grid-cols-1 gap-12 py-20 lg:grid-cols-2 lg:gap-14`}>
-          <div>
-            <h2 className="font-brand text-3xl font-extrabold leading-tight text-brown-900 sm:text-4xl">
-              Your patients&apos; data stays in India.
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-brown-600">
-              Patient data is sensitive, and a clinic in India is bound by more than good intentions
-              here. Your database runs in Mumbai, so a patient&apos;s record is never routed
-              through, or stored in, another country. Every patient consents when they&apos;re
-              added, and can ask for their record to be corrected or permanently erased at any
-              time, exactly what the Digital Personal Data Protection Act requires.
-            </p>
-            <p className="mt-4 text-lg leading-relaxed text-brown-600">
-              The table alongside is how specific provisions in Indian law map to what actually
-              happens inside the product, not a list of claims we&apos;re hoping nobody checks.
-            </p>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border border-beige-300 bg-surface">
-            {LAW_TABLE.map((row, i) => (
-              <div key={row.law} className={`px-5 py-5 ${i > 0 ? "border-t border-beige-300" : ""}`}>
-                <span className="font-brand text-base font-bold text-brown-900">{row.law}</span>
-                <p className="mt-1.5 text-base leading-relaxed text-brown-600">{row.whatWeDo}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing. Five cards, Pro raised and recolored to draw the eye —
-          every card links to the same /signup trial for now (self-serve
-          checkout for a specific tier is a later phase; a 30-day trial
-          already grants full Pro-level access regardless of which card
-          brought someone in, per lib/entitlements.ts). */}
-      <section id="pricing" className="mx-auto max-w-[100rem] px-6 py-20">
-        <div className="text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Pricing</p>
-          <h2 className="mt-3 font-brand text-3xl font-extrabold text-brown-900 sm:text-4xl">
-            Simple, transparent pricing
-          </h2>
-          <p className="mt-3 text-brown-600">
-            No per-seat pricing games. See the real number every time: free for {trialLengthLabel}, no
-            credit card needed to start.
-          </p>
-        </div>
-
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-          {pricingTiers.map((tier) => (
-            <div
-              key={tier.name}
-              className={
-                tier.highlight
-                  ? "relative flex flex-col rounded-2xl bg-brown-900 p-8 shadow-2xl ring-1 ring-gold-500 lg:-mt-6 lg:mb-6 lg:scale-[1.04]"
-                  : "relative flex flex-col rounded-2xl border border-beige-300 bg-surface p-8 shadow-card"
-              }
-            >
-              {tier.badge && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gold-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-brown-900">
-                  {tier.badge}
-                </span>
-              )}
-
-              <div
-                className={`font-brand text-3xl font-extrabold ${tier.highlight ? "text-beige-100" : "text-brown-900"}`}
-              >
-                {tier.price}
-                {tier.cadence && (
-                  <span className={`text-sm font-medium ${tier.highlight ? "text-beige-300" : "text-brown-400"}`}>
-                    {" "}
-                    {tier.cadence}
-                  </span>
-                )}
-              </div>
-
-              <div className={`mt-4 font-brand text-lg font-bold ${tier.highlight ? "text-beige-100" : "text-brown-900"}`}>
-                {tier.name}
-              </div>
-              <p className={`mt-1 text-sm leading-relaxed ${tier.highlight ? "text-beige-300" : "text-brown-500"}`}>
-                {tier.tagline}
-              </p>
-
-              <ul className="mt-6 flex-1 space-y-3">
-                {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-sm">
-                    <Check
-                      size={16}
-                      className={`mt-0.5 flex-shrink-0 ${tier.highlight ? "text-gold-400" : "text-gold-600"}`}
-                    />
-                    <span className={tier.highlight ? "text-beige-200" : "text-brown-600"}>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={tier.href}
-                className={
-                  tier.highlight
-                    ? "mt-8 inline-flex items-center justify-center gap-2 rounded-md bg-gold-500 px-5 py-3 text-sm font-semibold text-brown-900 transition-colors hover:bg-gold-400"
-                    : "mt-8 inline-flex items-center justify-center gap-2 rounded-md border border-beige-300 px-5 py-3 text-sm font-semibold text-brown-900 transition-colors hover:border-gold-500 hover:text-gold-600"
-                }
-              >
-                {tier.cta}
-                <ArrowRight size={15} />
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className={`${CONTAINER} border-t border-beige-300 py-8 text-sm text-brown-400`}>
+      {/* Footer — not part of the reference design (its pricing section is
+          the last thing on the page), but the legal/compliance links and
+          registration details here are real requirements, not something to
+          drop for the sake of matching a mockup that never modeled them. */}
+      <footer className="mx-auto w-full max-w-6xl border-t border-beige-300 px-6 py-8 text-sm text-brown-400">
         <p>
           © {new Date().getFullYear()} Radiance Laser ·{" "}
-          <Link href="/compliance" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+          <Link href="/compliance" className="underline decoration-beige-300 underline-offset-2 hover:text-rust-600">
             Data hosted in India, DPDP Act 2023 compliant
           </Link>{" "}
           ·{" "}
-          <Link href="/contact" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+          <Link href="/contact" className="underline decoration-beige-300 underline-offset-2 hover:text-rust-600">
             Contact us
           </Link>
         </p>
@@ -466,11 +54,11 @@ export default async function HomePage() {
           Udyam Registered: UDYAM-GJ-20-0310289 · Medical Advisor: Dr. Bhavesh Shah (MD Dermatology, DVD)
         </p>
         <p className="mt-1">
-          <Link href="/privacy-policy" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+          <Link href="/privacy-policy" className="underline decoration-beige-300 underline-offset-2 hover:text-rust-600">
             Privacy Policy
           </Link>{" "}
           ·{" "}
-          <Link href="/terms-of-service" className="underline decoration-beige-300 underline-offset-2 hover:text-gold-600">
+          <Link href="/terms-of-service" className="underline decoration-beige-300 underline-offset-2 hover:text-rust-600">
             Terms of Service
           </Link>
         </p>

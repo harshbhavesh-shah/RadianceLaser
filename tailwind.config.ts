@@ -50,17 +50,21 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Default heading face everywhere except the landing page — the
-        // dashboard, /login, /signup, /contact, /compliance.
+        // Default heading face everywhere, including the landing page as
+        // of its 2026-09-17 redesign (see app/page.tsx) — the dashboard,
+        // /login, /signup, /contact, /compliance, all of it.
         display: ["var(--font-manrope)", "sans-serif"],
         // Body text follows the Figma Make dashboard design, which uses
         // Manrope everywhere rather than pairing a separate body face —
         // same variable as font-display above, not a coincidence.
         sans: ["var(--font-manrope)", "sans-serif"],
-        // Landing page only (app/page.tsx) — everywhere else uses
-        // font-display/Manrope above instead.
+        // The auth shell's own headline (AuthShell.tsx, behind /login and
+        // /signup) — no longer used by the landing page itself, which
+        // switched to plain font-display/Manrope in its 2026-09-17 redesign.
         brand: ["var(--font-michroma)", "sans-serif"],
-        // The "Radiance Laser" wordmark only — see app/layout.tsx.
+        // The "Radiance Laser" wordmark in the auth shell only — see
+        // app/layout.tsx. The site header's own wordmark (components/
+        // marketing/SiteHeader.tsx) uses plain Manrope, not this.
         logo: ["var(--font-asimovian)", "sans-serif"],
       },
       boxShadow: {
