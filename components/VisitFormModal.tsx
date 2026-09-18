@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { numericFieldKeysFor } from "@/lib/sessionTypes";
 import { rollupAreaFields } from "@/lib/visitAreas";
 import { maybeAutoCompleteAppointment } from "@/lib/pipeline";
@@ -254,47 +254,79 @@ export default function VisitFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brown-900/40 px-4 py-6">
-      <div className="flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-beige-300 bg-surface p-5 shadow-card sm:p-6">
-        <div className="mb-1 flex flex-shrink-0 items-center gap-2">
-          <span
-            className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${config.badgeClassName}`}
-          >
-            {config.badgeText}
-          </span>
-          <h2 className="font-display text-lg font-medium text-brown-900">
-            {isEditing ? "Edit Visit" : "Log New Visit"}
-          </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm sm:p-6">
+      <div className="flex h-full max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] border border-beige-300 bg-white shadow-xl">
+        {/* Header */}
+        <div className="flex-shrink-0 border-b border-beige-300 px-6 pb-6 pt-6">
+          <div className="mb-2 flex items-center">
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest ${config.badgeClassName}`}
+            >
+              {config.badgeText}
+            </span>
+          </div>
+          <div className="inline-flex flex-col items-start">
+            <h2 className="m-0 text-2xl font-extrabold tracking-tight text-brown-900">
+              {isEditing ? "Edit Visit" : "Log New Visit"}
+            </h2>
+            <div className="mt-1.5 h-[3px] w-full rounded-full bg-rust-600" />
+          </div>
         </div>
-        <div className="mb-4 h-[2px] w-8 flex-shrink-0 bg-rust-600" />
 
-        <div className="flex-shrink-0 overflow-y-auto">
-          <div className="mb-4">
-            <label className="mb-1.5 block text-sm font-medium text-brown-700">Date</label>
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
-              />
-              <button
-                type="button"
-                onClick={() => setDate(todayLocalStr())}
-                className="flex-shrink-0 rounded-md border border-beige-300 px-3 py-2 text-sm font-medium text-brown-600 transition-colors hover:border-rust-600 hover:text-rust-700"
-              >
-                Today
-              </button>
+        {/* Body */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-canvas/30 p-6">
+          <div className="flex flex-col gap-6 sm:flex-row">
+            <div className="flex flex-1 flex-col gap-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-brown-400">Date</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-40 rounded-xl border border-beige-300 bg-white px-4 py-2.5 text-sm font-medium text-brown-900 shadow-sm outline-none transition-colors focus:border-rust-600/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDate(todayLocalStr())}
+                  className="rounded-lg bg-rust-100 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-widest text-rust-600 transition-colors hover:bg-rust-600/20"
+                >
+                  Today
+                </button>
+              </div>
             </div>
+
+            {!packageId && (
+              <div className="flex flex-1 flex-col gap-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-brown-400">
+                  Payment Method <span className="normal-case text-brown-400/70">(optional)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  {(["cash", "online"] as const).map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
+                      className={`rounded-xl px-5 py-2.5 text-sm font-bold capitalize shadow-sm transition-colors ${
+                        paymentMethod === method
+                          ? "bg-brown-900 text-white"
+                          : "border border-beige-300 bg-white text-brown-900 hover:bg-beige-100"
+                      }`}
+                    >
+                      {method}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {activePackages.length > 0 && (
-            <div className="mb-4">
-              <label className="mb-1.5 block text-sm font-medium text-brown-700">Package</label>
+            <div className="mt-6 flex flex-col gap-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-brown-400">Package</label>
               <select
                 value={packageId}
                 onChange={(e) => handlePackageChange(e.target.value)}
-                className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
+                className="w-full rounded-xl border border-beige-300 bg-white px-4 py-2.5 text-sm font-medium text-brown-900 shadow-sm outline-none transition-colors focus:border-rust-600/50"
               >
                 <option value="">None, pay per visit</option>
                 {activePackages.map((pkg) => (
@@ -304,69 +336,42 @@ export default function VisitFormModal({
                 ))}
               </select>
               {selectedPackage && (
-                <p className="mt-1.5 text-xs text-rust-700">
+                <p className="text-xs text-rust-600">
                   Covered by {selectedPackage.label}, no separate fee for this visit.
                 </p>
               )}
             </div>
           )}
 
-          {/* Only meaningful for a direct-pay visit — a package-covered
-              session has no new payment of its own (see PaymentMethod in
-              types/index.ts). */}
-          {!packageId && (
-            <div className="mb-4">
-              <label className="mb-1.5 block text-sm font-medium text-brown-700">
-                Payment Method <span className="text-brown-400">(optional)</span>
-              </label>
-              <div className="flex gap-2">
-                {(["cash", "online"] as const).map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setPaymentMethod(paymentMethod === method ? "" : method)}
-                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium capitalize transition-colors ${
-                      paymentMethod === method
-                        ? "border-rust-600 bg-rust-100 text-rust-700"
-                        : "border-beige-300 text-brown-600 hover:border-rust-600"
-                    }`}
-                  >
-                    {method}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mb-4">
-            <label className="mb-1.5 block text-sm font-medium text-brown-700">
-              Follow-up Date <span className="text-brown-400">(optional)</span>
+          <div className="mt-6 flex flex-col gap-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-brown-400">
+              Follow-up Date <span className="normal-case text-brown-400/70">(optional)</span>
             </label>
             <input
               type="date"
               value={followUpDate}
               onChange={(e) => setFollowUpDate(e.target.value)}
-              className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
+              className="w-40 rounded-xl border border-beige-300 bg-white px-4 py-2.5 text-sm font-medium text-brown-900 shadow-sm outline-none transition-colors focus:border-rust-600/50"
             />
             {followUpDate && (
               <input
                 value={followUpNote}
                 onChange={(e) => setFollowUpNote(e.target.value)}
                 placeholder="What's this follow-up about? e.g. Check for reaction"
-                className="mt-2 w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
+                className="w-full rounded-xl border border-beige-300 bg-white px-4 py-2.5 text-sm font-medium text-brown-900 shadow-sm outline-none transition-colors focus:border-rust-600/50"
               />
             )}
           </div>
 
           {(machinesForType.length > 0 || staff.length > 0) && (
-            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {machinesForType.length > 0 && (
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-brown-700">Machine</label>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-brown-400">Machine</label>
                   <select
                     value={machineId}
                     onChange={(e) => setMachineId(e.target.value)}
-                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
+                    className="w-full rounded-xl border border-beige-300 bg-white px-4 py-2.5 text-sm font-medium text-brown-900 shadow-sm outline-none transition-colors focus:border-rust-600/50"
                   >
                     <option value="">— None —</option>
                     {machinesForType.map((m) => (
@@ -378,12 +383,12 @@ export default function VisitFormModal({
                 </div>
               )}
               {staff.length > 0 && (
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-brown-700">Performed By</label>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-brown-400">Performed By</label>
                   <select
                     value={performedByUid}
                     onChange={(e) => setPerformedByUid(e.target.value)}
-                    className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
+                    className="w-full rounded-xl border border-beige-300 bg-white px-4 py-2.5 text-sm font-medium text-brown-900 shadow-sm outline-none transition-colors focus:border-rust-600/50"
                   >
                     <option value="">— None —</option>
                     {staff.map((s) => (
@@ -394,136 +399,146 @@ export default function VisitFormModal({
                   </select>
                 </div>
               )}
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-brown-700">Duration (min)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={durationMinutes}
-                  onChange={(e) => {
-                    setDurationMinutes(e.target.value);
-                    setDurationTouched(true);
-                  }}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none focus:border-rust-600 focus:bg-surface focus:ring-1 focus:ring-rust-600"
-                />
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-brown-400">Duration</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={0}
+                    value={durationMinutes}
+                    onChange={(e) => {
+                      setDurationMinutes(e.target.value);
+                      setDurationTouched(true);
+                    }}
+                    className="w-full rounded-xl border border-beige-300 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-brown-900 shadow-sm outline-none transition-colors focus:border-rust-600/50"
+                  />
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-brown-400">
+                    min
+                  </span>
+                </div>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Spreadsheet-style entry — one row per pass/area, every column
-            editable per row, styled after the clinic's old Excel-based
-            sheet so multi-pass/multi-area sessions are fast to type across
-            (tab or click cell to cell) instead of filling in a separate
-            card per area. */}
-        <div className="mt-4 flex min-h-0 flex-1 flex-col">
-          <div className="mb-2 flex flex-shrink-0 items-center justify-between">
-            <label className="font-display text-base font-medium text-brown-900">Session Entries</label>
-            <button
-              type="button"
-              onClick={addArea}
-              className="text-sm font-medium text-rust-700 hover:underline"
-            >
-              + Add Row
-            </button>
-          </div>
+          {/* Spreadsheet-style entry — one row per pass/area, every column
+              editable per row, styled after the clinic's old Excel-based
+              sheet so multi-pass/multi-area sessions are fast to type
+              across (tab or click cell to cell) instead of filling in a
+              separate card per area. */}
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-brown-900">Session Entries</label>
+              <button
+                type="button"
+                onClick={addArea}
+                className="inline-flex items-center gap-1 text-xs font-bold text-rust-600 transition-colors hover:text-rust-700"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Row
+              </button>
+            </div>
 
-          <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-beige-300">
-            <table className="w-full min-w-[640px] border-collapse text-base">
-              <thead className="sticky top-0 z-10">
-                <tr className="border-b border-beige-300 bg-beige-100">
-                  {config.columns.map((col) => (
-                    <th
-                      key={col.key}
-                      className="whitespace-nowrap border border-beige-300 px-3 py-3 text-left text-sm font-semibold uppercase tracking-wide text-brown-600"
-                    >
-                      {col.label}
-                    </th>
-                  ))}
-                  {areaEntries.length > 1 && <th className="w-10 border border-beige-300" />}
-                </tr>
-              </thead>
-              <tbody>
-                {areaEntries.map((entry, index) => {
-                  const isLastRow = index === areaEntries.length - 1;
-                  return (
-                    <tr key={index}>
-                      {config.columns.map((col, colIndex) => {
-                        const isFeeLocked = col.key === "fee" && !!packageId;
-                        const isLastCell = isLastRow && colIndex === config.columns.length - 1;
-                        return (
-                          <td key={col.key} className="border border-beige-200 p-1.5">
-                            {col.type === "select" ? (
-                              <select
-                                value={entry[col.key] || ""}
-                                onChange={(e) => updateAreaField(index, col.key, e.target.value)}
-                                className="w-full min-w-[6rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-rust-100/40 focus:ring-1 focus:ring-rust-600"
-                              >
-                                <option value="">—</option>
-                                {(col.key === AREA_COLUMN_KEY ? areaOptions : col.options)?.map((opt) => (
-                                  <option key={opt} value={opt}>
-                                    {opt}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <input
-                                type={col.type === "number" ? "number" : "text"}
-                                min={col.type === "number" ? 0 : undefined}
-                                value={entry[col.key] || ""}
-                                onChange={(e) => updateAreaField(index, col.key, e.target.value)}
-                                onKeyDown={(e) => {
-                                  // Mirrors a spreadsheet's "Enter adds a new
-                                  // row" — only from the last cell of the
-                                  // last row, so it never fires mid-row.
-                                  if (isLastCell && e.key === "Enter") {
-                                    e.preventDefault();
-                                    addArea();
-                                  }
-                                }}
-                                disabled={isFeeLocked}
-                                className="w-full min-w-[5.5rem] rounded border-0 bg-transparent px-2 py-2.5 text-base text-brown-900 outline-none focus:bg-rust-100/40 focus:ring-1 focus:ring-rust-600 disabled:text-brown-400"
-                              />
-                            )}
-                          </td>
-                        );
-                      })}
-                      {areaEntries.length > 1 && (
-                        <td className="border border-beige-200 p-1.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => removeArea(index)}
-                            className="rounded p-1.5 text-brown-400 hover:bg-red-50 hover:text-red-600"
-                            aria-label="Remove row"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      )}
+            <div className="flex flex-col overflow-hidden rounded-xl border border-beige-300 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-beige-300 bg-beige-100/40">
+                      {config.columns.map((col) => (
+                        <th
+                          key={col.key}
+                          className="whitespace-nowrap px-3 py-3 text-left text-[10px] font-extrabold uppercase tracking-widest text-brown-400"
+                        >
+                          {col.label}
+                        </th>
+                      ))}
+                      {areaEntries.length > 1 && <th className="w-10" />}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {areaEntries.map((entry, index) => {
+                      const isLastRow = index === areaEntries.length - 1;
+                      return (
+                        <tr key={index} className="border-b border-beige-200 last:border-b-0">
+                          {config.columns.map((col, colIndex) => {
+                            const isFeeLocked = col.key === "fee" && !!packageId;
+                            const isLastCell = isLastRow && colIndex === config.columns.length - 1;
+                            return (
+                              <td key={col.key} className="p-1.5">
+                                {col.type === "select" ? (
+                                  <select
+                                    value={entry[col.key] || ""}
+                                    onChange={(e) => updateAreaField(index, col.key, e.target.value)}
+                                    className="w-full min-w-[6rem] rounded-lg border border-transparent bg-transparent px-2 py-2 text-sm text-brown-900 outline-none transition-colors hover:border-beige-300 focus:border-rust-600/60"
+                                  >
+                                    <option value="">—</option>
+                                    {(col.key === AREA_COLUMN_KEY ? areaOptions : col.options)?.map((opt) => (
+                                      <option key={opt} value={opt}>
+                                        {opt}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type={col.type === "number" ? "number" : "text"}
+                                    min={col.type === "number" ? 0 : undefined}
+                                    value={entry[col.key] || ""}
+                                    onChange={(e) => updateAreaField(index, col.key, e.target.value)}
+                                    onKeyDown={(e) => {
+                                      // Mirrors a spreadsheet's "Enter adds a
+                                      // new row" — only from the last cell of
+                                      // the last row, so it never fires
+                                      // mid-row.
+                                      if (isLastCell && e.key === "Enter") {
+                                        e.preventDefault();
+                                        addArea();
+                                      }
+                                    }}
+                                    disabled={isFeeLocked}
+                                    className="w-full min-w-[5.5rem] rounded-lg border border-transparent bg-transparent px-2 py-2 text-sm text-brown-900 outline-none transition-colors hover:border-beige-300 focus:border-rust-600/60 disabled:text-brown-400"
+                                  />
+                                )}
+                              </td>
+                            );
+                          })}
+                          {areaEntries.length > 1 && (
+                            <td className="p-1.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => removeArea(index)}
+                                className="rounded p-1.5 text-brown-400 hover:bg-red-50 hover:text-red-600"
+                                aria-label="Remove row"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {areaEntries.length > 1 && (
+              <p className="text-xs text-brown-400">
+                Fee shown on receipts/reports for this visit will be the total across all rows above.
+              </p>
+            )}
           </div>
 
-          {areaEntries.length > 1 && (
-            <p className="mt-2 flex-shrink-0 text-xs text-brown-400">
-              Fee shown on receipts/reports for this visit will be the total across all rows above.
-            </p>
-          )}
+          {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
         </div>
 
-        {error && <p className="mt-4 flex-shrink-0 text-sm text-red-700">{error}</p>}
-
-        <div className="mt-4 flex flex-shrink-0 items-center justify-between">
+        {/* Footer */}
+        <div className="flex flex-shrink-0 items-center justify-between border-t border-beige-300 bg-white px-6 py-4">
           <div>
             {isEditing && (
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-sm font-medium text-red-700 hover:underline disabled:opacity-60"
+                className="text-sm font-bold text-red-700 hover:underline disabled:opacity-60"
               >
                 {deleting ? "Deleting…" : "Delete Visit"}
               </button>
@@ -533,7 +548,7 @@ export default function VisitFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md px-4 py-2 text-sm font-medium text-brown-600 hover:bg-beige-200"
+              className="px-4 py-2.5 text-sm font-bold text-brown-400 transition-colors hover:text-brown-900"
             >
               Cancel
             </button>
@@ -541,7 +556,7 @@ export default function VisitFormModal({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-md bg-rust-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
+              className="rounded-xl bg-rust-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-rust-700 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save Visit"}
             </button>
