@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   resolveRange,
   previousRange,
@@ -10,9 +11,17 @@ import {
   type DateRange,
 } from "@/lib/analyticsRange";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
-import RevenueLineChart from "./RevenueLineChart";
 import type { CashFlowSummary, PackageUtilizationSummary } from "@/lib/analyticsPage";
 import type { Appointment, Package, Patient, Visit } from "@/types";
+
+// recharts (and the d3 modules it pulls in) is the one dependency heavy
+// enough to matter here — code-split it into its own chunk rather than
+// let it get bundled in, since RevenueLineChart is the only other
+// consumer besides the marketing landing page's own dynamic import (see
+// app/page.tsx's comment), and both need to be dynamic for webpack to
+// actually split recharts out instead of hoisting it into the app-wide
+// shared chunk every route pays for.
+const RevenueLineChart = dynamic(() => import("./RevenueLineChart"), { ssr: false });
 
 function formatCurrency(n: number): string {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;

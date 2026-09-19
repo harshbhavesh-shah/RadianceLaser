@@ -1,16 +1,25 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { getSession } from "@/lib/session";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import { getTierPricing } from "@/lib/db/platformSettings";
 import SiteHeader from "@/components/marketing/SiteHeader";
 import LandingHero from "@/components/marketing/landing/LandingHero";
-import NoShowDemo from "@/components/marketing/landing/NoShowDemo";
 import DataMigrationSection from "@/components/marketing/landing/DataMigrationSection";
 import FeatureGrid from "@/components/marketing/landing/FeatureGrid";
 import SecuritySection from "@/components/marketing/landing/SecuritySection";
 import WhatsAppScrollSection from "@/components/marketing/landing/WhatsAppScrollSection";
 import PricingSection from "@/components/marketing/landing/PricingSection";
+
+// Split into its own chunk, away from the page's critical initial bundle —
+// recharts (and the d3 modules it pulls in) is a genuinely heavy
+// dependency for what's a decorative, below-the-fold demo, and dragging
+// its parse/execute cost into the main bundle was hurting Time to
+// Interactive and Total Blocking Time on the real production Speed test.
+const NoShowDemo = dynamic(() => import("@/components/marketing/landing/NoShowDemo"), {
+  loading: () => <div className="mx-auto mb-24 h-[520px] w-full max-w-[1200px] md:mb-32" />,
+});
 
 export default async function HomePage() {
   const session = await getSession();

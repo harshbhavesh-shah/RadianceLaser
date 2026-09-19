@@ -48,6 +48,16 @@ export default function LandingHero({ trialLengthLabel }: { trialLengthLabel: st
               width={1440}
               height={960}
               className="w-full"
+              // Without this, the browser has no way to know the image
+              // never actually renders wider than the 1200px container
+              // (className="w-full" makes the CSS width responsive, fully
+              // decoupled from the 1440 intrinsic width above) and falls
+              // back to picking a srcset candidate sized for the full
+              // intrinsic width — on a real phone that means downloading
+              // and decoding a needlessly large image for the page's own
+              // LCP element. This is the single biggest lever on mobile
+              // LCP/TTI for this page.
+              sizes="(min-width: 1200px) 1200px, 100vw"
               priority
             />
           </div>
