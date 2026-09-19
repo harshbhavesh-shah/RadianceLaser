@@ -668,6 +668,7 @@ export type MessageTemplateCategory =
   | "receipt_sent"
   | "visit_feedback"
   | "no_show_followup"
+  | "visit_follow_up"
   | "custom";
 
 // The built-in categories are wired to specific places in the app
@@ -697,6 +698,11 @@ export const TEMPLATE_VARIABLE_LABELS: Record<Exclude<MessageTemplateCategory, "
   receipt_sent: ["Patient name", "Receipt number", "Amount"],
   visit_feedback: ["Patient name", "Feedback link"],
   no_show_followup: ["Patient name", "Offer, link, or blank"],
+  // The Follow-Ups tab's "Send Follow-up Now" button (a visit's own
+  // followUpNote, e.g. "check for any reaction, confirm next session") —
+  // a different feature from no_show_followup above despite the similar
+  // name; that one is the automated post-no-show messaging.
+  visit_follow_up: ["Patient name", "Follow-up note"],
 };
 
 export interface MessageTemplate extends TenantScoped {

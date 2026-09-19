@@ -12,6 +12,7 @@ const CATEGORY_LABELS: Record<MessageTemplateCategory, string> = {
   receipt_sent: "Receipt Sent",
   visit_feedback: "Post-Visit Feedback",
   no_show_followup: "No Show Follow-Up",
+  visit_follow_up: "Visit Follow-Up",
   custom: "Custom",
 };
 

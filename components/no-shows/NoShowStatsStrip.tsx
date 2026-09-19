@@ -1,45 +1,55 @@
 import type { NoShowStats, NoShowWeekPoint } from "@/lib/analyticsPage";
 
-/** This-week/this-month counts + rate, plus a weekly trend chart in the
- * same style as RevenueChart.tsx. */
+/** This-week/this-month/rate counts as two mini stat cards, plus a weekly
+ * trend chart below — a week with zero no-shows gets a small dot instead
+ * of an invisible zero-height bar, so the trend line still reads at a
+ * glance even across quiet weeks. */
 export default function NoShowStatsStrip({ stats, trend }: { stats: NoShowStats; trend: NoShowWeekPoint[] }) {
   const maxCount = Math.max(...trend.map((w) => w.count), 1);
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        <div>
-          <div className="font-display text-3xl font-medium text-brown-900">{stats.thisWeek}</div>
-          <div className="text-xs text-brown-400">No shows this week</div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="flex-1 rounded-[18px] bg-surface p-6 shadow-soft">
+          <div className="text-3xl font-extrabold text-brown-900">{stats.thisMonth}</div>
+          <div className="mt-1 text-sm font-semibold text-brown-400">
+            No shows this month &middot; {stats.thisWeek} this week
+          </div>
         </div>
-        <div>
-          <div className="font-display text-3xl font-medium text-brown-900">{stats.thisMonth}</div>
-          <div className="text-xs text-brown-400">No shows this month</div>
-        </div>
-        <div>
-          <div className="font-display text-3xl font-medium text-brown-900">{stats.monthRate.toFixed(0)}%</div>
-          <div className="text-xs text-brown-400">No show rate this month</div>
+        <div className="flex-1 rounded-[18px] bg-surface p-6 shadow-soft">
+          <div className="text-3xl font-extrabold text-brown-900">{stats.monthRate.toFixed(0)}%</div>
+          <div className="mt-1 text-sm font-semibold text-brown-400">No show rate this month</div>
         </div>
       </div>
 
-      <div className="mt-6 border-t border-beige-300 pt-5">
-        <div className="mb-2.5 text-xs font-medium uppercase tracking-wide text-brown-400">
-          Weekly Trend
-        </div>
-        <div className="flex h-24 items-end gap-1.5">
-          {trend.map((w, i) => (
-            <div key={w.weekLabel} title={`Week of ${w.weekLabel}: ${w.count}`} className="group relative min-w-0 flex-1">
-              <div
-                className="animate-grow-y w-full rounded-t-sm bg-rust-600 transition-colors group-hover:bg-rust-700"
-                style={{
-                  height: `${Math.max((w.count / maxCount) * 100, w.count > 0 ? 4 : 1)}px`,
-                  animationDelay: `${i * 20}ms`,
-                }}
-              />
+      <div className="flex flex-col gap-3.5 rounded-[18px] bg-surface p-8 shadow-soft">
+        <div className="text-xs font-bold uppercase tracking-[0.05em] text-brown-400">Weekly Trend</div>
+
+        <div className="relative flex h-[170px] items-end gap-[18px] px-1">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-beige-200" />
+          <div className="pointer-events-none absolute inset-x-0 top-1/3 h-px bg-beige-200" />
+          <div className="pointer-events-none absolute inset-x-0 top-2/3 h-px bg-beige-200" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-beige-300" />
+
+          {trend.map((w) => (
+            <div
+              key={w.weekLabel}
+              title={`Week of ${w.weekLabel}: ${w.count}`}
+              className="flex h-full flex-1 items-end justify-center"
+            >
+              {w.count > 0 ? (
+                <div
+                  className="w-full max-w-[34px] rounded-t-md bg-rust-600 transition-colors hover:bg-rust-700"
+                  style={{ height: `${Math.max((w.count / maxCount) * 100, 4)}%` }}
+                />
+              ) : (
+                <div className="mb-0.5 h-2 w-2 flex-shrink-0 rounded-full bg-rust-600/30" />
+              )}
             </div>
           ))}
         </div>
-        <div className="mt-1.5 flex justify-between text-[10px] text-brown-400">
+
+        <div className="flex justify-between px-1 text-xs font-semibold text-brown-400">
           <span>{trend[0]?.weekLabel}</span>
           <span>{trend[trend.length - 1]?.weekLabel}</span>
         </div>

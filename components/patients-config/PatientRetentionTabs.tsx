@@ -61,13 +61,13 @@ export default function PatientRetentionTabs({
 
   return (
     <div>
-      <div className="mb-6 flex max-w-xs gap-1 rounded-lg border border-beige-300 bg-surface p-1 shadow-soft">
+      <div className="mb-6 inline-flex w-fit gap-1 rounded-xl bg-surface p-1 shadow-soft">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
-              tab === t.key ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
+            className={`whitespace-nowrap rounded-[9px] px-[22px] py-2.5 text-sm font-bold transition-colors ${
+              tab === t.key ? "bg-beige-200 text-rust-700" : "text-brown-400 hover:text-brown-900"
             }`}
           >
             {t.label}
@@ -76,30 +76,40 @@ export default function PatientRetentionTabs({
       </div>
 
       {tab === "no-shows" && (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <NoShowStatsStrip stats={stats} trend={trend} />
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
-            <NoShowList
-              appointments={recentNoShows}
-              followUps={noShowFollowUps}
-              messageLog={messageLog}
-              surveyResponses={surveyResponses}
-            />
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+            <div className="flex-1">
+              <NoShowList
+                appointments={recentNoShows}
+                followUps={noShowFollowUps}
+                messageLog={messageLog}
+                surveyResponses={surveyResponses}
+              />
+            </div>
 
-            <FollowUpsSection
-              initialFollowUps={noShowFollowUps}
-              templates={templates}
-              isConnected={isWhatsAppConnected}
-              canEdit={isOwner}
-            />
+            <div className="w-full lg:w-[340px] lg:flex-shrink-0">
+              <FollowUpsSection
+                initialFollowUps={noShowFollowUps}
+                templates={templates}
+                isConnected={isWhatsAppConnected}
+                canEdit={isOwner}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {tab === "follow-ups" && (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <FollowUpList title="Today" dateLabel={todayLabel} rows={todayRows} sessionTypeConfig={sessionTypeConfig} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <FollowUpList
+            title="Today"
+            dateLabel={todayLabel}
+            rows={todayRows}
+            sessionTypeConfig={sessionTypeConfig}
+            highlight
+          />
           <FollowUpList
             title="Tomorrow"
             dateLabel={tomorrowLabel}

@@ -95,6 +95,21 @@ export async function getVisitsWithFollowUpBetween(clinicId: string, startDateSt
   return rows.map(toVisit);
 }
 
+/** Clears a visit's follow-up (date + note) — backs the Follow-Ups page's
+ * "Mark Done"/"Skip" buttons and the post-send cleanup after "Send
+ * Follow-up Now", all of which just mean "this reminder no longer needs
+ * to show up in the list," not a full visit edit. A dedicated partial
+ * update rather than routing through updateVisit, which requires
+ * resupplying the whole visit (date/fields/areas/...) just to touch these
+ * two columns. */
+export async function clearVisitFollowUp(clinicId: string, visitId: string): Promise<void> {
+  const existing = await prisma.visit.findUnique({ where: { id: visitId }, select: { clinicId: true } });
+  if (!existing || existing.clinicId !== clinicId) {
+    throw new Error("Visit not found.");
+  }
+  await prisma.visit.update({ where: { id: visitId }, data: { followUpDate: null, followUpNote: null } });
+}
+
 /** Every visit redeemed against one package — exactly what
  * computePackageLedger (lib/packages.ts) actually needs. */
 export async function getVisitsByPackageId(clinicId: string, packageId: string): Promise<Visit[]> {

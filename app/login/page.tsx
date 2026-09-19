@@ -12,7 +12,6 @@ import {
   finishAfterOtp,
   signInWithGoogle,
 } from "@/lib/authFlow";
-import AuthShell from "@/components/marketing/AuthShell";
 
 // credentials: the normal email/password (or "click Google") screen.
 // otp: primary auth succeeded, this account has 2FA on — waiting on the
@@ -147,17 +146,18 @@ function LoginForm() {
   }
 
   return (
-    <AuthShell>
-      <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-card ring-1 ring-beige-300">
-        <Image src="/logo.png" alt="" width={44} height={44} className="mx-auto lg:hidden" />
-        <h1 className="mt-3 text-center font-logo text-2xl text-brown-900 lg:hidden">
-          Radiance <span className="text-gold-600">Laser</span>
-        </h1>
-        <div className="mx-auto mt-3 mb-5 h-[2px] w-10 bg-gold-500 lg:hidden" />
+    <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-canvas px-4 py-12">
+      <Link href="/" className="flex items-center gap-2.5">
+        <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 flex-shrink-0 rounded-lg" />
+        <span className="text-xl font-extrabold text-brown-900">
+          Radiance <span className="text-rust-600">Laser</span>
+        </span>
+      </Link>
 
+      <div className="w-full max-w-[440px] rounded-[20px] bg-surface p-9 py-10 shadow-soft">
         {stage.name === "credentials" && (
           <>
-            <p className="mb-7 text-center text-sm text-brown-600">
+            <p className="text-center text-[19px] font-bold text-brown-900">
               Sign in to your clinic&apos;s portal
             </p>
 
@@ -165,21 +165,21 @@ function LoginForm() {
               type="button"
               onClick={handleGoogleClick}
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-beige-300 bg-surface py-2.5 text-sm font-semibold text-brown-700 transition-colors hover:border-gold-500 hover:text-gold-600 disabled:opacity-60"
+              className="mt-[22px] flex w-full items-center justify-center gap-2.5 rounded-xl border border-beige-300 bg-surface py-3.5 text-[15px] font-bold text-brown-900 transition-colors hover:bg-beige-100/60 disabled:opacity-60"
             >
               <GoogleIcon />
               Continue with Google
             </button>
 
-            <div className="my-5 flex items-center gap-3 text-xs text-brown-400">
+            <div className="my-[22px] flex items-center gap-3">
               <div className="h-px flex-1 bg-beige-300" />
-              or
+              <span className="text-[13px] font-semibold text-brown-400">or</span>
               <div className="h-px flex-1 bg-beige-300" />
             </div>
 
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-brown-700">
+            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-[22px]">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="email" className="text-sm font-bold text-brown-900">
                   Email
                 </label>
                 <input
@@ -188,16 +188,16 @@ function LoginForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-[10px] border border-beige-300 bg-[#FCFAF7] px-3.5 py-[13px] text-sm text-brown-900 outline-none transition-colors focus:border-rust-600/50"
                 />
               </div>
 
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label htmlFor="password" className="block text-sm font-medium text-brown-700">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-bold text-brown-900">
                     Password
                   </label>
-                  <Link href="/forgot-password" className="text-xs font-medium text-gold-600 hover:underline">
+                  <Link href="/forgot-password" className="text-[13px] font-bold text-rust-600 hover:text-rust-700">
                     Forgot password?
                   </Link>
                 </div>
@@ -207,7 +207,7 @@ function LoginForm() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-[10px] border border-beige-300 bg-[#FCFAF7] px-3.5 py-[13px] text-sm text-brown-900 outline-none transition-colors focus:border-rust-600/50"
                 />
               </div>
 
@@ -216,7 +216,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-md bg-brown-900 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+                className="mt-1 w-full rounded-xl bg-rust-600 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
               >
                 {loading ? "Signing in…" : "Sign In"}
               </button>
@@ -226,12 +226,12 @@ function LoginForm() {
 
         {stage.name === "google-clinic-name" && (
           <>
-            <p className="mb-7 text-center text-sm text-brown-600">
+            <p className="text-center text-[19px] font-bold text-brown-900">
               Almost there. Name your clinic to finish setting up your account.
             </p>
-            <form onSubmit={handleGoogleClinicNameSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="clinicName" className="mb-1.5 block text-sm font-medium text-brown-700">
+            <form onSubmit={handleGoogleClinicNameSubmit} className="mt-[22px] flex flex-col gap-[22px]">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="clinicName" className="text-sm font-bold text-brown-900">
                   Clinic Name
                 </label>
                 <input
@@ -242,7 +242,7 @@ function LoginForm() {
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
                   placeholder="e.g. Advanced Skin Clinic"
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-sm text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-[10px] border border-beige-300 bg-[#FCFAF7] px-3.5 py-[13px] text-sm text-brown-900 outline-none transition-colors focus:border-rust-600/50"
                 />
               </div>
 
@@ -251,7 +251,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-md bg-brown-900 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+                className="w-full rounded-xl bg-rust-600 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
               >
                 {loading ? "Setting up your clinic…" : "Continue"}
               </button>
@@ -261,12 +261,12 @@ function LoginForm() {
 
         {stage.name === "otp" && (
           <>
-            <p className="mb-7 text-center text-sm text-brown-600">
+            <p className="text-center text-[19px] font-bold text-brown-900">
               Enter the 6-digit code we just emailed you.
             </p>
-            <form onSubmit={handleOtpSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="otp" className="mb-1.5 block text-sm font-medium text-brown-700">
+            <form onSubmit={handleOtpSubmit} className="mt-[22px] flex flex-col gap-[22px]">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="otp" className="text-sm font-bold text-brown-900">
                   Sign-in code
                 </label>
                 <input
@@ -279,7 +279,7 @@ function LoginForm() {
                   maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className="w-full rounded-md border border-beige-300 bg-canvas px-3 py-2 text-center text-lg tracking-[0.5em] text-brown-900 outline-none transition-colors focus:border-gold-500 focus:bg-surface focus:ring-1 focus:ring-gold-500"
+                  className="w-full rounded-[10px] border border-beige-300 bg-[#FCFAF7] px-3.5 py-[13px] text-center text-lg tracking-[0.5em] text-brown-900 outline-none transition-colors focus:border-rust-600/50"
                 />
               </div>
 
@@ -288,7 +288,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="w-full rounded-md bg-brown-900 py-2.5 text-sm font-semibold text-beige-200 transition-colors hover:bg-gold-600 disabled:opacity-60"
+                className="w-full rounded-xl bg-rust-600 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-rust-700 disabled:opacity-60"
               >
                 {loading ? "Verifying…" : "Verify & Sign In"}
               </button>
@@ -299,7 +299,7 @@ function LoginForm() {
                   setOtp("");
                   setError(null);
                 }}
-                className="w-full text-center text-sm font-medium text-brown-600 hover:text-gold-600"
+                className="w-full text-center text-sm font-bold text-brown-400 hover:text-rust-600"
               >
                 Back to sign in
               </button>
@@ -307,7 +307,7 @@ function LoginForm() {
           </>
         )}
       </div>
-    </AuthShell>
+    </div>
   );
 }
 
