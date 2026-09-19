@@ -19,12 +19,10 @@ function formatCellValue(key: string, value: string | number | undefined): strin
 export default function VisitTimeline({
   sessionType,
   visits,
-  onAddNew,
   onEdit,
 }: {
   sessionType: SessionType;
   visits: Visit[];
-  onAddNew: () => void;
   onEdit: (visit: Visit) => void;
 }) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
@@ -38,18 +36,9 @@ export default function VisitTimeline({
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
-        <button
-          onClick={onAddNew}
-          className="rounded-lg bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700"
-        >
-          + Log New Visit
-        </button>
-      </div>
-
       {sorted.length === 0 ? (
-        <div className="rounded-2xl border border-beige-300 bg-surface p-10 text-center shadow-soft">
-          <p className="text-sm text-brown-600">No {config.label} visits logged yet.</p>
+        <div className="flex items-center justify-center rounded-[18px] bg-surface p-10 shadow-soft">
+          <p className="text-[15px] font-semibold text-brown-400">No {config.label} visits logged yet.</p>
         </div>
       ) : (
         <div className="space-y-3">

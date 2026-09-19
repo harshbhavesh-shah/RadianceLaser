@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import SessionTypePanel from "@/components/SessionTypePanel";
+import { useRef, useState } from "react";
+import SessionTypePanel, { type SessionTypePanelHandle } from "@/components/SessionTypePanel";
 import { useSessionTypeConfig } from "@/lib/sessionTypeConfigContext";
 import { pickableSessionTypeEntries } from "@/lib/sessionTypes";
 import type { Machine, Package, PackageTypeDef, SessionType, StaffMember, Visit } from "@/types";
@@ -39,36 +39,54 @@ export default function PatientVisitTabs({
   const [active, setActive] = useState<SessionType>(
     (initialActiveTab && SESSION_TYPE_CONFIG[initialActiveTab] ? initialActiveTab : TABS[0]) || "lhr"
   );
+  // One handle per session type — every panel stays mounted (just hidden)
+  // so a "Log Visit" deep link can still land on the right one, so the
+  // shared "+ Log New Visit" button below needs to reach whichever panel
+  // is currently active rather than a single ref.
+  const panelRefs = useRef<Partial<Record<SessionType, SessionTypePanelHandle>>>({});
 
   return (
     <div>
-      <div className="mb-4 flex gap-2 overflow-x-auto">
-        {TABS.map((type) => {
-          const cfg = SESSION_TYPE_CONFIG[type];
-          const isActive = active === type;
-          return (
-            <button
-              key={type}
-              onClick={() => setActive(type)}
-              className={[
-                "flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",
-                isActive ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900",
-              ].join(" ")}
-            >
-              <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.badgeClassName}`}
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          {TABS.map((type) => {
+            const cfg = SESSION_TYPE_CONFIG[type];
+            const isActive = active === type;
+            return (
+              <button
+                key={type}
+                onClick={() => setActive(type)}
+                className={[
+                  "flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full py-2 pl-2 pr-4 text-sm font-bold transition-colors",
+                  isActive
+                    ? "bg-beige-200 text-rust-700"
+                    : "border border-beige-300 bg-surface text-brown-600 hover:border-rust-600/40",
+                ].join(" ")}
               >
-                {cfg.badgeText}
-              </span>
-              {cfg.label}
-            </button>
-          );
-        })}
+                <span
+                  className={`rounded-md px-1.5 py-[3px] text-[10px] font-extrabold tracking-wide ${cfg.badgeClassName}`}
+                >
+                  {cfg.badgeText}
+                </span>
+                {cfg.label}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => panelRefs.current[active]?.openCreate()}
+          className="flex-shrink-0 rounded-[10px] bg-rust-600 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-rust-700"
+        >
+          + Log New Visit
+        </button>
       </div>
 
       {TABS.map((type) => (
         <div key={type} className={active === type ? "block" : "hidden"}>
           <SessionTypePanel
+            ref={(handle) => {
+              panelRefs.current[type] = handle ?? undefined;
+            }}
             clinicId={clinicId}
             patientId={patientId}
             sessionType={type}

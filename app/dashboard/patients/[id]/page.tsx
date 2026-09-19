@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Hash, Phone, SquarePen, User } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getPatient } from "@/lib/db/patients";
@@ -56,60 +55,53 @@ export default async function PatientDetailPage({
     .toUpperCase();
 
   return (
-    <div className="flex max-w-5xl flex-col gap-6">
-      <Link href="/dashboard/patients" className="text-sm text-brown-600 hover:text-rust-700">
+    <div className="flex max-w-5xl flex-col gap-5">
+      <Link
+        href="/dashboard/patients"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-brown-400 hover:text-rust-600"
+      >
         ← Back to Patients
       </Link>
 
-      <header className="flex flex-col gap-6 rounded-[18px] border border-beige-300 bg-surface p-6 shadow-soft md:flex-row md:items-center md:justify-between md:p-8">
-        <div className="flex items-center gap-6">
-          <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full border-4 border-white bg-beige-200 text-2xl font-extrabold text-brown-400 shadow-sm">
+      <header className="flex flex-col gap-6 rounded-[18px] bg-surface p-7 shadow-soft md:flex-row md:items-center md:justify-between md:px-8 md:py-7">
+        <div className="flex items-center gap-5">
+          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-[#F0E4D8] text-xl font-bold text-[#B08D5F]">
             {initials}
           </div>
-          <div>
-            <h1 className="m-0 text-3xl font-extrabold tracking-tight text-brown-900">{patient.name}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm font-semibold text-brown-400">
-              <span className="flex items-center gap-1.5">
-                <Hash size={14} />
-                {patient.patientCode}
-              </span>
-              {patient.age !== undefined && (
-                <span className="flex items-center gap-1.5">
-                  <User size={14} />
-                  {patient.age} yrs
-                </span>
-              )}
-              <span className="flex items-center gap-1.5">
-                <Phone size={14} />
-                {patient.phone}
-              </span>
+          <div className="flex flex-col gap-1.5">
+            <h1 className="m-0 text-[26px] font-extrabold tracking-tight text-brown-900">{patient.name}</h1>
+            <div className="flex flex-wrap items-center gap-[18px] text-sm font-semibold text-brown-400">
+              <span># {patient.patientCode}</span>
+              {patient.age !== undefined && <span>{patient.age} yrs</span>}
+              <span>{patient.phone}</span>
             </div>
           </div>
         </div>
 
         <Link
           href={`/dashboard/patients/${patient.id}/edit`}
-          className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-beige-300 px-4 py-2.5 text-sm font-bold text-brown-900 transition-colors hover:border-brown-900/20 hover:bg-beige-200/50"
+          className="inline-flex flex-shrink-0 items-center justify-center rounded-[10px] border border-beige-300 bg-surface px-[18px] py-2.5 text-sm font-bold text-brown-900 transition-colors hover:bg-beige-100/60"
         >
-          <SquarePen size={16} strokeWidth={2.5} />
           Edit
         </Link>
       </header>
 
-      <div className="rounded-[18px] border border-beige-300 bg-surface p-6 shadow-soft">
+      <div className="flex flex-col gap-[22px] rounded-[18px] bg-surface p-7 shadow-soft md:px-8 md:py-7">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <InfoField label="Email" value={patient.email || "—"} />
           <InfoField label="Gender" value={patient.gender || "—"} />
           <InfoField label="Skin Type" value={patient.skinType ? `Type ${patient.skinType}` : "—"} />
-          <InfoField label="Address" value={patient.address || "—"} />
         </div>
+        <InfoField label="Address" value={patient.address || "—"} />
 
         {patient.contraindications && (
-          <div className="mt-6 rounded-[14px] border border-rust-600/30 bg-rust-100/60 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-rust-700">
+          <div className="rounded-[14px] bg-[#FBEEE9] px-[22px] py-[18px]" style={{ border: "1px solid #EFC9BB" }}>
+            <div className="text-xs font-bold uppercase tracking-[0.04em] text-rust-600">
               Contraindications / Notes
             </div>
-            <p className="mt-1 text-sm text-brown-700">{patient.contraindications}</p>
+            <p className="mt-1.5 text-[15px] font-semibold" style={{ color: "#7A4231" }}>
+              {patient.contraindications}
+            </p>
           </div>
         )}
       </div>
@@ -166,9 +158,9 @@ export default async function PatientDetailPage({
 
 function InfoField({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-brown-400">{label}</div>
-      <div className="mt-1 text-sm text-brown-900">{value}</div>
+    <div className="flex flex-col gap-1.5">
+      <div className="text-xs font-bold uppercase tracking-[0.04em] text-brown-400">{label}</div>
+      <div className="text-[15px] font-semibold text-brown-900">{value}</div>
     </div>
   );
 }

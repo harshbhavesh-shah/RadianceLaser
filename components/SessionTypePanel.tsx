@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import PackageCard from "@/components/PackageCard";
 import PackageFormModal from "@/components/PackageFormModal";
 import VisitTimeline from "@/components/VisitTimeline";
@@ -14,31 +14,35 @@ type ModalState =
   | { mode: "create"; presetPackageId?: string; presetAppointmentId?: string }
   | { mode: "edit"; visit: Visit };
 
-export default function SessionTypePanel({
-  clinicId,
-  patientId,
-  sessionType,
-  initialVisits,
-  initialPackages,
-  packageTypeDefs,
-  machines,
-  staff,
-  autoOpenAppointmentId,
-}: {
-  clinicId: string;
-  patientId: string;
-  sessionType: SessionType;
-  initialVisits: Visit[];
-  initialPackages: Package[];
-  // This session type's package presets (see app/dashboard/packages) — the
-  // "New Package" form's optional shortcut picker.
-  packageTypeDefs: PackageTypeDef[];
-  machines: Machine[];
-  staff: StaffMember[];
-  // Set only on the tab a "Log Visit" deep link targets — opens the visit
-  // form pre-linked to that appointment as soon as this tab is visible.
-  autoOpenAppointmentId?: string;
-}) {
+// Lets the shared "+ Log New Visit" button that now lives in the filter row
+// (see PatientVisitTabs) trigger the create modal on whichever session
+// type's panel is currently active, even though every panel stays mounted
+// (just hidden) so a "Log Visit" deep link can still land on the right one.
+export type SessionTypePanelHandle = {
+  openCreate: () => void;
+};
+
+const SessionTypePanel = forwardRef<
+  SessionTypePanelHandle,
+  {
+    clinicId: string;
+    patientId: string;
+    sessionType: SessionType;
+    initialVisits: Visit[];
+    initialPackages: Package[];
+    // This session type's package presets (see app/dashboard/packages) —
+    // the "New Package" form's optional shortcut picker.
+    packageTypeDefs: PackageTypeDef[];
+    machines: Machine[];
+    staff: StaffMember[];
+    // Set only on the tab a "Log Visit" deep link targets — opens the visit
+    // form pre-linked to that appointment as soon as this tab is visible.
+    autoOpenAppointmentId?: string;
+  }
+>(function SessionTypePanel(
+  { clinicId, patientId, sessionType, initialVisits, initialPackages, packageTypeDefs, machines, staff, autoOpenAppointmentId },
+  ref
+) {
   const SESSION_TYPE_CONFIG = useSessionTypeConfig();
   const config = SESSION_TYPE_CONFIG[sessionType];
   const [visits, setVisits] = useState<Visit[]>(initialVisits);
@@ -51,6 +55,10 @@ export default function SessionTypePanel({
   const activePackages = packages.filter(
     (p) => computePackageLedger(p, visits).status === "active"
   );
+
+  useImperativeHandle(ref, () => ({
+    openCreate: () => setVisitModal({ mode: "create" }),
+  }));
 
   function handleVisitSaved(saved: Visit) {
     setVisits((prev) => {
@@ -71,43 +79,39 @@ export default function SessionTypePanel({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-start">
-      <VisitTimeline
-        sessionType={sessionType}
-        visits={visits}
-        onAddNew={() => setVisitModal({ mode: "create" })}
-        onEdit={(visit) => setVisitModal({ mode: "edit", visit })}
-      />
+    <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+      <div className="flex-1">
+        <VisitTimeline sessionType={sessionType} visits={visits} onEdit={(visit) => setVisitModal({ mode: "edit", visit })} />
+      </div>
 
-      {/* Active Packages — always visible beside the timeline, matching the
-          new design's Treatment History layout, rather than the collapsed
-          accordion this used to be. Scoped to this session type only, same
-          as the timeline next to it — a package is always tied to one
-          type, so there's nothing to unify across tabs. */}
-      <div className="rounded-2xl border border-beige-300 bg-surface shadow-soft">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-4">
-          <span className="whitespace-nowrap text-sm font-semibold text-brown-900">Active Packages</span>
+      {/* Active Packages — always visible beside the timeline. Scoped to
+          this session type only, same as the timeline next to it — a
+          package is always tied to one type, so there's nothing to unify
+          across tabs. */}
+      <div className="flex w-full flex-col gap-4 rounded-[18px] bg-surface p-6 shadow-soft lg:w-[320px] lg:flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <span className="text-base font-extrabold text-brown-900">Active Packages</span>
           <button
             onClick={() => setPackageModalOpen(true)}
-            className="whitespace-nowrap text-xs font-medium text-rust-700 hover:underline"
+            className="whitespace-nowrap text-[13px] font-bold text-rust-600 hover:text-rust-700"
           >
             + New Package
           </button>
         </div>
-        <div className="space-y-4 border-t border-beige-300 px-5 py-4">
-          {packages.length === 0 ? (
-            <p className="text-sm text-brown-400">No {config.label} packages purchased.</p>
-          ) : (
-            packages.map((pkg) => (
+        {packages.length === 0 ? (
+          <p className="text-sm font-semibold text-brown-400">No {config.label} packages purchased.</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {packages.map((pkg) => (
               <PackageCard
                 key={pkg.id}
                 pkg={pkg}
                 visits={visits}
                 onRedeem={() => setVisitModal({ mode: "create", presetPackageId: pkg.id })}
               />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {visitModal.mode !== "closed" && (
@@ -139,4 +143,6 @@ export default function SessionTypePanel({
       )}
     </div>
   );
-}
+});
+
+export default SessionTypePanel;
