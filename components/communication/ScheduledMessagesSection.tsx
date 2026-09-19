@@ -99,25 +99,25 @@ export default function ScheduledMessagesSection({
   }
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
-      <h2 className="font-display text-lg font-medium text-brown-900">Automated Messages</h2>
-      <p className="mt-0.5 text-xs text-brown-400">
+    <div className="flex flex-col gap-1 rounded-[18px] bg-surface p-6 shadow-soft">
+      <h2 className="text-[17px] font-extrabold text-brown-900">Automated Messages</h2>
+      <p className="mb-2 text-[13px] font-medium text-brown-600">
         Sent automatically over WhatsApp, so no one has to remember to send these by hand.
       </p>
 
       {!canEdit ? (
-        <p className="mt-4 text-sm text-brown-400">Only the clinic owner can manage this.</p>
+        <p className="text-sm font-medium text-brown-400">Only the clinic owner can manage this.</p>
       ) : (
-        <div className="mt-5 space-y-5">
-          <div className="flex items-start justify-between gap-4 border-t border-beige-300 pt-5">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-brown-900">Appointment reminders</p>
-              <p className="mt-0.5 text-xs text-brown-400">
-                A WhatsApp reminder before every upcoming appointment, sent once, automatically.
+        <>
+          <div className="flex items-start justify-between gap-3 border-t border-beige-100 py-3.5">
+            <div className="min-w-0 flex flex-col gap-1">
+              <p className="text-[15px] font-bold text-brown-900">Appointment reminders</p>
+              <p className="text-xs font-medium text-brown-400">
+                A WhatsApp reminder before every upcoming appointment.
               </p>
               {reminderEnabled && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs text-brown-600">Send</span>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-xs font-semibold text-brown-600">Send</span>
                   <select
                     value={reminderHoursBefore}
                     onChange={(e) => handleReminderHours(Number(e.target.value))}
@@ -131,10 +131,10 @@ export default function ScheduledMessagesSection({
                   </select>
                 </div>
               )}
-              {!isConnected && <p className="mt-1.5 text-xs text-red-700">Connect WhatsApp first.</p>}
+              {!isConnected && <p className="text-xs font-bold text-[#B08A5F]">Needs WhatsApp connected</p>}
               {isConnected && !hasReminderTemplate && (
-                <p className="mt-1.5 text-xs text-red-700">
-                  Add an &quot;Appointment Reminder&quot; template below first.
+                <p className="text-xs font-bold text-[#B08A5F]">
+                  Add an &quot;Appointment Reminder&quot; template first.
                 </p>
               )}
             </div>
@@ -145,15 +145,15 @@ export default function ScheduledMessagesSection({
             />
           </div>
 
-          <div className="flex items-start justify-between gap-4 border-t border-beige-300 pt-5">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-brown-900">Post-visit feedback</p>
-              <p className="mt-0.5 text-xs text-brown-400">
-                A short WhatsApp survey after each visit. See responses below once patients reply.
+          <div className="flex items-start justify-between gap-3 border-t border-beige-100 py-3.5">
+            <div className="min-w-0 flex flex-col gap-1">
+              <p className="text-[15px] font-bold text-brown-900">Post-visit feedback</p>
+              <p className="text-xs font-medium text-brown-400">
+                A short survey after each visit, replies appear above.
               </p>
               {feedbackSurveyEnabled && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs text-brown-600">Send</span>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-xs font-semibold text-brown-600">Send</span>
                   <select
                     value={feedbackSurveyDelayHours}
                     onChange={(e) => handleSurveyHours(Number(e.target.value))}
@@ -167,10 +167,10 @@ export default function ScheduledMessagesSection({
                   </select>
                 </div>
               )}
-              {!isConnected && <p className="mt-1.5 text-xs text-red-700">Connect WhatsApp first.</p>}
+              {!isConnected && <p className="text-xs font-bold text-[#B08A5F]">Needs WhatsApp connected</p>}
               {isConnected && !hasFeedbackTemplate && (
-                <p className="mt-1.5 text-xs text-red-700">
-                  Add a &quot;Post-Visit Feedback&quot; template below first.
+                <p className="text-xs font-bold text-[#B08A5F]">
+                  Add a &quot;Post-Visit Feedback&quot; template first.
                 </p>
               )}
             </div>
@@ -180,11 +180,11 @@ export default function ScheduledMessagesSection({
               disabled={saving || !isConnected || !hasFeedbackTemplate}
             />
           </div>
-        </div>
+        </>
       )}
 
-      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-      {saved && <p className="mt-3 text-sm text-rust-700">Saved.</p>}
+      {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
+      {saved && <p className="mt-2 text-sm font-semibold text-rust-600">Saved.</p>}
     </div>
   );
 }

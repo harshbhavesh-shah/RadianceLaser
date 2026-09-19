@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { Lock } from "lucide-react";
 import ClientLinksSection from "./ClientLinksSection";
-import WhatsAppSection from "./WhatsAppSection";
-import WebhookInfoSection from "./WebhookInfoSection";
+import WhatsAppSetupBanner from "./WhatsAppSetupBanner";
 import MessageTemplatesSection from "./MessageTemplatesSection";
 import ScheduledMessagesSection from "./ScheduledMessagesSection";
 import FeedbackResultsSection from "./FeedbackResultsSection";
@@ -30,7 +29,6 @@ export default function CommunicationTabs({
   clinicSlug,
   isOwner,
   messageTemplates,
-  isConnected,
   visitFeedback,
   redactedConnection,
   scheduledMessagesInitial,
@@ -43,7 +41,6 @@ export default function CommunicationTabs({
   clinicSlug: string;
   isOwner: boolean;
   messageTemplates: MessageTemplate[];
-  isConnected: boolean;
   visitFeedback: VisitFeedback[];
   redactedConnection: WhatsAppConnection | null;
   scheduledMessagesInitial: Pick<
@@ -56,6 +53,8 @@ export default function CommunicationTabs({
   initialTab?: Tab;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab || "whatsapp");
+  const [connection, setConnection] = useState(redactedConnection);
+  const connected = connection?.status === "connected";
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "whatsapp", label: "WhatsApp" },
@@ -64,13 +63,13 @@ export default function CommunicationTabs({
 
   return (
     <div>
-      <div className="mb-6 flex max-w-xs gap-1 rounded-lg border border-beige-300 bg-surface p-1 shadow-soft">
+      <div className="mb-6 inline-flex w-fit gap-1 rounded-xl bg-surface p-1 shadow-soft">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-colors ${
-              tab === t.key ? "bg-rust-100 text-rust-700" : "text-brown-600 hover:text-brown-900"
+            className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] px-[22px] py-2.5 text-sm font-bold transition-colors ${
+              tab === t.key ? "bg-beige-200 text-rust-700" : "text-brown-400 hover:text-brown-900"
             }`}
           >
             {t.label}
@@ -80,29 +79,30 @@ export default function CommunicationTabs({
       </div>
 
       {tab === "whatsapp" && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-          <div className="min-w-0 space-y-6">
-            <MessageTemplatesSection
-              initialTemplates={messageTemplates}
-              isConnected={isConnected}
-              canEdit={isOwner}
-            />
-            <FeedbackResultsSection feedback={visitFeedback} />
-          </div>
+        <div className="flex flex-col gap-5">
+          <WhatsAppSetupBanner
+            connection={connection}
+            verifyToken={webhookVerifyToken}
+            canEdit={isOwner}
+            onConnectionChange={setConnection}
+          />
 
-          <div className="min-w-0 space-y-6">
-            <ClientLinksSection clinicId={clinicId} clinicSlug={clinicSlug} />
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+            <div className="flex min-w-0 flex-[1.6] flex-col gap-5">
+              <MessageTemplatesSection initialTemplates={messageTemplates} isConnected={connected} canEdit={isOwner} />
+              <FeedbackResultsSection feedback={visitFeedback} />
+            </div>
 
-            <WhatsAppSection initialConnection={redactedConnection} canEdit={isOwner} />
+            <div className="flex min-w-0 flex-1 flex-col gap-5">
+              <ClientLinksSection clinicId={clinicId} clinicSlug={clinicSlug} />
 
-            <WebhookInfoSection verifyToken={webhookVerifyToken} />
-
-            <ScheduledMessagesSection
-              initialClinic={scheduledMessagesInitial}
-              templates={messageTemplates}
-              isConnected={isConnected}
-              canEdit={isOwner}
-            />
+              <ScheduledMessagesSection
+                initialClinic={scheduledMessagesInitial}
+                templates={messageTemplates}
+                isConnected={connected}
+                canEdit={isOwner}
+              />
+            </div>
           </div>
         </div>
       )}

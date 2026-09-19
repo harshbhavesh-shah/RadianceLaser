@@ -22,35 +22,35 @@ export default function FeedbackResultsSection({ feedback }: { feedback: VisitFe
       : null;
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+    <div className="flex flex-col gap-4 rounded-[18px] bg-surface p-7 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-medium text-brown-900">Patient Feedback</h2>
-          <p className="mt-0.5 text-xs text-brown-400">Responses to the post-visit survey, newest first.</p>
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-[19px] font-extrabold text-brown-900">Patient Feedback</h2>
+          <p className="text-[13px] font-medium text-brown-400">Responses to the post-visit survey, newest first.</p>
         </div>
         {average && (
-          <span className="flex items-center gap-1.5 rounded-full bg-rust-100 px-3 py-1 text-xs font-semibold text-rust-700">
+          <span className="flex items-center gap-1.5 rounded-full bg-beige-200 px-3 py-1 text-xs font-bold text-rust-700">
             <Star size={12} className="fill-rust-700" />
-            {average} average · {feedback.length} response{feedback.length === 1 ? "" : "s"}
+            {average} average &middot; {feedback.length} response{feedback.length === 1 ? "" : "s"}
           </span>
         )}
       </div>
 
       {feedback.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-beige-300 py-6 text-center text-sm text-brown-400">
+        <p className="rounded-xl border border-dashed border-beige-300 py-9 text-center text-sm font-semibold text-brown-400">
           No responses yet.
         </p>
       ) : (
-        <div className="mt-4 space-y-3">
-          {feedback.map((f) => (
-            <div key={f.id} className="rounded-lg border border-beige-300 px-4 py-3">
+        <div className="flex flex-col">
+          {feedback.map((f, i) => (
+            <div key={f.id} className={`py-3.5 ${i < feedback.length - 1 ? "border-b border-beige-100" : ""}`}>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-brown-900">{f.patientName}</span>
+                <span className="text-sm font-bold text-brown-900">{f.patientName}</span>
                 {f.rating != null && <StarRow rating={f.rating} />}
               </div>
-              {f.comment && <p className="mt-1.5 text-sm text-brown-600">&quot;{f.comment}&quot;</p>}
+              {f.comment && <p className="mt-1.5 text-sm font-medium text-brown-600">&quot;{f.comment}&quot;</p>}
               {f.respondedAt && (
-                <p className="mt-1 text-xs text-brown-400">
+                <p className="mt-1 text-xs font-semibold text-brown-400">
                   {new Date(f.respondedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 </p>
               )}

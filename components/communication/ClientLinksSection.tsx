@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, ExternalLink, Link2 } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 
 // The bare root domain the main app itself lives on — kept in sync by
 // hand with middleware.ts's own ROOT_DOMAIN (same env var, same default);
@@ -53,22 +53,19 @@ export default function ClientLinksSection({ clinicId, clinicSlug }: { clinicId:
   }
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-5 shadow-soft">
-      <div className="flex items-center gap-2">
-        <Link2 size={16} className="text-rust-700" />
-        <h2 className="font-display text-base font-medium text-brown-900">Patient Booking Link</h2>
-      </div>
-      <p className="mt-1.5 text-sm text-brown-600">
+    <div className="flex flex-col gap-3.5 rounded-[18px] bg-surface p-6 shadow-soft">
+      <h2 className="text-[17px] font-extrabold text-brown-900">Patient Booking Link</h2>
+      <p className="text-[13px] font-medium leading-relaxed text-brown-600">
         Share this so patients can book themselves. Returning patients see their past sessions and can book the
         same treatment again; new patients book straight in.
       </p>
 
-      <div className="mt-3 flex items-center gap-2 rounded-md border border-beige-300 bg-canvas px-3 py-2">
-        <span className="min-w-0 flex-1 truncate text-sm text-brown-700">{bookingUrl}</span>
+      <div className="flex items-center gap-2 rounded-[10px] border border-beige-300 bg-[#FCFAF7] px-3 py-2.5">
+        <span className="min-w-0 flex-1 truncate text-[13px] text-brown-600">{bookingUrl}</span>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-rust-700 transition-colors hover:bg-rust-100"
+          className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-bold text-rust-600 transition-colors hover:bg-rust-100"
         >
           {copied ? <Check size={13} /> : <Copy size={13} />}
           {copied ? "Copied" : "Copy"}
@@ -79,7 +76,7 @@ export default function ClientLinksSection({ clinicId, clinicSlug }: { clinicId:
         href={bookingUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-brown-500 hover:text-rust-700"
+        className="flex items-center gap-1.5 text-[13px] font-bold text-rust-600 hover:text-rust-700"
       >
         <ExternalLink size={12} />
         Open the booking page

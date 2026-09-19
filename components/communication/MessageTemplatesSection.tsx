@@ -16,6 +16,13 @@ const CATEGORY_LABELS: Record<MessageTemplateCategory, string> = {
   custom: "Custom",
 };
 
+// The two retention-messaging categories get a highlighted badge instead
+// of the neutral one every other category uses — same rust-tinted chip as
+// the active session-type pill elsewhere, since these are the two most
+// likely to need a staff member's attention (they gate the No Shows and
+// Follow-Ups tabs' own send buttons).
+const HIGHLIGHTED_CATEGORIES = new Set<MessageTemplateCategory>(["no_show_followup", "visit_follow_up"]);
+
 /** Inline "send this template to a real number" form — lets the owner
  * verify a Meta WhatsApp Cloud API connection actually works (right token,
  * right template name/language/approval) by triggering a real send and
@@ -104,58 +111,64 @@ export default function MessageTemplatesSection({
   }
 
   return (
-    <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
+    <div className="flex flex-col gap-[18px] rounded-[18px] bg-surface p-7 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-medium text-brown-900">Message Templates</h2>
-          <p className="mt-0.5 text-xs text-brown-400">
-            Templates approved in your Meta Template Library. This just tells the app the exact name, language, and
-            variables to fill in.
-          </p>
-        </div>
+        <h2 className="text-[19px] font-extrabold text-brown-900">Message Templates</h2>
         {canEdit && (
           <button
             onClick={() => setModalOpen(true)}
             disabled={!isConnected}
             title={isConnected ? undefined : "Connect WhatsApp first"}
-            className="flex-shrink-0 rounded-md bg-rust-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rust-700 disabled:opacity-40"
+            className="flex-shrink-0 rounded-[10px] bg-beige-200 px-4 py-2.5 text-[13px] font-bold text-rust-700 transition-colors hover:bg-beige-300 disabled:opacity-40"
           >
             + New Template
           </button>
         )}
       </div>
+      <p className="-mt-2.5 text-[13px] font-medium text-brown-400">
+        Templates approved in your Meta Template Library, so the app knows the exact name, language, and variables
+        to fill in.
+      </p>
 
       {templates.length === 0 ? (
-        <div className="mt-4 flex flex-col items-center rounded-lg border border-dashed border-beige-300 py-8 text-center">
-          <p className="text-sm text-brown-400">No templates yet.</p>
+        <div className="flex flex-col items-center rounded-xl border border-dashed border-beige-300 py-8 text-center">
+          <p className="text-sm font-semibold text-brown-400">No templates yet.</p>
         </div>
       ) : (
-        <div className="mt-4 space-y-2">
-          {templates.map((t) => (
-            <div key={t.id} className="rounded-lg border border-beige-300 px-4 py-3">
+        <div className="flex flex-col">
+          {templates.map((t, i) => (
+            <div key={t.id} className={`py-4 ${i < templates.length - 1 ? "border-b border-beige-100" : ""}`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="min-w-0 truncate text-sm font-medium text-brown-900">{t.name}</span>
-                    <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold text-brown-600">
+                    <span className="min-w-0 truncate text-[15px] font-bold text-brown-900">{t.name}</span>
+                    <span
+                      className={`flex-shrink-0 whitespace-nowrap rounded-md px-2 py-[3px] text-[11px] font-bold ${
+                        HIGHLIGHTED_CATEGORIES.has(t.category)
+                          ? "bg-beige-200 text-rust-700"
+                          : "bg-beige-100 text-brown-400"
+                      }`}
+                    >
                       {CATEGORY_LABELS[t.category]}
                     </span>
-                    <span className="flex-shrink-0 whitespace-nowrap rounded-full bg-beige-200 px-2 py-0.5 text-[10px] font-semibold uppercase text-brown-600">
+                    <span className="flex-shrink-0 whitespace-nowrap rounded-md bg-beige-100 px-2 py-[3px] text-[11px] font-bold uppercase text-brown-400">
                       {t.language}
                     </span>
                   </div>
                   {t.variableLabels.length > 0 && (
-                    <p className="mt-0.5 truncate text-xs text-brown-400">Fills: {t.variableLabels.join(", ")}</p>
+                    <p className="mt-1.5 truncate text-[13px] font-medium text-brown-400">
+                      Fills: {t.variableLabels.join(", ")}
+                    </p>
                   )}
                   {t.bodyPreview && (
-                    <p className="mt-0.5 truncate text-xs text-brown-400 italic">"{t.bodyPreview}"</p>
+                    <p className="mt-1.5 truncate text-[13px] italic text-brown-400">&quot;{t.bodyPreview}&quot;</p>
                   )}
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-1">
                   {canEdit && isConnected && (
                     <button
                       onClick={() => setTestingId(testingId === t.id ? null : t.id)}
-                      className="rounded-md border border-beige-300 px-2.5 py-1 text-xs font-medium text-brown-700 transition-colors hover:border-rust-600"
+                      className="rounded-lg border border-beige-300 px-2.5 py-1.5 text-xs font-bold text-brown-900 transition-colors hover:bg-beige-100/60"
                     >
                       Send Test
                     </button>
