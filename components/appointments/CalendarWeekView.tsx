@@ -58,7 +58,7 @@ export default function CalendarWeekView({
   return (
     <div className="overflow-x-auto rounded-[18px] border border-beige-300 bg-surface shadow-soft">
       <div className="flex min-w-[720px] border-b border-beige-300 bg-beige-100/40">
-        <div className="w-16 flex-shrink-0 border-r border-beige-300" />
+        <div className="w-[76px] flex-shrink-0 border-r border-beige-300" />
         {days.map((d) => {
           const dateStr = toDateStr(d);
           const isToday = dateStr === today;
@@ -81,10 +81,10 @@ export default function CalendarWeekView({
       </div>
 
       <div className="flex min-w-[720px]">
-        <div className="w-16 flex-shrink-0">
+        <div className="w-[76px] flex-shrink-0">
           {HOURS.map((h) => (
             <div key={h} style={{ height: PIXELS_PER_HOUR }} className="relative">
-              <span className="absolute -top-2 right-3 bg-surface px-1 text-[11px] font-extrabold text-brown-400">
+              <span className="absolute -top-2 right-3 whitespace-nowrap bg-surface px-1 text-[11px] font-extrabold text-brown-400">
                 {formatTime12h(`${String(h).padStart(2, "0")}:00`)}
               </span>
             </div>
@@ -169,20 +169,20 @@ export default function CalendarWeekView({
                           e.stopPropagation();
                           onEdit(appointment);
                         }}
-                        className={`absolute overflow-hidden rounded-lg border border-beige-300 px-2 py-1 text-left shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
+                        className={`absolute z-10 flex flex-col justify-center gap-0.5 rounded-lg border border-beige-300 px-2 py-1 text-left shadow-sm outline-none transition-shadow hover:z-20 hover:shadow-md focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
                         style={{
                           top,
-                          height,
+                          minHeight: height,
                           left: `${column * widthPct}%`,
                           width: `calc(${widthPct}% - 2px)`,
                           borderLeftWidth: 3,
                           borderLeftColor: appointment.status === "cancelled" ? "#9C8672" : "#C1694F",
                         }}
                       >
-                        <div className="truncate text-xs font-extrabold text-brown-900">
+                        <div className="text-xs font-extrabold leading-tight text-brown-900">
                           {appointment.patientName}
                         </div>
-                        <div className="truncate text-[11px] font-semibold text-brown-600">
+                        <div className="truncate text-[11px] font-semibold leading-tight text-brown-600">
                           {cfg.badgeText} · {formatTime12h(appointment.time)}
                         </div>
                       </button>

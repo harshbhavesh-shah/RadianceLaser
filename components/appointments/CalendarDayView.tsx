@@ -58,17 +58,17 @@ export default function CalendarDayView({
   return (
     <div className="overflow-hidden rounded-[18px] border border-beige-300 bg-surface shadow-soft">
       <div className="flex border-b border-beige-300 bg-beige-100/40">
-        <div className="w-16 flex-shrink-0 border-r border-beige-300" />
+        <div className="w-[76px] flex-shrink-0 border-r border-beige-300" />
         <div className="flex-1 px-4 py-4 text-center text-xl font-extrabold text-brown-900">
           {date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         </div>
       </div>
 
       <div className="flex">
-        <div className="w-16 flex-shrink-0">
+        <div className="w-[76px] flex-shrink-0">
           {HOURS.map((h) => (
             <div key={h} style={{ height: PIXELS_PER_HOUR }} className="relative">
-              <span className="absolute -top-2 right-3 bg-surface px-1 text-[11px] font-extrabold text-brown-400">
+              <span className="absolute -top-2 right-3 whitespace-nowrap bg-surface px-1 text-[11px] font-extrabold text-brown-400">
                 {formatTime12h(`${String(h).padStart(2, "0")}:00`)}
               </span>
             </div>
@@ -139,10 +139,10 @@ export default function CalendarDayView({
                       e.stopPropagation();
                       onEdit(appointment);
                     }}
-                    className={`absolute overflow-hidden rounded-lg border border-beige-300 px-2.5 py-1.5 text-left text-xs shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
+                    className={`absolute z-10 flex flex-col justify-center gap-0.5 rounded-lg border border-beige-300 px-2.5 py-1.5 text-left text-xs shadow-sm outline-none transition-shadow hover:z-20 hover:shadow-md focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-rust-600 ${statusStyle.bg}`}
                     style={{
                       top,
-                      height,
+                      minHeight: height,
                       left: `${column * widthPct}%`,
                       width: `calc(${widthPct}% - 4px)`,
                       borderLeftWidth: 3,
@@ -150,15 +150,17 @@ export default function CalendarDayView({
                         appointment.status === "cancelled" ? "#9C8672" : "#C1694F",
                     }}
                   >
-                    <div className="flex items-center gap-1.5 font-extrabold text-brown-900">
+                    <div className="flex items-start gap-1.5 font-extrabold leading-tight text-brown-900">
                       <span
-                        className={`flex-shrink-0 rounded px-1 text-[9px] font-bold ${cfg.badgeClassName}`}
+                        className={`mt-px flex-shrink-0 rounded px-1 text-[9px] font-bold ${cfg.badgeClassName}`}
                       >
                         {cfg.badgeText}
                       </span>
-                      <span className="min-w-0 truncate">{appointment.patientName}</span>
+                      <span className="min-w-0">{appointment.patientName}</span>
                     </div>
-                    <div className="truncate font-semibold text-brown-600">{formatTime12h(appointment.time)}</div>
+                    <div className="truncate font-semibold leading-tight text-brown-600">
+                      {formatTime12h(appointment.time)}
+                    </div>
                   </button>
                 );
               }
