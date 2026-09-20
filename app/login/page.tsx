@@ -4,23 +4,19 @@ import { Suspense, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signInWithEmailAndPassword, type UserCredential } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
-import { provisionGoogleClinicAction } from "./actions";
-import {
-  proceedAfterPrimaryAuth as sharedProceedAfterPrimaryAuth,
-  finishAfterOtp,
-  signInWithGoogle,
-} from "@/lib/authFlow";
+import { signInAction, provisionGoogleClinicAction } from "./actions";
+import { signInWithGoogleAndProceed, finishLoginOtp, navigateAfterAuth } from "@/lib/authFlow";
 
 // credentials: the normal email/password (or "click Google") screen.
 // otp: primary auth succeeded, this account has 2FA on — waiting on the
-//   emailed code before a session cookie gets issued.
+//   emailed code before a session cookie gets issued. `uid` isn't a secret
+//   (see app/login/actions.ts verifyLoginTwoFactorAction) — the code itself
+//   is the actual gate.
 // google-clinic-name: a Google account signed in for the first time (no
-//   clinicId claim yet) — needs a clinic name before it can be provisioned.
+//   StaffMember row yet) — needs a clinic name before it can be provisioned.
 type Stage =
   | { name: "credentials" }
-  | { name: "otp"; idToken: string }
+  | { name: "otp"; uid: string }
   | { name: "google-clinic-name"; idToken: string; suggestedName: string };
 
 export default function LoginPage() {
@@ -42,35 +38,26 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // After ANY primary auth succeeds (password or Google, and for Google
-  // only once a clinic actually exists on the account), decide whether the
-  // 2FA gate applies before finishing sign-in — shared with
-  // app/signup/page.tsx via lib/authFlow.ts so the gate can't drift out of
-  // sync (or get skipped) between the two entry points.
-  async function proceedAfterPrimaryAuth(idToken: string) {
-    const outcome = await sharedProceedAfterPrimaryAuth(idToken, router, searchParams.get("next"));
-    if (outcome.error) {
-      setError(outcome.error);
-      setLoading(false);
-      return;
-    }
-    if (outcome.otpRequired && outcome.idToken) {
-      setStage({ name: "otp", idToken: outcome.idToken });
-      setLoading(false);
-    }
-  }
-
   async function handlePasswordSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await credential.user.getIdToken();
-      await proceedAfterPrimaryAuth(idToken);
+      const result = await signInAction(email, password);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+      if (result.otpRequired && result.uid) {
+        setStage({ name: "otp", uid: result.uid });
+        setLoading(false);
+        return;
+      }
+      navigateAfterAuth(router, searchParams.get("next"), result.redirectTo);
     } catch (err) {
       console.error(err);
-      setError(describeAuthError(err));
+      setError("Something went wrong signing in. Please try again.");
       setLoading(false);
     }
   }
@@ -79,25 +66,25 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const credential: UserCredential = await signInWithGoogle();
-      const idTokenResult = await credential.user.getIdTokenResult();
-
-      if (!idTokenResult.claims.clinicId) {
-        // Brand-new Google sign-in, no clinic attached yet — ask for a
-        // clinic name before provisioning (see provisionGoogleClinicAction).
-        setStage({
-          name: "google-clinic-name",
-          idToken: await credential.user.getIdToken(),
-          suggestedName: "",
-        });
+      const outcome = await signInWithGoogleAndProceed(router, searchParams.get("next"));
+      if (outcome.error) {
+        setError(outcome.error);
         setLoading(false);
         return;
       }
-
-      await proceedAfterPrimaryAuth(await credential.user.getIdToken());
+      if (outcome.needsClinicName && outcome.idToken) {
+        setStage({ name: "google-clinic-name", idToken: outcome.idToken, suggestedName: outcome.suggestedName || "" });
+        setLoading(false);
+        return;
+      }
+      if (outcome.otpRequired && outcome.uid) {
+        setStage({ name: "otp", uid: outcome.uid });
+        setLoading(false);
+        return;
+      }
     } catch (err) {
       console.error(err);
-      setError(describeAuthError(err));
+      setError(describeGoogleAuthError(err));
       setLoading(false);
     }
   }
@@ -114,11 +101,7 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      // Custom claims were just set server-side — the token already held by
-      // the client is stale until force-refreshed.
-      if (!auth.currentUser) throw new Error("Session was lost. Please try signing in again.");
-      const freshIdToken = await auth.currentUser.getIdToken(true);
-      await proceedAfterPrimaryAuth(freshIdToken);
+      navigateAfterAuth(router, searchParams.get("next"), result.redirectTo);
     } catch (err) {
       console.error(err);
       setError("Something went wrong setting up your clinic. Please try again.");
@@ -132,7 +115,7 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const result = await finishAfterOtp(stage.idToken, otp, router, searchParams.get("next"));
+      const result = await finishLoginOtp(stage.uid, otp, router, searchParams.get("next"));
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -334,18 +317,14 @@ function GoogleIcon() {
   );
 }
 
-// Turns a raw Firebase Auth error into something specific and actionable,
-// instead of a single generic message for every possible failure. The full
-// error is always logged to the console too (see the catch block above) for
-// anything not covered here.
-function describeAuthError(err: unknown): string {
+// Turns a raw Firebase Auth error into something specific and actionable.
+// Only the Google sign-in path can still throw one of these now — the
+// email/password path returns plain error strings from signInAction
+// directly (see app/login/actions.ts), never a Firebase error code.
+function describeGoogleAuthError(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
 
   switch (code) {
-    case "auth/invalid-credential":
-    case "auth/wrong-password":
-    case "auth/user-not-found":
-      return "Incorrect email or password.";
     case "auth/too-many-requests":
       return "Too many failed attempts. Please wait a moment and try again.";
     case "auth/network-request-failed":
@@ -362,7 +341,7 @@ function describeAuthError(err: unknown): string {
         "values in .env.local match your Firebase project.";
     default:
       return code
-        ? `Sign-in failed (${code}). Check the browser console for details.`
-        : "Something went wrong signing in. Check the browser console for details.";
+        ? `Google sign-in failed (${code}). Check the browser console for details.`
+        : "Something went wrong with Google sign-in. Check the browser console for details.";
   }
 }

@@ -1,11 +1,12 @@
 "use server";
 
-import { adminAuth } from "@/lib/firebase/admin";
+import { hashPassword } from "@/lib/auth/password";
 import { createClinic } from "@/lib/db/clinics";
-import { createStaffMember } from "@/lib/db/staff";
+import { createStaffMember, getStaffAuthRecordByEmail } from "@/lib/db/staff";
 import { checkAndRecordSignupAttempt } from "@/lib/db/signupAttempts";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { getClientIp } from "@/lib/request";
+import { createSessionCookieForSubject } from "@/lib/session";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -13,19 +14,17 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface SignUpResult {
   error?: string;
-  success?: boolean;
+  redirectTo?: string;
 }
 
 /**
- * The self-serve counterpart to scripts/createClinic.mjs — same shape
- * (clinic doc + Auth user + custom claims + staff mirror doc), but callable
- * from an unauthenticated public route instead of a local script. Doesn't
- * sign the new owner in itself: it only creates the account server-side
- * (required, since setting custom claims needs the Admin SDK); the signup
- * form then signs in client-side with the same email/password right after
- * this succeeds, reusing the exact login flow (app/login/page.tsx) to
- * exchange for a session cookie — so there's exactly one code path that
- * turns "signed in" into a session cookie, not two.
+ * The self-serve counterpart to scripts/createClinic.mjs. Fully self-rolled
+ * now (see lib/auth/password.ts) — no more external Auth account to create
+ * first and roll back on failure if the clinic/staff setup fails partway
+ * through: it's all one database, so a failure here just leaves an orphaned
+ * Clinic row with no staff (rare, and harmless — nothing can sign into it).
+ * Mints the session cookie directly on success, so the caller can navigate
+ * straight to /dashboard without a separate client-side sign-in step.
  *
  * Rate-limited by IP (see lib/db/signupAttempts.ts) AND gated by a
  * Cloudflare Turnstile challenge (lib/turnstile.ts) — a genuinely public,
@@ -64,44 +63,35 @@ export async function createTrialClinicAction(input: {
   if (!EMAIL_RE.test(email)) return { error: "Enter a valid email address." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
 
-  const auth = adminAuth();
-
-  let uid: string;
-  try {
-    const userRecord = await auth.createUser({ email, password, displayName: ownerName });
-    uid = userRecord.uid;
-  } catch (err) {
-    const code = (err as { code?: string })?.code;
-    if (code === "auth/email-already-exists") {
-      return { error: "An account with this email already exists. Sign in instead." };
-    }
-    console.error("Signup: failed to create Auth user:", err);
-    return { error: "Something went wrong creating your account. Please try again." };
+  const existing = await getStaffAuthRecordByEmail(email);
+  if (existing) {
+    return { error: "An account with this email already exists. Sign in instead." };
   }
 
   try {
+    const passwordHash = await hashPassword(password);
     const trialEndsAt = Date.now() + TRIAL_LENGTH_DAYS * DAY_MS;
 
     const clinic = await createClinic({ name: clinicName, subscriptionStatus: "trialing", trialEndsAt });
-
-    await auth.setCustomUserClaims(uid, { clinicId: clinic.id, role: "owner" });
-
-    await createStaffMember({
-      uid,
+    const staff = await createStaffMember({
       clinicId: clinic.id,
       name: ownerName,
       email,
       role: "owner",
+      passwordHash,
     });
 
-    return { success: true };
+    await createSessionCookieForSubject({
+      uid: staff.id,
+      email,
+      clinicId: clinic.id,
+      role: "owner",
+      superAdmin: false,
+    });
+
+    return { redirectTo: "/dashboard" };
   } catch (err) {
-    // The Auth account exists but the clinic/claims/staff doc setup failed
-    // partway through — clean up the orphaned account rather than leaving a
-    // login with no clinic attached (getSession() would reject it anyway,
-    // but better not to leave it around at all).
-    console.error("Signup: failed to provision clinic, rolling back Auth user:", err);
-    await auth.deleteUser(uid).catch(() => {});
+    console.error("Signup: failed to provision clinic:", err);
     return { error: "Something went wrong setting up your clinic. Please try again." };
   }
 }

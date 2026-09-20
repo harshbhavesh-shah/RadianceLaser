@@ -3,9 +3,10 @@
 import { useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { requestPasswordResetAction } from "./actions";
 import AuthShell from "@/components/marketing/AuthShell";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -16,25 +17,20 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const trimmed = email.trim();
+    if (!EMAIL_RE.test(trimmed)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
     setLoading(true);
     try {
-      // The link Firebase emails lands on our own /reset-password (see
-      // handleCodeInApp below) instead of a generic Firebase-hosted page —
-      // that page reads the oobCode itself and calls confirmPasswordReset.
-      await sendPasswordResetEmail(auth, email.trim().toLowerCase(), {
-        url: `${window.location.origin}/reset-password`,
-        handleCodeInApp: true,
-      });
+      // Deliberately no signal either way (see app/forgot-password/actions.ts) —
+      // confirming which emails have accounts would let anyone enumerate
+      // your clinic list.
+      await requestPasswordResetAction(trimmed);
     } catch (err) {
-      // Deliberately shown even on auth/user-not-found — confirming which
-      // emails have accounts would let anyone enumerate your clinic list.
-      // Only a genuinely malformed address gets its own message.
-      const code = (err as { code?: string })?.code;
-      if (code === "auth/invalid-email") {
-        setError("Enter a valid email address.");
-        setLoading(false);
-        return;
-      }
       console.error("Password reset request failed:", err);
     }
     setLoading(false);

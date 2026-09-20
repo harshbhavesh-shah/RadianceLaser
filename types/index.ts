@@ -448,6 +448,10 @@ export interface StaffMember extends TenantScoped {
   // deliberate simplification over tracking "seen at N/5 done" separately.
   tourCompleted?: boolean;
   onboardingDismissed?: boolean;
+  // Soft-disabled by the owner (Settings → Staff) — replaces the old
+  // hard-delete-only removal. A disabled account can't sign in again, but
+  // keeps its history (visits, receipts) attributed correctly.
+  disabled?: boolean;
 }
 
 export type MachineStatus = "active" | "maintenance" | "retired";

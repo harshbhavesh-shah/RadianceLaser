@@ -9,15 +9,12 @@
  * Usage:
  *   node scripts/disableTwoFactor.mjs --email owner@example.com
  *
- * Requires .env.local to be filled in with FIREBASE_ADMIN_* and
- * DATABASE_URL values.
+ * Requires .env.local to be filled in with DATABASE_URL.
  */
 
 import { config } from "dotenv";
 config({ path: ".env.local" });
 import { readFileSync } from "fs";
-import { initializeApp, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
@@ -51,37 +48,26 @@ async function main() {
     console.error("Usage: node scripts/disableTwoFactor.mjs --email you@example.com");
     process.exit(1);
   }
-
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  if (!projectId || !clientEmail || !privateKey) {
-    console.error("Missing FIREBASE_ADMIN_* values in .env.local");
-    process.exit(1);
-  }
-
   if (!process.env.DATABASE_URL) {
     console.error("Missing DATABASE_URL in .env.local");
     process.exit(1);
   }
 
-  initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
-  const auth = getAuth();
   const prisma = createPrismaClient();
+  const normalizedEmail = email.trim().toLowerCase();
 
-  const userRecord = await auth.getUserByEmail(email);
-  const staff = await prisma.staffMember.findUnique({ where: { id: userRecord.uid } });
+  const staff = await prisma.staffMember.findUnique({ where: { email: normalizedEmail } });
   if (!staff) {
-    console.error(`No staff record found for ${email} (uid ${userRecord.uid}).`);
+    console.error(`No staff record found for ${normalizedEmail}.`);
     process.exit(1);
   }
 
   const wasEnabled = staff.twoFactorEnabled === true;
-  await prisma.staffMember.update({ where: { id: userRecord.uid }, data: { twoFactorEnabled: false } });
+  await prisma.staffMember.update({ where: { id: staff.id }, data: { twoFactorEnabled: false } });
   console.log(
     wasEnabled
-      ? `✓ Disabled 2FA for ${email}. They can sign in normally now.`
-      : `2FA was already off for ${email} — nothing to change.`
+      ? `✓ Disabled 2FA for ${normalizedEmail}. They can sign in normally now.`
+      : `2FA was already off for ${normalizedEmail} — nothing to change.`
   );
 
   await prisma.$disconnect();

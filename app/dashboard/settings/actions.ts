@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { randomInt } from "crypto";
 import { getSession } from "@/lib/session";
-import { adminAuth } from "@/lib/firebase/admin";
+import { hashPassword } from "@/lib/auth/password";
 import {
   clinicCacheTag,
   getClinic,
@@ -12,6 +13,7 @@ import {
 import {
   createStaffMember,
   getClinicStaffCount,
+  getStaffAuthRecordByEmail,
   updateStaffRole as updateStaffRoleInDb,
   removeStaffMember as removeStaffMemberInDb,
   updateStaffFlags,
@@ -26,12 +28,13 @@ async function requireOwner() {
   return session;
 }
 
+// Not meant to be memorable — the owner shares it once, the new staff
+// member is expected to change it after first login. crypto.randomInt, not
+// Math.random(): this is a real (if temporary) credential, not a UI id.
 function generateTempPassword(): string {
-  // Not meant to be memorable — the owner shares it once, the new staff
-  // member is expected to change it after first login.
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   let pw = "";
-  for (let i = 0; i < 12; i++) pw += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 12; i++) pw += chars.charAt(randomInt(0, chars.length));
   return pw;
 }
 
@@ -51,9 +54,6 @@ export async function addStaffMember(
     if (!name.trim()) return { error: "Name is required." };
     if (!email.trim()) return { error: "Email is required." };
 
-    // Checked before creating the Firebase Auth user below, not after — an
-    // orphaned Auth account with no matching StaffMember row is worse than
-    // a rejected request, and there'd be no clean way to roll it back here.
     const clinic = await getClinic(session.clinicId);
     const tier = getClinicTier(
       clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
@@ -66,37 +66,25 @@ export async function addStaffMember(
       }
     }
 
+    const existing = await getStaffAuthRecordByEmail(email.trim());
+    if (existing) return { error: "A staff member with this email already exists." };
+
     const tempPassword = generateTempPassword();
-
-    const userRecord = await adminAuth().createUser({
-      email: email.trim(),
-      password: tempPassword,
-      displayName: name.trim(),
-    });
-
-    await adminAuth().setCustomUserClaims(userRecord.uid, {
-      clinicId: session.clinicId,
-      role,
-    });
+    const passwordHash = await hashPassword(tempPassword);
 
     const staff = await createStaffMember({
-      uid: userRecord.uid,
       clinicId: session.clinicId,
       name: name.trim(),
       email: email.trim(),
       role,
+      passwordHash,
     });
 
     revalidatePath("/dashboard/settings");
     return { success: { staff, tempPassword } };
   } catch (err) {
     console.error("Failed to add staff member:", err);
-    const message = (err as { errorInfo?: { message?: string } })?.errorInfo?.message;
-    return {
-      error:
-        message ||
-        (err instanceof Error ? err.message : "Something went wrong adding this staff member."),
-    };
+    return { error: err instanceof Error ? err.message : "Something went wrong adding this staff member." };
   }
 }
 
@@ -108,9 +96,6 @@ export async function updateStaffRole(uid: string, newRole: UserRole): Promise<{
       return { error: "You can't change your own role." };
     }
 
-    const userRecord = await adminAuth().getUser(uid);
-    const existingClaims = userRecord.customClaims || {};
-    await adminAuth().setCustomUserClaims(uid, { ...existingClaims, role: newRole });
     await updateStaffRoleInDb(session.clinicId, uid, newRole);
 
     revalidatePath("/dashboard/settings");
@@ -129,7 +114,6 @@ export async function removeStaffMember(uid: string): Promise<{ error?: string }
       return { error: "You can't remove your own account." };
     }
 
-    await adminAuth().deleteUser(uid);
     await removeStaffMemberInDb(session.clinicId, uid);
 
     revalidatePath("/dashboard/settings");

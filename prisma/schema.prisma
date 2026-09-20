@@ -253,27 +253,40 @@ model Machine {
   @@map("machines")
 }
 
-// Mirrors types/index.ts StaffMember — chunk 7. `id` is deliberately NOT
-// @default(cuid()) like every other table's — a StaffMember's id must equal
-// its Firebase Auth uid (the two are the same value everywhere in the app,
-// e.g. StaffSection.tsx's `member.uid === currentUid`), since this table is
-// a mirror of the Auth user for display/preferences, not its own identity
-// space. The actual authorization boundary stays entirely in Firebase Auth
-// custom claims (clinicId/role) — see lib/session.ts, which reads those
-// claims directly and never touches this table. This table only backs the
-// Settings → Staff list and each person's own preferences (2FA opt-in,
-// onboarding flags) — nothing here gates access to anything.
+// Mirrors types/index.ts StaffMember — chunk 7, originally a Firebase Auth
+// mirror only (id = the Firebase uid, authorization lived entirely in
+// Firebase custom claims). Now the actual identity + authorization source:
+// passwordHash gates sign-in (lib/auth/password.ts, scrypt — see
+// lib/session.ts) and disabled/superAdmin are read directly when building a
+// session, not mirrored from anywhere else. Existing rows keep their old
+// Firebase-uid-shaped id (never reused as a real uid again); new rows get a
+// normal cuid. email is always stored lowercased (see createStaffMember) so
+// the unique constraint below actually prevents case-variant duplicates.
 model StaffMember {
-  id                  String   @id
+  id                  String    @id @default(cuid())
   clinicId            String
   name                String
   email               String
   role                String
+  // Null only for a row created before this migration and not yet reset —
+  // see the forced password-reset note in the auth migration plan. A null
+  // hash can never authenticate (verifyPassword rejects it outright), so
+  // this isn't a security gap, just an intermediate state.
+  passwordHash        String?
+  // Soft-disable, replacing the old hard-delete-only staff removal —
+  // checked in getSession() so a disabled account's existing session cookie
+  // stops working immediately, not just its ability to sign in again.
+  disabled            Boolean?
+  // Platform super-admin — previously a Firebase custom claim with no
+  // Postgres representation at all. Grants /admin access; see
+  // scripts/grantSuperAdmin.mjs.
+  superAdmin          Boolean?
   twoFactorEnabled    Boolean?
   tourCompleted       Boolean?
   onboardingDismissed Boolean?
   createdAt           BigInt
 
+  @@unique([email])
   @@index([clinicId])
   @@map("staff")
 }
@@ -706,6 +719,22 @@ model Payment {
   @@map("payments")
 }
 
+// A pure platform super-admin with no clinic at all (see
+// scripts/grantSuperAdmin.mjs) — StaffMember.superAdmin instead covers a
+// clinic staff member who is ALSO a super admin, since StaffMember.clinicId
+// is required and this account has none. Deliberately its own table rather
+// than a nullable-clinicId StaffMember row, so every StaffMember query
+// (staff lists, counts, role checks) keeps its existing "always has a
+// clinic" invariant instead of every caller needing a null check.
+model PlatformAdmin {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String?
+  createdAt    BigInt
+
+  @@map("platformAdmins")
+}
+
 // Backs lib/twoFactor.ts's email-OTP sign-in gate — chunk 13 of the
 // post-launch cleanup. Short-lived (10 minute TTL, enforced in app code,
 // not a DB-level expiry) and self-contained, no clinicId at all: `id` is
@@ -718,6 +747,26 @@ model TwoFactorChallenge {
   attempts  Int
 
   @@map("twoFactorChallenges")
+}
+
+// Backs the self-rolled /forgot-password → /reset-password flow (replacing
+// Firebase's sendPasswordResetEmail/confirmPasswordReset), same shape as
+// TwoFactorChallenge: only a hash of the token is stored, so reading this
+// table never exposes a usable secret. Unlike the 2FA code, this token goes
+// in a URL (emailed link), so it's a long random string, not a 6-digit
+// code — length is the whole defense against guessing, not attempt limits.
+// usedAt makes each token single-use even though it would otherwise still
+// pass the expiry check.
+model PasswordResetToken {
+  id        String  @id @default(cuid())
+  uid       String
+  tokenHash String  @unique
+  expiresAt BigInt
+  usedAt    BigInt?
+  createdAt BigInt
+
+  @@index([uid])
+  @@map("passwordResetTokens")
 }
 
 // One row per visit a post-visit satisfaction survey was (or is about to
@@ -990,4 +1039,22 @@ model SignupAttempt {
 
   @@index([ipAddress, createdAt])
   @@map("signupAttempts")
+}
+
+// Same shape and purpose as SignupAttempt, kept as a separate table rather
+// than a shared one with a "purpose" column — a burst of signup attempts
+// and a burst of login attempts are different threats with potentially
+// different thresholds, and this login endpoint replaces what Firebase
+// Auth's own (undocumented, client-SDK-only) rate limiting used to cover
+// once sign-in became a self-rolled server action. Keyed by email, not IP:
+// login is a per-account brute-force target (one attacker, one victim
+// email, possibly many IPs), unlike signup abuse (one attacker, many
+// throwaway emails, one IP).
+model LoginAttempt {
+  id        String @id @default(cuid())
+  email     String
+  createdAt BigInt
+
+  @@index([email, createdAt])
+  @@map("loginAttempts")
 }

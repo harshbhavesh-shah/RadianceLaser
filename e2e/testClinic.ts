@@ -8,6 +8,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { generateUniqueClinicSlug } from "@/lib/clinicSlug";
+import { hashPassword } from "@/lib/auth/password";
 
 // A programmatic version of scripts/createClinic.mjs (plus a matching
 // full-teardown, which that script doesn't have) — Playwright's global
@@ -67,10 +68,23 @@ export async function createTestClinic(): Promise<TestClinic> {
   });
   await db.collection("clinics").doc(clinic.id).set({ subscriptionStatus: "trialing", trialEndsAt }, { merge: true });
 
+  // The Firebase Auth account below is no longer what /login actually
+  // checks (see lib/session.ts / app/login/actions.ts — sign-in is
+  // self-rolled against StaffMember.passwordHash now), but is kept around
+  // harmlessly for now since deleteTestClinic() still cleans it up the same
+  // way. The passwordHash is what really lets e2e/login.spec.ts sign in.
   const userRecord = await auth.createUser({ email, password, displayName: "E2E Test Owner" });
-  await auth.setCustomUserClaims(userRecord.uid, { clinicId: clinic.id, role: "owner" });
+  const passwordHash = await hashPassword(password);
   await prisma.staffMember.create({
-    data: { id: userRecord.uid, clinicId: clinic.id, name: "E2E Test Owner", email, role: "owner", createdAt: Date.now() },
+    data: {
+      id: userRecord.uid,
+      clinicId: clinic.id,
+      name: "E2E Test Owner",
+      email,
+      role: "owner",
+      passwordHash,
+      createdAt: Date.now(),
+    },
   });
 
   await prisma.$disconnect();

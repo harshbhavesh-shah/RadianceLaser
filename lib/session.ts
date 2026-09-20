@@ -1,16 +1,18 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { adminAuth } from "@/lib/firebase/admin";
+import { createSignedSessionToken, verifySignedSessionToken } from "@/lib/auth/session";
 import type { AdminSession, Session, UserRole } from "@/types";
 
 const SESSION_COOKIE_NAME = "__session";
-// Firebase session cookies can live up to 14 days; keep it shorter for a
-// clinical/admin tool where staff share shared devices at a front desk.
+// Was capped at 5 days back when Firebase session cookies could live up to
+// 14 — no longer a hard ceiling now that we mint these ourselves, but kept
+// the same for a clinical/admin tool where staff share shared devices at a
+// front desk.
 const SESSION_EXPIRES_IN_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
 
 // A super admin's "View as" state (app/admin/actions.ts
 // startImpersonationAction) — deliberately a separate, plain (not a signed
-// Firebase JWT) cookie, since it's only ever trusted in combination with an
+// token) cookie, since it's only ever trusted in combination with an
 // independently-verified super-admin session on the real __session cookie
 // below (see getSession()). Short-lived on purpose: this is a one-off
 // support session, not a standing login.
@@ -23,17 +25,29 @@ interface ImpersonationPayload {
   role: UserRole;
 }
 
-/**
- * Exchanges a Firebase Auth ID token (from client-side sign-in) for a secure,
- * HttpOnly session cookie, and sets it on the response. Call this from the
- * /api/auth/session route right after the client signs in with Firebase Auth.
- */
-export async function createSessionCookie(idToken: string): Promise<void> {
-  const sessionCookie = await adminAuth().createSessionCookie(idToken, {
-    expiresIn: SESSION_EXPIRES_IN_MS,
-  });
+export interface SessionSubject {
+  uid: string;
+  email: string | null;
+  // null for a pure super-admin with no clinic (see PlatformAdmin in
+  // prisma/schema.prisma) — a clinic staff member who also happens to be a
+  // super admin still has a real clinicId/role here, with superAdmin=true.
+  clinicId: string | null;
+  role: UserRole | null;
+  superAdmin: boolean;
+}
 
-  cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
+/**
+ * Mints a session cookie for an already-authenticated subject — call this
+ * right after a password check (app/login/actions.ts) or, temporarily, a
+ * verified Google ID token (see the Google sign-in bridge there) succeeds.
+ * Purely local: signs a token with AUTH_SESSION_SECRET, no network round
+ * trip anywhere — unlike the old Firebase Admin createSessionCookie, which
+ * called out to Google to mint it.
+ */
+export async function createSessionCookieForSubject(subject: SessionSubject): Promise<void> {
+  const token = await createSignedSessionToken(subject, SESSION_EXPIRES_IN_MS);
+
+  cookies().set(SESSION_COOKIE_NAME, token, {
     maxAge: SESSION_EXPIRES_IN_MS / 1000,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -76,25 +90,21 @@ export function stopImpersonation(): void {
 }
 
 /**
- * Reads and verifies the session cookie server-side. Returns null if there's
- * no cookie, it's expired/invalid, or it's missing the clinicId/role custom
- * claims (which means the user account wasn't provisioned correctly — see
- * scripts/createClinic.mjs). Use this in server components and API routes
- * to gate access — NOT in middleware, since the Admin SDK doesn't run in the
- * Edge runtime middleware uses (see middleware.ts for the lightweight check
- * that happens there instead).
+ * Reads and verifies the session cookie server-side. Returns null if
+ * there's no cookie, it's expired/tampered, or it's missing a
+ * clinicId/role (which means the account wasn't provisioned correctly).
+ * Use this in server components and server actions to gate access.
+ *
+ * Unlike the old Firebase-backed version, a disabled account's
+ * already-issued session cookie is NOT force-invalidated the instant
+ * disabled flips true — checking that here would mean a Postgres read on
+ * every single authenticated request just to catch a rare, non-urgent
+ * case (an owner disabling a staff account). Same tradeoff this file
+ * already made for Firebase's checkRevoked (measured at ~245ms/request):
+ * disabling only takes effect the next time that person tries to sign in
+ * again, not mid-session. verifySignedSessionToken itself is pure
+ * signature+expiry verification — no network, no DB.
  */
-// false, not true: verifySessionCookie's checkRevoked param forces a live
-// network round-trip to Firebase on every call when true, which meant
-// every single authenticated page load in the app — not just login — paid
-// for it. Measured directly: ~245ms slower per page load on average with
-// checkRevoked true vs false. The tradeoff is that a revoked/disabled
-// staff account keeps working until their session cookie naturally
-// expires (SESSION_EXPIRES_IN_MS, 5 days) instead of being cut off
-// instantly — acceptable here since that's a rare, non-urgent case for a
-// clinic-staff tool, not worth 245ms on every request.
-const CHECK_REVOKED = false;
-
 export async function getSession(): Promise<Session | null> {
   // A present impersonation cookie always short-circuits to either an
   // impersonated session or null — never falls through to a normal
@@ -121,29 +131,16 @@ export async function getSession(): Promise<Session | null> {
   const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!sessionCookie) return null;
 
-  try {
-    const decoded = await adminAuth().verifySessionCookie(sessionCookie, CHECK_REVOKED);
+  const payload = await verifySignedSessionToken(sessionCookie);
+  if (!payload || !payload.clinicId || !payload.role) return null;
 
-    const clinicId = decoded.clinicId as string | undefined;
-    const role = decoded.role as UserRole | undefined;
-
-    if (!clinicId || !role) {
-      // Token is valid but wasn't issued with the custom claims this app
-      // relies on — treat as unauthenticated rather than guessing defaults.
-      return null;
-    }
-
-    return {
-      uid: decoded.uid,
-      email: decoded.email ?? null,
-      clinicId,
-      role,
-      isSuperAdmin: decoded.superAdmin === true,
-    };
-  } catch {
-    // Expired, revoked, or tampered cookie.
-    return null;
-  }
+  return {
+    uid: payload.uid,
+    email: payload.email,
+    clinicId: payload.clinicId,
+    role: payload.role,
+    isSuperAdmin: payload.superAdmin,
+  };
 }
 
 /**
@@ -160,14 +157,10 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!sessionCookie) return null;
 
-  try {
-    const decoded = await adminAuth().verifySessionCookie(sessionCookie, CHECK_REVOKED);
-    if (decoded.superAdmin !== true) return null;
+  const payload = await verifySignedSessionToken(sessionCookie);
+  if (!payload || payload.superAdmin !== true) return null;
 
-    return { uid: decoded.uid, email: decoded.email ?? null };
-  } catch {
-    return null;
-  }
+  return { uid: payload.uid, email: payload.email };
 }
 
 export { SESSION_COOKIE_NAME };

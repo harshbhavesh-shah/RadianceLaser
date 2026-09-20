@@ -1,32 +1,40 @@
 #!/usr/bin/env node
 /**
  * Creates (or re-seeds) a persistent demo clinic — "Lumière Aesthétique" —
- * fully populated with realistic fake data: staff (with real Firebase Auth
- * logins), machines, a custom treatment type, patients, visits, packages,
- * receipts, and a mix of past/today/upcoming appointments (including a
- * couple of still-unlinked "public booking" ones, to demo that flow too).
- * Unlike a quick manual test clinic, this one is meant to be kept around
- * as a standing demo account — safe to re-run: it always creates a fresh
- * clinic (a new id each time) rather than upserting into an existing one,
- * so re-running this is only for regenerating the demo from scratch, not
- * for topping up an existing one.
+ * fully populated with realistic fake data: staff, machines, a custom
+ * treatment type, patients, visits, packages, receipts, and a mix of
+ * past/today/upcoming appointments (including a couple of still-unlinked
+ * "public booking" ones, to demo that flow too). Unlike a quick manual test
+ * clinic, this one is meant to be kept around as a standing demo account —
+ * safe to re-run: it always creates a fresh clinic (a new id each time)
+ * rather than upserting into an existing one, so re-running this is only
+ * for regenerating the demo from scratch, not for topping up an existing
+ * one (see scripts/topUpDemoClinic.mjs for that).
  *
  * Usage:
  *   node scripts/seedDemoClinic.mjs
  *
- * Requires .env.local to be filled in with FIREBASE_ADMIN_* and
- * DATABASE_URL values. Prints staff login credentials at the end — save
- * them, they're not stored anywhere afterward (passwords are hashed by
- * Firebase Auth, same as any real account).
+ * Requires .env.local to be filled in with DATABASE_URL. Prints staff login
+ * credentials at the end — save them, they're not stored anywhere
+ * afterward (only a scrypt hash is — see lib/auth/password.ts).
  */
 
 import { config } from "dotenv";
 config({ path: ".env.local" });
 import { readFileSync } from "fs";
-import { initializeApp, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { randomBytes, scrypt as scryptCallback } from "crypto";
+import { promisify } from "util";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+
+// Duplicated from lib/auth/password.ts — see scripts/createClinic.mjs's
+// copy of this same comment for why.
+const scrypt = promisify(scryptCallback);
+async function hashPassword(password) {
+  const salt = randomBytes(16);
+  const derived = await scrypt(password, salt, 64);
+  return `scrypt:${salt.toString("hex")}:${derived.toString("hex")}`;
+}
 
 function createPrismaClient() {
   const adapter = new PrismaPg({
@@ -160,20 +168,11 @@ function randomPhone() {
 }
 
 async function main() {
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  if (!projectId || !clientEmail || !privateKey) {
-    console.error("Missing FIREBASE_ADMIN_* values in .env.local");
-    process.exit(1);
-  }
   if (!process.env.DATABASE_URL) {
     console.error("Missing DATABASE_URL in .env.local");
     process.exit(1);
   }
 
-  initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
-  const auth = getAuth();
   const prisma = createPrismaClient();
 
   console.log("=== 1. Creating clinic ===");
@@ -192,28 +191,27 @@ async function main() {
   console.log(`✓ Clinic "${clinic.name}" (id: ${clinic.id})`);
   console.log(`✓ Public booking subdomain: https://${clinicSlug}.radiancelaser.in`);
 
-  console.log("\n=== 2. Creating staff (real Firebase Auth logins) ===");
+  console.log("\n=== 2. Creating staff ===");
   const staffDefs = [
     { name: "Dr. Meera Kapoor", email: "owner@lumiere-aesthetique.test", role: "owner" },
     { name: "Dr. Arjun Malhotra", email: "arjun.malhotra@lumiere-aesthetique.test", role: "doctor" },
     { name: "Dr. Sanya Verma", email: "sanya.verma@lumiere-aesthetique.test", role: "doctor" },
     { name: "Priya Nair", email: "priya.nair@lumiere-aesthetique.test", role: "reception" },
   ];
+  const demoPasswordHash = await hashPassword(DEMO_PASSWORD);
   const staff = [];
   for (const def of staffDefs) {
-    const userRecord = await auth.createUser({ email: def.email, password: DEMO_PASSWORD, displayName: def.name });
-    await auth.setCustomUserClaims(userRecord.uid, { clinicId: clinic.id, role: def.role });
-    await prisma.staffMember.create({
+    const row = await prisma.staffMember.create({
       data: {
-        id: userRecord.uid,
         clinicId: clinic.id,
         name: def.name,
         email: def.email,
         role: def.role,
+        passwordHash: demoPasswordHash,
         createdAt: BigInt(daysAgo(85)),
       },
     });
-    staff.push({ uid: userRecord.uid, name: def.name, role: def.role });
+    staff.push({ uid: row.id, name: def.name, role: def.role });
     console.log(`✓ ${def.role.padEnd(9)} ${def.name} <${def.email}>`);
   }
   const doctors = staff.filter((s) => s.role !== "reception");

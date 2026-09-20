@@ -4,15 +4,12 @@ import { Suspense, useEffect, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { checkResetTokenAction, resetPasswordAction } from "./actions";
 import AuthShell from "@/components/marketing/AuthShell";
 
-// Where the link app/forgot-password's sendPasswordResetEmail generates
-// actually lands (its `url` + handleCodeInApp:true) — Firebase appends
-// oobCode (and mode=resetPassword) as query params rather than routing
-// through its own hosted page, so this reads and consumes that code
-// directly instead of trusting anything else in the URL.
+// Where the link app/forgot-password/actions.ts's issuePasswordResetToken
+// generates actually lands — a plain `token` query param (see
+// lib/auth/passwordReset.ts), not a Firebase oobCode.
 type Stage = "verifying" | "invalid" | "ready" | "done";
 
 export default function ResetPasswordPage() {
@@ -26,30 +23,32 @@ export default function ResetPasswordPage() {
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const oobCode = searchParams.get("oobCode");
+  const token = searchParams.get("token");
 
   const [stage, setStage] = useState<Stage>("verifying");
-  const [email, setEmail] = useState<string | null>(null);
+  const [invalidMessage, setInvalidMessage] = useState("Request a new password reset link and try again.");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!oobCode) {
+    if (!token) {
       setStage("invalid");
       return;
     }
-    verifyPasswordResetCode(auth, oobCode)
-      .then((verifiedEmail) => {
-        setEmail(verifiedEmail);
+    checkResetTokenAction(token).then((result) => {
+      if (result.valid) {
         setStage("ready");
-      })
-      .catch(() => setStage("invalid"));
-  }, [oobCode]);
+      } else {
+        setInvalidMessage(result.error || "Request a new password reset link and try again.");
+        setStage("invalid");
+      }
+    });
+  }, [token]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!oobCode) return;
+    if (!token) return;
     setError(null);
 
     if (password.length < 8) {
@@ -58,13 +57,13 @@ function ResetPasswordForm() {
     }
 
     setLoading(true);
-    try {
-      await confirmPasswordReset(auth, oobCode, password);
-      setStage("done");
-    } catch (err) {
-      console.error("Password reset failed:", err);
-      setError("This link has expired or already been used. Request a new one.");
+    const result = await resetPasswordAction(token, password);
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
     }
+    setStage("done");
     setLoading(false);
   }
 
@@ -82,7 +81,7 @@ function ResetPasswordForm() {
         {stage === "invalid" && (
           <>
             <p className="mb-2 text-center text-sm font-medium text-brown-900">This link is invalid or expired</p>
-            <p className="text-center text-sm text-brown-600">Request a new password reset link and try again.</p>
+            <p className="text-center text-sm text-brown-600">{invalidMessage}</p>
             <Link
               href="/forgot-password"
               className="mt-6 block text-center text-sm font-medium text-gold-600 hover:underline"
@@ -94,9 +93,7 @@ function ResetPasswordForm() {
 
         {stage === "ready" && (
           <>
-            <p className="mb-7 text-center text-sm text-brown-600">
-              Set a new password for <span className="font-medium">{email}</span>.
-            </p>
+            <p className="mb-7 text-center text-sm text-brown-600">Set a new password for your account.</p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-brown-700">

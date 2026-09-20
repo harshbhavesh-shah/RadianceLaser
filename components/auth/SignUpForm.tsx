@@ -4,11 +4,9 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
 import { createTrialClinicAction } from "@/app/signup/actions";
 import { provisionGoogleClinicAction } from "@/app/login/actions";
-import { proceedAfterPrimaryAuth, finishAfterOtp, signInWithGoogle } from "@/lib/authFlow";
+import { signInWithGoogleAndProceed, finishLoginOtp, navigateAfterAuth } from "@/lib/authFlow";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import AuthShell from "@/components/marketing/AuthShell";
 import TurnstileWidget from "@/components/auth/TurnstileWidget";
@@ -16,15 +14,15 @@ import TurnstileWidget from "@/components/auth/TurnstileWidget";
 // form: the normal clinic-name/owner-name/email/password form (or "click
 //   Google").
 // google-clinic-name: a Google account signed in for the first time (no
-//   clinicId claim yet) — needs a clinic name before it can be provisioned.
-// otp: primary auth succeeded (password or an existing Google account
-//   landing here by mistake) and that account has 2FA on — see
+//   StaffMember row yet) — needs a clinic name before it can be provisioned.
+// otp: an existing Google account with 2FA on landed here by mistake — see
 //   lib/authFlow.ts for why this is shared with /login rather than
-//   reimplemented here.
+//   reimplemented here. (A brand-new password signup never hits this stage
+//   itself — createTrialClinicAction signs it straight in.)
 type Stage =
   | { name: "form" }
   | { name: "google-clinic-name"; idToken: string }
-  | { name: "otp"; idToken: string };
+  | { name: "otp"; uid: string };
 
 export default function SignUpForm({ startingPriceInr }: { startingPriceInr: number }) {
   const router = useRouter();
@@ -43,27 +41,12 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
   // blocked waiting on a token that will never arrive.
   const turnstileRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
-  async function afterPrimaryAuth(idToken: string) {
-    const outcome = await proceedAfterPrimaryAuth(idToken, router, null);
-    if (outcome.error) {
-      setError(outcome.error);
-      setLoading(false);
-      return;
-    }
-    if (outcome.otpRequired && outcome.idToken) {
-      setStage({ name: "otp", idToken: outcome.idToken });
-      setLoading(false);
-    }
-  }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      // Step 1: create the clinic + owner account server-side (needs the
-      // Admin SDK to set custom claims — see app/signup/actions.ts).
       const result = await createTrialClinicAction({
         clinicName,
         ownerName,
@@ -76,13 +59,9 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
         setLoading(false);
         return;
       }
-
-      // Step 2: sign in client-side with the same credentials, then run
-      // through the same primary-auth flow /login uses (a brand-new signup
-      // won't have 2FA on yet, but this keeps exactly one code path for
-      // "authenticated, now what").
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      await afterPrimaryAuth(await credential.user.getIdToken());
+      // The session cookie is already set server-side — a brand-new signup
+      // never has 2FA on yet, so there's nothing else to do but navigate.
+      navigateAfterAuth(router, null, result.redirectTo);
     } catch (err) {
       console.error(err);
       setError("Something went wrong signing you in. Please try logging in instead.");
@@ -94,19 +73,24 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
     setError(null);
     setLoading(true);
     try {
-      const credential = await signInWithGoogle();
-      const idTokenResult = await credential.user.getIdTokenResult();
-
-      if (!idTokenResult.claims.clinicId) {
-        setStage({ name: "google-clinic-name", idToken: await credential.user.getIdToken() });
+      // A Google account that already has a clinic (someone who already
+      // signed up landing on /signup again by mistake) is handled the same
+      // as an ordinary login here, 2FA gate included — see lib/authFlow.ts.
+      const outcome = await signInWithGoogleAndProceed(router, null);
+      if (outcome.error) {
+        setError(outcome.error);
         setLoading(false);
         return;
       }
-
-      // This Google account already has a clinic — someone who already
-      // signed up landed on /signup again. Treat it as an ordinary login
-      // rather than erroring, including the 2FA gate if they have it on.
-      await afterPrimaryAuth(await credential.user.getIdToken());
+      if (outcome.needsClinicName && outcome.idToken) {
+        setStage({ name: "google-clinic-name", idToken: outcome.idToken });
+        setLoading(false);
+        return;
+      }
+      if (outcome.otpRequired && outcome.uid) {
+        setStage({ name: "otp", uid: outcome.uid });
+        setLoading(false);
+      }
     } catch (err) {
       console.error(err);
       setError(describeAuthError(err));
@@ -126,9 +110,7 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
         setLoading(false);
         return;
       }
-      if (!auth.currentUser) throw new Error("Session was lost. Please try again.");
-      const freshIdToken = await auth.currentUser.getIdToken(true);
-      await afterPrimaryAuth(freshIdToken);
+      navigateAfterAuth(router, null, result.redirectTo);
     } catch (err) {
       console.error(err);
       setError("Something went wrong setting up your clinic. Please try again.");
@@ -142,7 +124,7 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
     setError(null);
     setLoading(true);
     try {
-      const result = await finishAfterOtp(stage.idToken, otp, router, null);
+      const result = await finishLoginOtp(stage.uid, otp, router, null);
       if (result.error) {
         setError(result.error);
         setLoading(false);

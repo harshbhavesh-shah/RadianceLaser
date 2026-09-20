@@ -1,33 +1,53 @@
 #!/usr/bin/env node
 /**
- * Grants (or revokes) the platform-level `superAdmin` custom claim on an
- * existing Firebase Auth user — this is what unlocks /admin (see
- * lib/session.ts getAdminSession()). Independent of clinicId/role: the same
- * account can be a clinic's owner AND the platform super-admin at once, or
- * a standalone admin account with no clinic at all. There's no in-product
- * way to grant this — deliberately, since anyone with it can see and change
- * every clinic's subscription status.
+ * Grants (or revokes) platform-level super-admin access — this is what
+ * unlocks /admin (see lib/session.ts getAdminSession()). An account that
+ * already has a clinic (StaffMember row) gets superAdmin=true set directly
+ * on that row, so the same account stays both a clinic's owner/staff AND
+ * the platform admin. An email with no clinic at all becomes a standalone
+ * PlatformAdmin row instead (see prisma/schema.prisma) — there's no
+ * in-product way to grant either, deliberately, since anyone with this can
+ * see and change every clinic's subscription status.
  *
  * Usage:
  *   node scripts/grantSuperAdmin.mjs --email you@example.com
  *   node scripts/grantSuperAdmin.mjs --email you@example.com --revoke
  *
- *   # If the account doesn't exist yet (e.g. a standalone admin login with
- *   # no clinic), pass --password to create it first:
+ *   # If the email matches no account at all (a standalone admin login with
+ *   # no clinic), pass --password to create one:
  *   node scripts/grantSuperAdmin.mjs --email admin@example.com --password "some-temp-password"
  *
- *   # --password also works against an EXISTING account (e.g. one that so
- *   # far only has Google Sign-In linked, no password) — it sets/resets
+ *   # --password also works against an EXISTING account — it sets/resets
  *   # that account's password rather than being ignored.
  *   node scripts/grantSuperAdmin.mjs --email admin@example.com --password "new-password"
  *
- * Requires .env.local to be filled in with FIREBASE_ADMIN_* values.
+ * Requires .env.local to be filled in with DATABASE_URL.
  */
 
 import { config } from "dotenv";
 config({ path: ".env.local" });
-import { initializeApp, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { readFileSync } from "fs";
+import { randomBytes, scrypt as scryptCallback } from "crypto";
+import { promisify } from "util";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
+
+// Duplicated from lib/auth/password.ts — see scripts/createClinic.mjs's
+// copy of this same comment for why.
+const scrypt = promisify(scryptCallback);
+async function hashPassword(password) {
+  const salt = randomBytes(16);
+  const derived = await scrypt(password, salt, 64);
+  return `scrypt:${salt.toString("hex")}:${derived.toString("hex")}`;
+}
+
+function createPrismaClient() {
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { ca: readFileSync("global-bundle.pem", "utf-8"), rejectUnauthorized: true },
+  });
+  return new PrismaClient({ adapter });
+}
 
 function parseArgs() {
   const args = {};
@@ -55,75 +75,71 @@ async function main() {
     );
     process.exit(1);
   }
-
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-  if (!projectId || !clientEmail || !privateKey) {
-    console.error("Missing FIREBASE_ADMIN_* values in .env.local");
+  if (!process.env.DATABASE_URL) {
+    console.error("Missing DATABASE_URL in .env.local");
     process.exit(1);
   }
 
-  initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
-  const auth = getAuth();
+  const prisma = createPrismaClient();
+  const normalizedEmail = email.trim().toLowerCase();
 
-  let userRecord;
-  let accountExisted = true;
-  try {
-    userRecord = await auth.getUserByEmail(email);
-  } catch (err) {
-    if (err.code !== "auth/user-not-found") throw err;
-    accountExisted = false;
-
-    if (!password) {
-      console.error(
-        `No account exists for ${email} yet. Pass --password "some-temp-password" to create one, ` +
-        "e.g.:\n  node scripts/grantSuperAdmin.mjs --email " + email + ' --password "some-temp-password"'
-      );
-      process.exit(1);
+  const staff = await prisma.staffMember.findUnique({ where: { email: normalizedEmail } });
+  if (staff) {
+    if (password) {
+      await prisma.staffMember.update({
+        where: { id: staff.id },
+        data: { passwordHash: await hashPassword(password) },
+      });
+      console.log(`✓ Set password for existing staff account ${normalizedEmail}`);
     }
+    await prisma.staffMember.update({ where: { id: staff.id }, data: { superAdmin: !revoke } });
+    console.log(`✓ ${revoke ? "Revoked" : "Granted"} superAdmin ${revoke ? "from" : "to"} ${normalizedEmail} (clinic staff, id: ${staff.id})`);
+    await prisma.$disconnect();
+    return;
+  }
+
+  const platformAdmin = await prisma.platformAdmin.findUnique({ where: { email: normalizedEmail } });
+  if (platformAdmin) {
     if (revoke) {
-      console.error("Nothing to revoke — no account exists for this email.");
-      process.exit(1);
+      await prisma.platformAdmin.delete({ where: { id: platformAdmin.id } });
+      console.log(`✓ Removed standalone platform admin account ${normalizedEmail}`);
+      await prisma.$disconnect();
+      return;
     }
-
-    userRecord = await auth.createUser({ email, password });
-    console.log(`✓ Created account ${email} (uid: ${userRecord.uid})`);
+    if (password) {
+      await prisma.platformAdmin.update({
+        where: { id: platformAdmin.id },
+        data: { passwordHash: await hashPassword(password) },
+      });
+      console.log(`✓ Set password for existing platform admin account ${normalizedEmail}`);
+    } else {
+      console.log(`✓ ${normalizedEmail} already has standalone superAdmin access.`);
+    }
+    await prisma.$disconnect();
+    return;
   }
 
-  // An account that already exists (e.g. created earlier via Google
-  // Sign-In, which links no password credential at all) previously made
-  // --password silently do nothing here — this was a real bug, not user
-  // error: the flag only ever took effect in the create-new-account branch
-  // above. Applying it here too means --password reliably sets/resets the
-  // password whether the account is brand new or not.
-  if (accountExisted && password) {
-    await auth.updateUser(userRecord.uid, { password });
-    console.log(`✓ Set password for existing account ${email}`);
-  }
-
-  const existingClaims = userRecord.customClaims || {};
-
-  const newClaims = { ...existingClaims };
   if (revoke) {
-    delete newClaims.superAdmin;
-  } else {
-    newClaims.superAdmin = true;
+    console.error("Nothing to revoke — no account exists for this email.");
+    process.exit(1);
+  }
+  if (!password) {
+    console.error(
+      `No account exists for ${normalizedEmail} yet. Pass --password "some-temp-password" to create one, ` +
+      "e.g.:\n  node scripts/grantSuperAdmin.mjs --email " + normalizedEmail + ' --password "some-temp-password"'
+    );
+    process.exit(1);
   }
 
-  await auth.setCustomUserClaims(userRecord.uid, newClaims);
+  const created = await prisma.platformAdmin.create({
+    data: { email: normalizedEmail, passwordHash: await hashPassword(password), createdAt: BigInt(Date.now()) },
+  });
+  console.log(`✓ Created standalone platform admin account ${normalizedEmail} (id: ${created.id})`);
 
-  console.log(
-    `✓ ${revoke ? "Revoked" : "Granted"} superAdmin ${revoke ? "from" : "to"} ${email} (uid: ${userRecord.uid})`
-  );
-  console.log(
-    "Note: if they're already signed in anywhere, they'll need to sign out and back in " +
-    "for the new claim to take effect (Firebase caches the token client-side)."
-  );
+  await prisma.$disconnect();
 }
 
 main().catch((err) => {
-  console.error("Failed to update superAdmin claim:", err);
+  console.error("Failed to update superAdmin access:", err);
   process.exit(1);
 });

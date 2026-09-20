@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import { GoogleAuthProvider, signInWithCredential, signInWithPopup, type UserCredential } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
-import { requestTwoFactorIfEnabledAction, verifyTwoFactorCodeAction } from "@/app/login/actions";
+import { createSessionFromGoogleIdToken, verifyLoginTwoFactorAction } from "@/app/login/actions";
 
 /**
  * Shared by app/login/page.tsx and components/auth/SignUpForm.tsx. Google
@@ -14,6 +14,10 @@ import { requestTwoFactorIfEnabledAction, verifyTwoFactorCodeAction } from "@/ap
  * picker instead (via @capacitor-firebase/authentication) and exchanges the
  * resulting Google credential for a Firebase sign-in with signInWithCredential,
  * so callers get back the same UserCredential shape either way.
+ *
+ * Email/password sign-in no longer touches Firebase at all (see
+ * app/login/actions.ts signInAction) — Google is the one remaining path
+ * that still does, until a later migration chunk replaces this too.
  */
 export async function signInWithGoogle(): Promise<UserCredential> {
   if (!Capacitor.isNativePlatform()) {
@@ -36,67 +40,59 @@ interface MinimalRouter {
   refresh: () => void;
 }
 
-/**
- * Shared by app/login/page.tsx and app/signup/page.tsx (Google sign-in on
- * the signup page can land on an account that already exists, e.g. someone
- * who already has an account clicking "Continue with Google" on /signup by
- * mistake) so the "primary auth succeeded → check 2FA → exchange for a
- * session cookie" sequence — and specifically the 2FA gate — only lives in
- * one place. Duplicating it per entry point would risk one of them quietly
- * drifting out of sync and becoming a way to bypass a user's own 2FA.
- */
-async function exchangeForSession(idToken: string, router: MinimalRouter, nextParam: string | null) {
-  const res = await fetch("/api/auth/session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken }),
-  });
-  if (!res.ok) throw new Error("Could not start a session. Please try again.");
-
-  // A super-admin-only account (no clinicId at all) has nothing to show at
-  // /dashboard — app/dashboard/layout.tsx's getSession() would return null
-  // for it and bounce straight back to /login. Default it to /admin
-  // instead; an explicit ?next= (e.g. from middleware redirecting an
-  // unauthenticated visit) still wins either way.
-  const payload = JSON.parse(atob(idToken.split(".")[1]));
-  const isAdminOnly = payload.superAdmin === true && !payload.clinicId;
-  const next = nextParam || (isAdminOnly ? "/admin" : "/dashboard");
-  router.push(next);
+function navigateAfterAuth(router: MinimalRouter, nextParam: string | null, redirectTo: string | undefined) {
+  router.push(nextParam || redirectTo || "/dashboard");
   router.refresh();
 }
 
-export interface PrimaryAuthOutcome {
+export interface GoogleAuthOutcome {
   otpRequired?: boolean;
+  uid?: string;
+  needsClinicName?: boolean;
   idToken?: string;
+  suggestedName?: string;
   error?: string;
 }
 
-/** Call after ANY primary auth succeeds (password or Google) for an account
- * that already has a clinicId claim. Returns {otpRequired: true, idToken}
- * if the caller should show an OTP entry screen instead of navigating away
- * — otherwise the session cookie is already set and the router has already
- * navigated. */
-export async function proceedAfterPrimaryAuth(
-  idToken: string,
+/**
+ * Runs Google sign-in (web popup or native) then hands the resulting ID
+ * token to the server-side bridge (app/login/actions.ts
+ * createSessionFromGoogleIdToken) — shared by app/login/page.tsx and
+ * app/signup/page.tsx (a Google sign-in on the signup page can land on an
+ * account that already exists) so this sequence can't drift out of sync or
+ * accidentally skip the 2FA gate between the two entry points.
+ */
+export async function signInWithGoogleAndProceed(
   router: MinimalRouter,
   nextParam: string | null
-): Promise<PrimaryAuthOutcome> {
-  const check = await requestTwoFactorIfEnabledAction(idToken);
-  if (check.error) return { error: check.error };
-  if (check.required) return { otpRequired: true, idToken };
-  await exchangeForSession(idToken, router, nextParam);
+): Promise<GoogleAuthOutcome> {
+  const credential = await signInWithGoogle();
+  const idToken = await credential.user.getIdToken();
+  const result = await createSessionFromGoogleIdToken(idToken);
+
+  if (result.error) return { error: result.error };
+  if (result.needsClinicName) {
+    return { needsClinicName: true, idToken: result.idToken, suggestedName: result.suggestedName };
+  }
+  if (result.otpRequired) return { otpRequired: true, uid: result.uid };
+
+  navigateAfterAuth(router, nextParam, result.redirectTo);
   return {};
 }
 
-/** Call once the user submits the code from the OTP screen `proceedAfterPrimaryAuth` triggered. */
-export async function finishAfterOtp(
-  idToken: string,
+/** Call once the user submits the code from the OTP screen sign-in (password
+ * or Google) triggered — both funnel into the same uid-keyed 2FA challenge
+ * (see lib/twoFactor.ts), so this one function covers either entry point. */
+export async function finishLoginOtp(
+  uid: string,
   code: string,
   router: MinimalRouter,
   nextParam: string | null
 ): Promise<{ error?: string }> {
-  const result = await verifyTwoFactorCodeAction(idToken, code);
+  const result = await verifyLoginTwoFactorAction(uid, code);
   if (result.error) return { error: result.error };
-  await exchangeForSession(idToken, router, nextParam);
+  navigateAfterAuth(router, nextParam, result.redirectTo);
   return {};
 }
+
+export { navigateAfterAuth };
