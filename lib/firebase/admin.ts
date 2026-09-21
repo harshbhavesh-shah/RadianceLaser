@@ -2,10 +2,16 @@
 // rules, so it must NEVER be imported into a client component or anything
 // bundled for the browser. It's used in: API routes, server components, and
 // the one-off scripts/ folder.
+//
+// Auth is deliberately NOT exported from here anymore — sign-in is fully
+// self-rolled (see lib/session.ts, lib/auth/*), and Google sign-in
+// verifies identity via lib/auth/googleSignIn.ts's plain fetch calls, not
+// this SDK. Firestore and Messaging remain: plenty of data still lives in
+// Firestore (see lib/firestore/*), and push notifications go through FCM
+// (lib/push/send.ts) — neither has anything to do with authentication.
 
 import "server-only";
 import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getMessaging, type Messaging } from "firebase-admin/messaging";
 
@@ -14,7 +20,7 @@ import { getMessaging, type Messaging } from "firebase-admin/messaging";
 // which would otherwise run this initialization (and require real Firebase
 // credentials) at build time instead of request time. Wrapping it in a
 // function means it only actually runs the first time a route/component
-// calls adminAuth()/adminDb() while handling a real request.
+// calls adminDb()/adminMessaging() while handling a real request.
 let _adminApp: App | undefined;
 
 function getAdminApp(): App {
@@ -40,10 +46,6 @@ function getAdminApp(): App {
     credential: cert({ projectId, clientEmail, privateKey }),
   });
   return _adminApp;
-}
-
-export function adminAuth(): Auth {
-  return getAuth(getAdminApp());
 }
 
 export function adminDb(): Firestore {

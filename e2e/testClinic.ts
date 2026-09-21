@@ -3,7 +3,6 @@ config({ path: ".env.local" });
 
 import { readFileSync } from "fs";
 import { initializeApp, cert, getApps } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
@@ -52,7 +51,6 @@ export interface TestClinic {
  * UI sweeps have used all along, just made reusable for Playwright. */
 export async function createTestClinic(): Promise<TestClinic> {
   ensureFirebaseAdmin();
-  const auth = getAuth();
   const db = getFirestore();
   const prisma = createPrismaClient();
 
@@ -68,28 +66,17 @@ export async function createTestClinic(): Promise<TestClinic> {
   });
   await db.collection("clinics").doc(clinic.id).set({ subscriptionStatus: "trialing", trialEndsAt }, { merge: true });
 
-  // The Firebase Auth account below is no longer what /login actually
-  // checks (see lib/session.ts / app/login/actions.ts — sign-in is
-  // self-rolled against StaffMember.passwordHash now), but is kept around
-  // harmlessly for now since deleteTestClinic() still cleans it up the same
-  // way. The passwordHash is what really lets e2e/login.spec.ts sign in.
-  const userRecord = await auth.createUser({ email, password, displayName: "E2E Test Owner" });
+  // Sign-in is fully self-rolled now (see lib/session.ts,
+  // app/login/actions.ts) — no external Auth account to create, just a row
+  // with a real passwordHash, same as any account created through the app.
   const passwordHash = await hashPassword(password);
-  await prisma.staffMember.create({
-    data: {
-      id: userRecord.uid,
-      clinicId: clinic.id,
-      name: "E2E Test Owner",
-      email,
-      role: "owner",
-      passwordHash,
-      createdAt: Date.now(),
-    },
+  const staff = await prisma.staffMember.create({
+    data: { clinicId: clinic.id, name: "E2E Test Owner", email, role: "owner", passwordHash, createdAt: Date.now() },
   });
 
   await prisma.$disconnect();
 
-  return { clinicId: clinic.id, clinicName, uid: userRecord.uid, email, password };
+  return { clinicId: clinic.id, clinicName, uid: staff.id, email, password };
 }
 
 // Every Prisma model keyed by clinicId, as its client accessor name — see
@@ -127,9 +114,8 @@ const CLINIC_SCOPED_MODELS = [
   "whatsAppMessage",
 ] as const;
 
-export async function deleteTestClinic(clinicId: string, uid: string): Promise<void> {
+export async function deleteTestClinic(clinicId: string): Promise<void> {
   ensureFirebaseAdmin();
-  const auth = getAuth();
   const db = getFirestore();
   const prisma = createPrismaClient();
 
@@ -142,7 +128,6 @@ export async function deleteTestClinic(clinicId: string, uid: string): Promise<v
   await prisma.clinic.delete({ where: { id: clinicId } }).catch(() => {}); // already gone is fine
 
   await db.collection("clinics").doc(clinicId).delete().catch(() => {});
-  await auth.deleteUser(uid).catch(() => {}); // already gone is fine
 
   await prisma.$disconnect();
 }

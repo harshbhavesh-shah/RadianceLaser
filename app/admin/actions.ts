@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { getAdminSession, startImpersonation, stopImpersonation, peekImpersonation } from "@/lib/session";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminDb } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/db/client";
 import { clinicCacheTag, updateClinicSubscription, updateClinicPlanTier, deleteClinic } from "@/lib/db/clinics";
 import type { PlanTier } from "@/lib/entitlements";
@@ -313,9 +313,9 @@ async function deleteQueryInChunks(query: FirebaseFirestore.Query): Promise<numb
 /**
  * Permanently deletes a clinic and everything it owns — every clinic-scoped
  * Firestore collection (see CLINIC_SCOPED_COLLECTIONS), its WhatsApp
- * connection doc, every staff member's Firebase Auth account and any
- * pending 2FA challenge of theirs, and finally the clinic doc itself.
- * Irreversible — there's no soft-delete/undo here, unlike
+ * connection doc, every staff member's row (and any pending 2FA challenge
+ * of theirs), and finally the clinic doc itself. Irreversible — there's no
+ * soft-delete/undo here, unlike
  * terminateAccessAction which just locks writes. The confirmation typing
  * the clinic's exact name lives client-side (ClinicsTable) since that's a
  * UX safeguard, not a security boundary — requireSuperAdmin() is the real
@@ -326,7 +326,6 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
     const session = await requireSuperAdmin();
 
     const db = adminDb();
-    const auth = adminAuth();
     // Checked in both stores, same reasoning as the staff uid collection
     // just below: a clinic created before Clinic moved to Postgres (see
     // lib/db/clinics.ts) may only exist as a Firestore doc.
@@ -337,14 +336,12 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
     if (!clinicRow && !clinicSnap.exists) return { error: "Clinic not found." };
     const clinicName = clinicRow?.name ?? (clinicSnap.data()?.name as string | undefined) ?? clinicId;
 
-    // Staff docs/rows double as the id of who to delete from Firebase Auth —
-    // collect their uids before deleting them below. Checked in both
-    // stores: StaffMember moved to Postgres (see lib/db/staff.ts), but a
-    // clinic whose staff were created before that move may still have
-    // Firestore-era staff docs that were never touched by it (this
-    // migration deliberately doesn't backfill old data — see
-    // prisma/schema.prisma's chunk-1 comment) — missing either would leave
-    // orphaned Auth accounts behind.
+    // Staff docs/rows double as the id of whose pending 2FA challenges to
+    // clean up below. Checked in both stores: StaffMember moved to Postgres
+    // (see lib/db/staff.ts), but a clinic whose staff were created before
+    // that move may still have Firestore-era staff docs that were never
+    // touched by it (this migration deliberately doesn't backfill old
+    // data — see prisma/schema.prisma's chunk-1 comment).
     const [staffSnap, staffRows] = await Promise.all([
       db.collection("staff").where("clinicId", "==", clinicId).get(),
       prisma.staffMember.findMany({ where: { clinicId }, select: { id: true } }),
@@ -377,11 +374,6 @@ export async function deleteClinicAction(clinicId: string): Promise<AdminActionR
 
     for (const uid of staffUids) {
       await prisma.twoFactorChallenge.deleteMany({ where: { uid } });
-      await auth.deleteUser(uid).catch((err) => {
-        // A uid with no matching Auth user (already removed some other way)
-        // shouldn't block the rest of the deletion — log and move on.
-        console.error(`Failed to delete Auth user ${uid} for clinic ${clinicId}:`, err);
-      });
     }
 
     // deleteClinic handles both the Postgres row (if any) and the Firestore

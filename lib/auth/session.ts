@@ -19,7 +19,10 @@ export interface SessionTokenPayload {
   exp: number; // ms epoch — checked by verifySignedSessionToken, not by verifyToken itself
 }
 
-function getSecret(): string {
+/** Also used directly by app/login/actions.ts for the short-lived
+ * "Google account verified, now pick a clinic name" ticket — same secret,
+ * same signedToken.ts primitive, just a different payload shape. */
+export function getAuthSecret(): string {
   const secret = process.env.AUTH_SESSION_SECRET;
   if (!secret) {
     throw new Error("Missing AUTH_SESSION_SECRET in .env.local. See .env.local.example.");
@@ -31,7 +34,7 @@ export async function createSignedSessionToken(
   input: Omit<SessionTokenPayload, "exp">,
   expiresInMs: number
 ): Promise<string> {
-  return signToken({ ...input, exp: Date.now() + expiresInMs }, getSecret());
+  return signToken({ ...input, exp: Date.now() + expiresInMs }, getAuthSecret());
 }
 
 /** Verifies signature + expiry and shape. Returns null for anything else —
@@ -39,7 +42,7 @@ export async function createSignedSessionToken(
  * even in this format at all (e.g. a stale Firebase session cookie from
  * before this migration, which has a different segment count/shape). */
 export async function verifySignedSessionToken(token: string): Promise<SessionTokenPayload | null> {
-  const payload = await verifyToken<SessionTokenPayload>(token, getSecret());
+  const payload = await verifyToken<SessionTokenPayload>(token, getAuthSecret());
   if (!payload) return null;
   if (typeof payload.uid !== "string" || payload.uid.length === 0) return null;
   if (typeof payload.superAdmin !== "boolean") return null;

@@ -1,6 +1,5 @@
 "use server";
 
-import { adminAuth } from "@/lib/firebase/admin";
 import { verifyPassword } from "@/lib/auth/password";
 import {
   getStaffAuthRecordByEmail,
@@ -12,6 +11,9 @@ import { getPlatformAdminByEmail } from "@/lib/db/platformAdmins";
 import { checkAndRecordLoginAttempt } from "@/lib/db/loginAttempts";
 import { createClinic } from "@/lib/db/clinics";
 import { createSessionCookieForSubject } from "@/lib/session";
+import { getAuthSecret } from "@/lib/auth/session";
+import { signToken, verifyToken } from "@/lib/auth/signedToken";
+import { verifyGoogleSignInCode, verifyGoogleIdToken, type GoogleIdentity } from "@/lib/auth/googleSignIn";
 import { issueTwoFactorChallenge, verifyTwoFactorCode } from "@/lib/twoFactor";
 import { TRIAL_LENGTH_DAYS } from "@/lib/subscription";
 import type { UserRole } from "@/types";
@@ -132,10 +134,15 @@ export interface GoogleSignInResult {
   error?: string;
   redirectTo?: string;
   needsClinicName?: boolean;
-  // Only set alongside needsClinicName — echoed back to
-  // provisionGoogleClinicAction so it doesn't need to re-verify the ID
-  // token characteristics the client already has in hand.
-  idToken?: string;
+  // Only set alongside needsClinicName — a short-lived signed ticket
+  // proving Google already verified this email, echoed back to
+  // provisionGoogleClinicAction. Not a raw ID token/code: the code from the
+  // web popup flow is already single-use-consumed by the time this
+  // returns, and re-deriving one for the native path would mean asking
+  // Google twice for no reason — this ticket is our own, cheap to verify
+  // (no network call), and carries exactly the one fact the next step
+  // needs (see PROVISION_TICKET_PURPOSE below).
+  ticket?: string;
   suggestedName?: string;
   // Same otpRequired/uid shape as SignInResult — the client's OTP-entry
   // step (finishAfterOtp in lib/authFlow.ts) is shared between both sign-in
@@ -144,49 +151,62 @@ export interface GoogleSignInResult {
   uid?: string;
 }
 
-/**
- * TEMPORARY Google sign-in bridge — Google sign-in (web popup + native
- * Android) still goes through Firebase Auth for one more migration chunk
- * (verifying who this Google account is), but no longer through Firebase's
- * createSessionCookie/custom-claims machinery: clinicId/role/superAdmin all
- * come straight from this account's own StaffMember row in Postgres now,
- * the same single source of truth email/password login uses. Once native
- * Google sign-in is migrated off Firebase entirely, this whole function
- * goes away and Google sign-in becomes just another call into
- * createSessionCookieForSubject.
- */
-export async function createSessionFromGoogleIdToken(idToken: string): Promise<GoogleSignInResult> {
-  try {
-    const decoded = await adminAuth().verifyIdToken(idToken);
-    const staff = await getStaffAuthRecordByUid(decoded.uid);
+const PROVISION_TICKET_PURPOSE = "google-clinic-provision";
+const PROVISION_TICKET_TTL_MS = 10 * 60 * 1000; // 10 minutes — just long enough to type a clinic name
 
-    if (!staff) {
-      return {
-        needsClinicName: true,
-        idToken,
-        suggestedName: (decoded.name as string | undefined) || decoded.email || undefined,
-      };
-    }
-    if (staff.disabled) return { error: "This account has been disabled. Contact your clinic owner." };
+interface ProvisionTicketPayload {
+  purpose: typeof PROVISION_TICKET_PURPOSE;
+  email: string;
+  name: string | null;
+  exp: number;
+}
 
-    const staffMember = await getStaffMemberByUid(staff.id);
-    if (staffMember?.twoFactorEnabled) {
-      await issueTwoFactorChallenge(staff.id, decoded.email || "");
-      return { otpRequired: true, uid: staff.id };
-    }
-
-    await createSessionCookieForSubject({
-      uid: staff.id,
-      email: decoded.email || null,
-      clinicId: staff.clinicId,
-      role: staff.role,
-      superAdmin: staff.superAdmin,
-    });
-    return { redirectTo: redirectFor(staff.clinicId, staff.superAdmin) };
-  } catch (err) {
-    console.error("Failed to sign in with Google:", err);
-    return { error: "Something went wrong signing you in. Please try again." };
+async function finishGoogleSignIn(identity: GoogleIdentity): Promise<GoogleSignInResult> {
+  if (!identity.emailVerified) {
+    return { error: "Your Google account's email address isn't verified." };
   }
+  const email = identity.email.toLowerCase();
+
+  const staff = await getStaffAuthRecordByEmail(email);
+  if (!staff) {
+    const ticket = await signToken(
+      { purpose: PROVISION_TICKET_PURPOSE, email, name: identity.name, exp: Date.now() + PROVISION_TICKET_TTL_MS },
+      getAuthSecret()
+    );
+    return { needsClinicName: true, ticket, suggestedName: identity.name || undefined };
+  }
+  if (staff.disabled) return { error: "This account has been disabled. Contact your clinic owner." };
+
+  const staffMember = await getStaffMemberByUid(staff.id);
+  if (staffMember?.twoFactorEnabled) {
+    await issueTwoFactorChallenge(staff.id, email);
+    return { otpRequired: true, uid: staff.id };
+  }
+
+  await createSessionCookieForSubject({
+    uid: staff.id,
+    email,
+    clinicId: staff.clinicId,
+    role: staff.role,
+    superAdmin: staff.superAdmin,
+  });
+  return { redirectTo: redirectFor(staff.clinicId, staff.superAdmin) };
+}
+
+/** Web sign-in — see lib/authFlow.ts for the Google Identity Services popup
+ * flow that produces this authorization code. */
+export async function signInWithGoogleCodeAction(code: string): Promise<GoogleSignInResult> {
+  const identity = await verifyGoogleSignInCode(code);
+  if (!identity) return { error: "Google sign-in failed. Please try again." };
+  return finishGoogleSignIn(identity);
+}
+
+/** Native (Android) sign-in — the device's own account picker hands back
+ * an ID token directly, no code exchange needed. */
+export async function signInWithGoogleIdTokenAction(idToken: string): Promise<GoogleSignInResult> {
+  const identity = await verifyGoogleIdToken(idToken);
+  if (!identity) return { error: "Google sign-in failed. Please try again." };
+  return finishGoogleSignIn(identity);
 }
 
 export interface ProvisionGoogleClinicResult {
@@ -197,22 +217,25 @@ export interface ProvisionGoogleClinicResult {
 /**
  * The Google-sign-in equivalent of app/signup/actions.ts
  * createTrialClinicAction — used when someone completes Google sign-in for
- * the first time (no StaffMember row for their uid yet, per
- * createSessionFromGoogleIdToken above). Re-verifies the ID token itself
- * (not just trusting the uid the client echoes back) so this can't be used
- * to attach a clinic to an arbitrary account.
+ * the first time (no StaffMember row for their email yet, per
+ * finishGoogleSignIn above). Verifies the ticket itself (not just trusting
+ * the email the client echoes back) so this can't be used to attach a
+ * clinic to an arbitrary address.
  */
 export async function provisionGoogleClinicAction(
-  idToken: string,
+  ticket: string,
   clinicName: string
 ): Promise<ProvisionGoogleClinicResult> {
   const trimmedName = clinicName.trim();
   if (!trimmedName) return { error: "Clinic name is required." };
 
-  try {
-    const decoded = await adminAuth().verifyIdToken(idToken);
+  const payload = await verifyToken<ProvisionTicketPayload>(ticket, getAuthSecret());
+  if (!payload || payload.purpose !== PROVISION_TICKET_PURPOSE || Date.now() > payload.exp) {
+    return { error: "This sign-in has expired. Please try Google sign-in again." };
+  }
 
-    const existing = await getStaffAuthRecordByUid(decoded.uid);
+  try {
+    const existing = await getStaffAuthRecordByEmail(payload.email);
     if (existing) {
       return { error: "This account is already attached to a clinic." };
     }
@@ -221,18 +244,17 @@ export async function provisionGoogleClinicAction(
     const clinic = await createClinic({ name: trimmedName, subscriptionStatus: "trialing", trialEndsAt });
 
     const role: UserRole = "owner";
-    await createStaffMember({
-      id: decoded.uid,
+    const staff = await createStaffMember({
       clinicId: clinic.id,
-      name: decoded.name || decoded.email || "Clinic Owner",
-      email: decoded.email || "",
+      name: payload.name || payload.email,
+      email: payload.email,
       role,
       passwordHash: null,
     });
 
     await createSessionCookieForSubject({
-      uid: decoded.uid,
-      email: decoded.email || null,
+      uid: staff.id,
+      email: payload.email,
       clinicId: clinic.id,
       role,
       superAdmin: false,

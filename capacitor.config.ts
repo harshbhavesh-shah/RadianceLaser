@@ -38,12 +38,19 @@ const config: CapacitorConfig = {
       backgroundColor: "#FBF8F3",
       style: "DARK", // dark icons/text — every screen sits on a light background
     },
-    FirebaseAuthentication: {
-      // Native Google Sign-In (Android's own account picker) instead of
-      // the web signInWithPopup() flow, which Google blocks inside an
-      // embedded WebView — see lib/authFlow.ts signInWithGoogle().
-      providers: ["google.com"],
-      skipNativeAuth: false,
+    SocialLogin: {
+      // Native Google Sign-In (Android's own Credential Manager account
+      // picker) instead of the web popup flow, which Google blocks inside
+      // an embedded WebView — see lib/authFlow.ts signInWithGoogleNative().
+      // webClientId is the Web application OAuth client (GOOGLE_CLIENT_ID),
+      // the same one the server verifies ID tokens against — NOT the
+      // separate Android-type client Google Cloud Console also needs
+      // (registered there only, by package name + signing SHA-1, never
+      // referenced in code). See @capgo/capacitor-social-login's README
+      // for why Credential Manager requires exactly this split.
+      google: {
+        webClientId: "1010631493574-5gpchvg3dj2k5si2aairtv9lpojhresa.apps.googleusercontent.com",
+      },
     },
   },
 };

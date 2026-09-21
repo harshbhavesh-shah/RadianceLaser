@@ -17,7 +17,7 @@ import { signInWithGoogleAndProceed, finishLoginOtp, navigateAfterAuth } from "@
 type Stage =
   | { name: "credentials" }
   | { name: "otp"; uid: string }
-  | { name: "google-clinic-name"; idToken: string; suggestedName: string };
+  | { name: "google-clinic-name"; ticket: string; suggestedName: string };
 
 export default function LoginPage() {
   return (
@@ -72,8 +72,8 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      if (outcome.needsClinicName && outcome.idToken) {
-        setStage({ name: "google-clinic-name", idToken: outcome.idToken, suggestedName: outcome.suggestedName || "" });
+      if (outcome.needsClinicName && outcome.ticket) {
+        setStage({ name: "google-clinic-name", ticket: outcome.ticket, suggestedName: outcome.suggestedName || "" });
         setLoading(false);
         return;
       }
@@ -95,7 +95,7 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const result = await provisionGoogleClinicAction(stage.idToken, clinicName);
+      const result = await provisionGoogleClinicAction(stage.ticket, clinicName);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -317,31 +317,11 @@ function GoogleIcon() {
   );
 }
 
-// Turns a raw Firebase Auth error into something specific and actionable.
-// Only the Google sign-in path can still throw one of these now — the
-// email/password path returns plain error strings from signInAction
-// directly (see app/login/actions.ts), never a Firebase error code.
+// signInWithGoogleAndProceed (lib/authFlow.ts) throws a plain Error — from
+// Google Identity Services itself (e.g. the popup being closed) or from
+// the native plugin — rather than a Firebase error code, so there's no
+// code to switch on anymore, just its message.
 function describeGoogleAuthError(err: unknown): string {
-  const code = (err as { code?: string })?.code ?? "";
-
-  switch (code) {
-    case "auth/too-many-requests":
-      return "Too many failed attempts. Please wait a moment and try again.";
-    case "auth/network-request-failed":
-      return "Network error. Check your connection and try again.";
-    case "auth/popup-closed-by-user":
-    case "auth/cancelled-popup-request":
-      return "Sign-in was cancelled.";
-    case "auth/operation-not-allowed":
-      return "That sign-in method isn't enabled for this Firebase project yet " +
-        "(Firebase Console → Authentication → Sign-in method).";
-    case "auth/invalid-api-key":
-    case "auth/api-key-not-valid":
-      return "Firebase client config looks wrong. Double-check the NEXT_PUBLIC_FIREBASE_* " +
-        "values in .env.local match your Firebase project.";
-    default:
-      return code
-        ? `Google sign-in failed (${code}). Check the browser console for details.`
-        : "Something went wrong with Google sign-in. Check the browser console for details.";
-  }
+  if (err instanceof Error && err.message) return err.message;
+  return "Something went wrong with Google sign-in. Please try again.";
 }

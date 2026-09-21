@@ -21,7 +21,7 @@ import TurnstileWidget from "@/components/auth/TurnstileWidget";
 //   itself — createTrialClinicAction signs it straight in.)
 type Stage =
   | { name: "form" }
-  | { name: "google-clinic-name"; idToken: string }
+  | { name: "google-clinic-name"; ticket: string }
   | { name: "otp"; uid: string };
 
 export default function SignUpForm({ startingPriceInr }: { startingPriceInr: number }) {
@@ -82,8 +82,8 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
         setLoading(false);
         return;
       }
-      if (outcome.needsClinicName && outcome.idToken) {
-        setStage({ name: "google-clinic-name", idToken: outcome.idToken });
+      if (outcome.needsClinicName && outcome.ticket) {
+        setStage({ name: "google-clinic-name", ticket: outcome.ticket });
         setLoading(false);
         return;
       }
@@ -104,7 +104,7 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
     setError(null);
     setLoading(true);
     try {
-      const result = await provisionGoogleClinicAction(stage.idToken, clinicName);
+      const result = await provisionGoogleClinicAction(stage.ticket, clinicName);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -350,17 +350,10 @@ function GoogleIcon() {
   );
 }
 
+// signInWithGoogleAndProceed (lib/authFlow.ts) throws a plain Error now,
+// not a Firebase error code — see app/login/page.tsx's copy of this same
+// function for why.
 function describeAuthError(err: unknown): string {
-  const code = (err as { code?: string })?.code ?? "";
-  switch (code) {
-    case "auth/popup-closed-by-user":
-    case "auth/cancelled-popup-request":
-      return "Sign-in was cancelled.";
-    case "auth/network-request-failed":
-      return "Network error. Check your connection and try again.";
-    default:
-      return code
-        ? `Sign-in failed (${code}). Check the browser console for details.`
-        : "Something went wrong signing in. Check the browser console for details.";
-  }
+  if (err instanceof Error && err.message) return err.message;
+  return "Something went wrong with Google sign-in. Please try again.";
 }

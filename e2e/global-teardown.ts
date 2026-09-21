@@ -7,5 +7,5 @@ export default async function globalTeardown() {
   if (!existsSync(clinicFile)) return; // global-setup never got far enough to write it
 
   const clinic: TestClinic = JSON.parse(readFileSync(clinicFile, "utf-8"));
-  await deleteTestClinic(clinic.clinicId, clinic.uid);
+  await deleteTestClinic(clinic.clinicId);
 }
