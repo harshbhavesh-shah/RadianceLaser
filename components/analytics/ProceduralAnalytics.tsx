@@ -244,7 +244,7 @@ export default function ProceduralAnalytics({
         <div className="mt-2 mb-6 h-[2px] w-8 bg-beige-300" />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-beige-300 bg-surface p-6 shadow-soft">
           <h2 className="font-display text-lg font-semibold text-brown-900">
             Appointment Reliability ({new Date().getFullYear()})
@@ -276,7 +276,7 @@ export default function ProceduralAnalytics({
           )}
         </div>
 
-        <NoShowStatsStrip stats={noShowStats} trend={noShowTrend} />
+        <NoShowStatsStrip stats={noShowStats} trend={noShowTrend} hideMonthRate />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">

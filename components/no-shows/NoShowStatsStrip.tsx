@@ -3,8 +3,23 @@ import type { NoShowStats, NoShowWeekPoint } from "@/lib/analyticsPage";
 /** This-week/this-month/rate counts as two mini stat cards, plus a weekly
  * trend chart below — a week with zero no-shows gets a small dot instead
  * of an invisible zero-height bar, so the trend line still reads at a
- * glance even across quiet weeks. */
-export default function NoShowStatsStrip({ stats, trend }: { stats: NoShowStats; trend: NoShowWeekPoint[] }) {
+ * glance even across quiet weeks.
+ *
+ * hideMonthRate: the Analytics page (ProceduralAnalytics) already has its
+ * own no-show-rate KPI tile, driven by that page's date-range selector —
+ * this strip's own rate tile is always calendar-month-fixed regardless of
+ * that selector, so showing both there reads as two competing numbers
+ * (they only agree when "This Month" is the selected range). The Patient
+ * Retention page has no such KPI elsewhere, so it keeps both tiles. */
+export default function NoShowStatsStrip({
+  stats,
+  trend,
+  hideMonthRate,
+}: {
+  stats: NoShowStats;
+  trend: NoShowWeekPoint[];
+  hideMonthRate?: boolean;
+}) {
   const maxCount = Math.max(...trend.map((w) => w.count), 1);
 
   return (
@@ -16,10 +31,12 @@ export default function NoShowStatsStrip({ stats, trend }: { stats: NoShowStats;
             No shows this month &middot; {stats.thisWeek} this week
           </div>
         </div>
-        <div className="flex-1 rounded-[18px] bg-surface p-6 shadow-soft">
-          <div className="text-3xl font-extrabold text-brown-900">{stats.monthRate.toFixed(0)}%</div>
-          <div className="mt-1 text-sm font-semibold text-brown-400">No show rate this month</div>
-        </div>
+        {!hideMonthRate && (
+          <div className="flex-1 rounded-[18px] bg-surface p-6 shadow-soft">
+            <div className="text-3xl font-extrabold text-brown-900">{stats.monthRate.toFixed(0)}%</div>
+            <div className="mt-1 text-sm font-semibold text-brown-400">No show rate this month</div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-3.5 rounded-[18px] bg-surface p-8 shadow-soft">
