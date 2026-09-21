@@ -282,6 +282,12 @@ model StaffMember {
   // scripts/grantSuperAdmin.mjs.
   superAdmin          Boolean?
   twoFactorEnabled    Boolean?
+  // Authenticator-app (TOTP) seed, AES-GCM encrypted — see lib/auth/totp.ts.
+  // Null with twoFactorEnabled=true is a legacy email-code account that
+  // hasn't switched to an authenticator yet. totpLastStep blocks replaying
+  // an already-accepted code.
+  totpSecret          String?
+  totpLastStep        BigInt?
   tourCompleted       Boolean?
   onboardingDismissed Boolean?
   createdAt           BigInt

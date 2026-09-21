@@ -22,7 +22,7 @@ import TurnstileWidget from "@/components/auth/TurnstileWidget";
 type Stage =
   | { name: "form" }
   | { name: "google-clinic-name"; ticket: string }
-  | { name: "otp"; uid: string };
+  | { name: "otp"; ticket: string; method: "totp" | "email" };
 
 export default function SignUpForm({ startingPriceInr }: { startingPriceInr: number }) {
   const router = useRouter();
@@ -87,8 +87,8 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
         setLoading(false);
         return;
       }
-      if (outcome.otpRequired && outcome.uid) {
-        setStage({ name: "otp", uid: outcome.uid });
+      if (outcome.otpRequired && outcome.twoFactorTicket) {
+        setStage({ name: "otp", ticket: outcome.twoFactorTicket, method: outcome.twoFactorMethod ?? "totp" });
         setLoading(false);
       }
     } catch (err) {
@@ -124,7 +124,7 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
     setError(null);
     setLoading(true);
     try {
-      const result = await finishLoginOtp(stage.uid, otp, router, null);
+      const result = await finishLoginOtp(stage.ticket, otp, router, null);
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -291,7 +291,9 @@ export default function SignUpForm({ startingPriceInr }: { startingPriceInr: num
           {stage.name === "otp" && (
             <>
               <p className="mb-7 text-center text-sm text-brown-600">
-                Enter the 6-digit code we just emailed you.
+                {stage.method === "totp"
+                  ? "Enter the 6-digit code from your authenticator app."
+                  : "Enter the 6-digit code we just emailed you."}
               </p>
               <form onSubmit={handleOtpSubmit} className="space-y-4">
                 <div>

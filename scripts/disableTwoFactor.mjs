@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Turns off email-OTP 2FA (StaffMember.twoFactorEnabled) for one account —
- * a recovery tool for exactly the lockout case where the 2FA email never
- * arrives (e.g. the email service can't send to this address) and the
+ * Turns off 2FA (StaffMember.twoFactorEnabled and any authenticator seed) for one account —
+ * a recovery tool for exactly the lockout case where the user lost their
+ * authenticator device (or a legacy 2FA email never arrives) and the
  * account can't get past the "enter your code" gate to turn it back off
  * from Settings itself.
  *
@@ -63,7 +63,7 @@ async function main() {
   }
 
   const wasEnabled = staff.twoFactorEnabled === true;
-  await prisma.staffMember.update({ where: { id: staff.id }, data: { twoFactorEnabled: false } });
+  await prisma.staffMember.update({ where: { id: staff.id }, data: { twoFactorEnabled: false, totpSecret: null, totpLastStep: null } });
   console.log(
     wasEnabled
       ? `✓ Disabled 2FA for ${normalizedEmail}. They can sign in normally now.`

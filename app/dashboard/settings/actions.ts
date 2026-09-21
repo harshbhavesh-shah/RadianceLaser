@@ -17,7 +17,13 @@ import {
   updateStaffRole as updateStaffRoleInDb,
   removeStaffMember as removeStaffMemberInDb,
   updateStaffFlags,
+  getStaffTotp,
+  setStaffTotp,
 } from "@/lib/db/staff";
+import { checkAndRecordLoginAttempt } from "@/lib/db/loginAttempts";
+import { getAuthSecret } from "@/lib/auth/session";
+import { signToken, verifyToken } from "@/lib/auth/signedToken";
+import { generateTotpSecret, totpQrDataUri, encryptTotpSecret, decryptTotpSecret, verifyTotp } from "@/lib/auth/totp";
 import { getClinicTier, getEntitlements } from "@/lib/entitlements";
 import type { StaffMember, UserRole } from "@/types";
 
@@ -152,20 +158,93 @@ export async function updateClinicAddress(address: string): Promise<{ error?: st
   }
 }
 
-/** Each staff member manages their own 2FA — deliberately no requireOwner()
- * here, unlike everything else in this file. There's no owner-mandated
- * "require this for everyone" yet (see lib/twoFactor.ts and
- * app/login/actions.ts requestTwoFactorIfEnabledAction()). */
-export async function toggleTwoFactorAction(enabled: boolean): Promise<{ error?: string }> {
+// Each staff member manages their own authenticator-app 2FA — deliberately
+// no requireOwner() here, unlike everything else in this file. There's no
+// owner-mandated "require this for everyone" yet. See lib/auth/totp.ts and
+// app/login/actions.ts verifyLoginTwoFactorAction for the sign-in side.
+
+const ENROLL_TICKET_PURPOSE = "totp-enroll";
+const ENROLL_TICKET_TTL_MS = 10 * 60 * 1000;
+
+interface EnrollTicketPayload {
+  purpose: typeof ENROLL_TICKET_PURPOSE;
+  uid: string;
+  secret: string;
+  exp: number;
+}
+
+export interface TotpEnrollmentResult {
+  error?: string;
+  ticket?: string;
+  qrCode?: string; // SVG data URI
+  secret?: string; // same secret, for manual entry
+}
+
+/** Generates a fresh secret and QR code. Nothing is saved yet — the secret
+ * only travels in a signed ticket and becomes active once
+ * confirmTotpEnrollmentAction sees a valid code from the user's app. */
+export async function startTotpEnrollmentAction(): Promise<TotpEnrollmentResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Not signed in.");
+    const secret = generateTotpSecret();
+    const ticket = await signToken(
+      { purpose: ENROLL_TICKET_PURPOSE, uid: session.uid, secret, exp: Date.now() + ENROLL_TICKET_TTL_MS },
+      getAuthSecret()
+    );
+    return { ticket, secret, qrCode: await totpQrDataUri(secret, session.email || "account") };
+  } catch (err) {
+    console.error("Failed to start authenticator setup:", err);
+    return { error: "Couldn't start setup. Please try again." };
+  }
+}
+
+export async function confirmTotpEnrollmentAction(ticket: string, code: string): Promise<{ error?: string }> {
   try {
     const session = await getSession();
     if (!session) throw new Error("Not signed in.");
 
-    await updateStaffFlags(session.uid, { twoFactorEnabled: enabled });
+    const payload = await verifyToken<EnrollTicketPayload>(ticket, getAuthSecret());
+    if (!payload || payload.purpose !== ENROLL_TICKET_PURPOSE || payload.uid !== session.uid || Date.now() > payload.exp) {
+      return { error: "This setup has expired. Please start again." };
+    }
+    const { allowed } = await checkAndRecordLoginAttempt(`2fa:${session.uid}`);
+    if (!allowed) return { error: "Too many attempts. Please wait a few minutes and try again." };
+
+    const step = verifyTotp(payload.secret, code);
+    if (step === null) return { error: "That code isn't right. Try the current one from your app." };
+
+    await setStaffTotp(session.uid, encryptTotpSecret(payload.secret), step);
     revalidatePath("/dashboard/settings");
     return {};
   } catch (err) {
-    console.error("Failed to update 2FA preference:", err);
+    console.error("Failed to confirm authenticator setup:", err);
+    return { error: "Couldn't turn on two-factor sign-in. Please try again." };
+  }
+}
+
+/** Turns 2FA off. With an authenticator enrolled this needs a current code,
+ * so a hijacked, already-signed-in browser can't quietly strip the second
+ * factor; a legacy email-code account has no seed to check against. */
+export async function disableTwoFactorAction(code: string): Promise<{ error?: string }> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Not signed in.");
+
+    const { secret: stored, lastStep } = await getStaffTotp(session.uid);
+    if (stored) {
+      const { allowed } = await checkAndRecordLoginAttempt(`2fa:${session.uid}`);
+      if (!allowed) return { error: "Too many attempts. Please wait a few minutes and try again." };
+      const secret = decryptTotpSecret(stored);
+      if (!secret || verifyTotp(secret, code, lastStep) === null) {
+        return { error: "That code isn't right. Enter the current code from your app." };
+      }
+    }
+    await setStaffTotp(session.uid, null);
+    revalidatePath("/dashboard/settings");
+    return {};
+  } catch (err) {
+    console.error("Failed to disable 2FA:", err);
     return { error: "Couldn't update this setting. Please try again." };
   }
 }

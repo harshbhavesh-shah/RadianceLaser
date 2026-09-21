@@ -255,7 +255,7 @@ email/password you just created.
   e.g. your own clinic-owner login — the same account can be both a
   clinic's owner and the platform admin at once).
 
-## Google sign-in and email-OTP 2FA
+## Google sign-in and authenticator-app 2FA
 
 - **Google Sign-In** works for both login and signup, on the same button,
   via `lib/authFlow.ts`'s `signInWithGoogle()` — `signInWithPopup` with
@@ -283,20 +283,22 @@ email/password you just created.
   not the address has an account, to avoid leaking which emails exist. Only
   works for accounts with the `password` provider linked — a Google-only
   account has no password to reset yet.
-- **Email-OTP 2FA is opt-in per staff member**, toggled from their own
-  Settings page (`components/settings/TwoFactorSection.tsx`) — there's no
-  owner-mandated "require this for everyone" yet. When on, primary auth
-  (password or Google) still has to succeed first; only *after* that does
-  `app/login/actions.ts` `requestTwoFactorIfEnabledAction()` check the
-  account's `twoFactorEnabled` flag and, if set, generate and email a
-  6-digit code via `lib/twoFactor.ts` before a session cookie is ever
-  issued. Codes are stored as a SHA-256 hash (never plaintext), expire
-  after 10 minutes, allow 5 attempts before requiring a fresh code, and are
-  deleted the moment they're used — see `lib/twoFactor.ts` for all of this.
-  `app/login/page.tsx` and `app/signup/page.tsx` share the exact same gate
-  logic via `lib/authFlow.ts`, deliberately, so a 2FA-enabled account can't
-  be signed into by skipping the check on one entry point but not the
-  other.
+- **Authenticator-app (TOTP) 2FA is opt-in per staff member**, set up from
+  their own Settings page (`components/settings/TwoFactorSection.tsx`:
+  scan a QR code, confirm with a 6-digit code) — there's no owner-mandated
+  "require this for everyone" yet. When on, primary auth (password or
+  Google) still has to succeed first; `app/login/actions.ts` then returns a
+  5-minute signed ticket and `verifyLoginTwoFactorAction` checks the code
+  (RFC 6238, `lib/auth/totp.ts`) before any session cookie is issued. The
+  seed is stored AES-GCM-encrypted (key derived from `AUTH_SESSION_SECRET`,
+  so rotating it also invalidates enrolled authenticators), each time step
+  is single-use, and attempts are rate-limited per account. Turning it off
+  needs a current code; a lost phone is recovered with
+  `scripts/disableTwoFactor.mjs`. `app/login/page.tsx` and
+  `app/signup/page.tsx` share the same gate via `lib/authFlow.ts`.
+- Accounts that enabled the older emailed-code 2FA (`twoFactorEnabled` with
+  no seed) keep getting an emailed code (`lib/twoFactor.ts`) until they
+  switch to an authenticator in Settings.
 - Sending the actual code needs `RESEND_KEY_ID` in `.env.local` (see
   `.env.local.example`) — works immediately with no domain setup, but
   Resend's sandbox sender can then only deliver to the email address that

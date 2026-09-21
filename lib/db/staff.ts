@@ -209,3 +209,29 @@ export async function updateStaffFlags(
 ): Promise<void> {
   await prisma.staffMember.update({ where: { id: uid }, data: flags });
 }
+
+/** The encrypted TOTP seed + last accepted time step for a uid — read only by
+ * the 2FA verify/enrolment code (lib/auth/totp.ts does the decrypting). */
+export async function getStaffTotp(uid: string): Promise<{ secret: string | null; lastStep: number | null }> {
+  const row = await prisma.staffMember.findUnique({
+    where: { id: uid },
+    select: { totpSecret: true, totpLastStep: true },
+  });
+  return { secret: row?.totpSecret ?? null, lastStep: row?.totpLastStep != null ? Number(row.totpLastStep) : null };
+}
+
+/** Enables authenticator 2FA (pass the encrypted seed) or clears it (null). */
+export async function setStaffTotp(uid: string, encryptedSecret: string | null, lastStep?: number): Promise<void> {
+  await prisma.staffMember.update({
+    where: { id: uid },
+    data: {
+      totpSecret: encryptedSecret,
+      totpLastStep: encryptedSecret && lastStep != null ? BigInt(lastStep) : null,
+      twoFactorEnabled: encryptedSecret !== null,
+    },
+  });
+}
+
+export async function recordStaffTotpStep(uid: string, step: number): Promise<void> {
+  await prisma.staffMember.update({ where: { id: uid }, data: { totpLastStep: BigInt(step) } });
+}

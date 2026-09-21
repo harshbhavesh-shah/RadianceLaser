@@ -22,7 +22,8 @@ function navigateAfterAuth(router: MinimalRouter, nextParam: string | null, redi
 
 export interface GoogleAuthOutcome {
   otpRequired?: boolean;
-  uid?: string;
+  twoFactorTicket?: string;
+  twoFactorMethod?: "totp" | "email";
   needsClinicName?: boolean;
   ticket?: string;
   suggestedName?: string;
@@ -146,22 +147,24 @@ export async function signInWithGoogleAndProceed(
   if (result.needsClinicName) {
     return { needsClinicName: true, ticket: result.ticket, suggestedName: result.suggestedName };
   }
-  if (result.otpRequired) return { otpRequired: true, uid: result.uid };
+  if (result.otpRequired) {
+    return { otpRequired: true, twoFactorTicket: result.twoFactorTicket, twoFactorMethod: result.twoFactorMethod };
+  }
 
   navigateAfterAuth(router, nextParam, result.redirectTo);
   return {};
 }
 
-/** Call once the user submits the code from the OTP screen sign-in (password
- * or Google) triggered — both funnel into the same uid-keyed 2FA challenge
- * (see lib/twoFactor.ts), so this one function covers either entry point. */
+/** Call once the user submits the code from the 2FA screen sign-in (password
+ * or Google) triggered — both hand back the same signed ticket, so this one
+ * function covers either entry point. */
 export async function finishLoginOtp(
-  uid: string,
+  ticket: string,
   code: string,
   router: MinimalRouter,
   nextParam: string | null
 ): Promise<{ error?: string }> {
-  const result = await verifyLoginTwoFactorAction(uid, code);
+  const result = await verifyLoginTwoFactorAction(ticket, code);
   if (result.error) return { error: result.error };
   navigateAfterAuth(router, nextParam, result.redirectTo);
   return {};

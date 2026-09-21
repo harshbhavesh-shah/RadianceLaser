@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getClinic } from "@/lib/db/clinics";
-import { getClinicStaff } from "@/lib/db/staff";
+import { getClinicStaff, getStaffTotp } from "@/lib/db/staff";
 import { getClinicMachines } from "@/lib/db/machines";
 import { getClinicSessionTypeDefs } from "@/lib/db/sessionTypeDefs";
 import { getClinicPayments } from "@/lib/db/payments";
@@ -40,6 +40,7 @@ export default async function SettingsPage() {
     clinic ?? { subscriptionStatus: "active", trialEndsAt: 0, planTier: null }
   );
   const currentStaff = staff.find((s) => s.uid === session.uid);
+  const hasAuthenticator = (await getStaffTotp(session.uid)).secret !== null;
 
   return (
     <div className="max-w-6xl">
@@ -77,7 +78,7 @@ export default async function SettingsPage() {
 
           <TwoFactorSection
             initialEnabled={currentStaff?.twoFactorEnabled === true}
-            email={session.email || ""}
+            initialHasAuthenticator={hasAuthenticator}
           />
 
           <ReplayTourSection role={session.role} />

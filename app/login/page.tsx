@@ -9,14 +9,14 @@ import { signInWithGoogleAndProceed, finishLoginOtp, navigateAfterAuth } from "@
 
 // credentials: the normal email/password (or "click Google") screen.
 // otp: primary auth succeeded, this account has 2FA on — waiting on the
-//   emailed code before a session cookie gets issued. `uid` isn't a secret
-//   (see app/login/actions.ts verifyLoginTwoFactorAction) — the code itself
-//   is the actual gate.
+//   authenticator-app code (or, for legacy accounts, an emailed one) before
+//   a session cookie gets issued. `ticket` is the signed proof from the
+//   first step (see app/login/actions.ts verifyLoginTwoFactorAction).
 // google-clinic-name: a Google account signed in for the first time (no
 //   StaffMember row yet) — needs a clinic name before it can be provisioned.
 type Stage =
   | { name: "credentials" }
-  | { name: "otp"; uid: string }
+  | { name: "otp"; ticket: string; method: "totp" | "email" }
   | { name: "google-clinic-name"; ticket: string; suggestedName: string };
 
 export default function LoginPage() {
@@ -49,8 +49,8 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      if (result.otpRequired && result.uid) {
-        setStage({ name: "otp", uid: result.uid });
+      if (result.otpRequired && result.twoFactorTicket) {
+        setStage({ name: "otp", ticket: result.twoFactorTicket, method: result.twoFactorMethod ?? "totp" });
         setLoading(false);
         return;
       }
@@ -77,8 +77,8 @@ function LoginForm() {
         setLoading(false);
         return;
       }
-      if (outcome.otpRequired && outcome.uid) {
-        setStage({ name: "otp", uid: outcome.uid });
+      if (outcome.otpRequired && outcome.twoFactorTicket) {
+        setStage({ name: "otp", ticket: outcome.twoFactorTicket, method: outcome.twoFactorMethod ?? "totp" });
         setLoading(false);
         return;
       }
@@ -115,7 +115,7 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const result = await finishLoginOtp(stage.uid, otp, router, searchParams.get("next"));
+      const result = await finishLoginOtp(stage.ticket, otp, router, searchParams.get("next"));
       if (result.error) {
         setError(result.error);
         setLoading(false);
@@ -245,7 +245,9 @@ function LoginForm() {
         {stage.name === "otp" && (
           <>
             <p className="text-center text-[19px] font-bold text-brown-900">
-              Enter the 6-digit code we just emailed you.
+              {stage.method === "totp"
+                ? "Enter the 6-digit code from your authenticator app."
+                : "Enter the 6-digit code we just emailed you."}
             </p>
             <form onSubmit={handleOtpSubmit} className="mt-[22px] flex flex-col gap-[22px]">
               <div className="flex flex-col gap-2">
