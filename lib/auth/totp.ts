@@ -10,7 +10,7 @@ import { getAuthSecret } from "@/lib/auth/session";
 const STEP_SECONDS = 30;
 const DIGITS = 6;
 const WINDOW = 1; // accept the previous/next step too, for clock drift
-const ISSUER = "Radiance Laser";
+const ISSUER = "Lumière by Radiance";
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function base32Encode(buf: Buffer): string {

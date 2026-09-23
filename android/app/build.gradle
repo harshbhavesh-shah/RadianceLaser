@@ -8,10 +8,10 @@ if (hasReleaseSigning) {
 }
 
 android {
-    namespace = "in.radiancelaser.app"
+    namespace = "in.lumiereradiance.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "in.radiancelaser.app"
+        applicationId "in.lumiereradiance.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

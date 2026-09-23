@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db/client";
 
-// Backs the Gmail OAuth grant for admin@radiancelaser.in — see
+// Backs the Gmail OAuth grant for admin@lumiereradiance.in — see
 // prisma/schema.prisma's EmailConnection comment. One row, always at this
 // id, same singleton pattern as lib/db/platformSettings.ts.
 const CONNECTION_ID = "global";

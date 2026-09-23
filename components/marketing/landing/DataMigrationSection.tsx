@@ -81,7 +81,7 @@ export default function DataMigrationSection() {
             <div className="relative h-full w-full overflow-hidden rounded-[12px] border border-beige-300 shadow-soft">
               <Image
                 src="/schedule-after.png"
-                alt="Radiance Laser weekly schedule showing appointments for Jane Doe, Amos Burton, Priya S, and Chrisjen Avasarala"
+                alt="Lumière by Radiance weekly schedule showing appointments for Jane Doe, Amos Burton, Priya S, and Chrisjen Avasarala"
                 fill
                 sizes="(min-width: 768px) 900px, 100vw"
                 className="object-cover object-top"

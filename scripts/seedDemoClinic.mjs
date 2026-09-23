@@ -189,7 +189,7 @@ async function main() {
     },
   });
   console.log(`✓ Clinic "${clinic.name}" (id: ${clinic.id})`);
-  console.log(`✓ Public booking subdomain: https://${clinicSlug}.radiancelaser.in`);
+  console.log(`✓ Public booking subdomain: https://${clinicSlug}.lumiereradiance.in`);
 
   console.log("\n=== 2. Creating staff ===");
   const staffDefs = [

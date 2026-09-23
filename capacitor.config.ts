@@ -5,11 +5,11 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // instead of "/". Everything else (dashboard, admin, all server actions)
 // loads from the live server exactly like the web app does.
 //
-const PRODUCTION_URL = "https://www.radiancelaser.in";
+const PRODUCTION_URL = "https://www.lumiereradiance.in";
 
 const config: CapacitorConfig = {
-  appId: "in.radiancelaser.app",
-  appName: "Radiance Laser",
+  appId: "in.lumiereradiance.app",
+  appName: "Lumière by Radiance",
   webDir: "public",
   server: {
     url: `${PRODUCTION_URL}/login`,

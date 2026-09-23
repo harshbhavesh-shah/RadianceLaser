@@ -70,7 +70,7 @@ export async function getAllClinics(): Promise<Clinic[]> {
 }
 
 /** Resolves the clinic behind a public booking subdomain
- * (https://{slug}.radiancelaser.in, see middleware.ts) — not cached like
+ * (https://{slug}.lumiereradiance.in, see middleware.ts) — not cached like
  * getClinic() above, since this only runs on the low-traffic public
  * booking page, not every dashboard navigation. */
 export async function getClinicBySlug(slug: string): Promise<Clinic | null> {

@@ -20,7 +20,7 @@ export default async function AdminEmailPage({
       <h1 className="inline-block border-b-4 border-rust-600 pb-1 font-display text-2xl font-bold text-brown-900">
         Email
       </h1>
-      <p className="mt-3 text-sm text-brown-400">Read, send, and reply as admin@radiancelaser.in.</p>
+      <p className="mt-3 text-sm text-brown-400">Read, send, and reply as admin@lumiereradiance.in.</p>
 
       {searchParams.error && (
         <p className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">

@@ -50,7 +50,7 @@ export default async function HomePage() {
           drop for the sake of matching a mockup that never modeled them. */}
       <footer className="mx-auto w-full max-w-6xl border-t border-beige-300 px-6 py-8 text-sm text-brown-400">
         <p>
-          © {new Date().getFullYear()} Radiance Laser ·{" "}
+          © {new Date().getFullYear()} Lumière by Radiance ·{" "}
           <Link href="/compliance" className="underline decoration-beige-300 underline-offset-2 hover:text-rust-600">
             Data hosted in India, DPDP Act 2023 compliant
           </Link>{" "}

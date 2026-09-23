@@ -62,7 +62,7 @@ const config: Config = {
         // /signup) — no longer used by the landing page itself, which
         // switched to plain font-display/Manrope in its 2026-09-17 redesign.
         brand: ["var(--font-michroma)", "sans-serif"],
-        // The "Radiance Laser" wordmark in the auth shell only — see
+        // The "Lumière by Radiance" wordmark in the auth shell only — see
         // app/layout.tsx. The site header's own wordmark (components/
         // marketing/SiteHeader.tsx) uses plain Manrope, not this.
         logo: ["var(--font-asimovian)", "sans-serif"],

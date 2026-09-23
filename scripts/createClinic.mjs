@@ -165,7 +165,7 @@ async function main() {
   });
   const clinicId = clinic.id;
   console.log(`✓ Created clinic "${clinicName}" (id: ${clinicId}), trial ends ${new Date(trialEndsAt).toDateString()}`);
-  console.log(`✓ Public booking subdomain: https://${slug}.radiancelaser.in`);
+  console.log(`✓ Public booking subdomain: https://${slug}.lumiereradiance.in`);
 
   // 1b. Seed starter treatment areas for the Q-Switch/LHR visit forms —
   //     see prisma/schema.prisma's AreaDef model.

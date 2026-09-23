@@ -4,7 +4,7 @@ import { refreshAccessToken } from "@/lib/gmail/oauth";
 import { RADIANCE_EMAIL_ADDRESS } from "@/lib/gmail/constants";
 
 // The Gmail API wrapper backing app/admin/email — read, send, and reply as
-// admin@radiancelaser.in (a verified "Send mail as" alias on the connected
+// admin@lumiereradiance.in (a verified "Send mail as" alias on the connected
 // Gmail account, see prisma/schema.prisma's EmailConnection comment).
 // Deliberately scoped to exactly what the inbox UI needs, not a general
 // Gmail client: list threads, fetch one thread's messages, send a message.
@@ -150,7 +150,7 @@ function toEmailMessage(row: GmailMessageRow): EmailMessage {
 }
 
 /**
- * Threads addressed to (or from) admin@radiancelaser.in, newest first.
+ * Threads addressed to (or from) admin@lumiereradiance.in, newest first.
  * Scoped with a Gmail search query rather than listing the whole
  * underlying account's mail — that inbox may receive plenty that has
  * nothing to do with this alias.
@@ -216,7 +216,7 @@ export interface SendEmailInput {
 
 function buildRawMessage(input: SendEmailInput): string {
   const lines = [
-    `From: Radiance Laser <${RADIANCE_EMAIL_ADDRESS}>`,
+    `From: Lumière by Radiance <${RADIANCE_EMAIL_ADDRESS}>`,
     `To: ${input.to}`,
     `Subject: ${input.subject}`,
     `Content-Type: text/plain; charset="UTF-8"`,

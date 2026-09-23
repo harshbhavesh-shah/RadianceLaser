@@ -1,4 +1,4 @@
-package in.radiancelaser.app;
+package in.lumiereradiance.app;
 
 import android.os.Build;
 import android.os.Bundle;

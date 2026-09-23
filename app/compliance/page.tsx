@@ -56,7 +56,7 @@ export default function CompliancePage() {
           Compliance & Data Protection
         </p>
         <h1 className="mt-4 font-display text-3xl font-medium leading-tight text-brown-900 sm:text-4xl">
-          How Radiance Laser handles patient data under Indian law
+          How Lumière by Radiance handles patient data under Indian law
         </h1>
         <p className="mt-4 max-w-2xl text-brown-600">
           This page describes how the software itself is built around the laws that govern patient
@@ -72,7 +72,7 @@ export default function CompliancePage() {
                 <th className="px-5 py-3.5 font-display text-sm font-medium text-brown-900">Law</th>
                 <th className="px-5 py-3.5 font-display text-sm font-medium text-brown-900">What it requires</th>
                 <th className="px-5 py-3.5 font-display text-sm font-medium text-brown-900">
-                  What Radiance Laser does
+                  What Lumière by Radiance does
                 </th>
               </tr>
             </thead>
@@ -116,7 +116,7 @@ export default function CompliancePage() {
       </main>
 
       <footer className="border-t border-beige-300 py-8 text-center text-sm text-brown-400">
-        <p>© {new Date().getFullYear()} Radiance Laser</p>
+        <p>© {new Date().getFullYear()} Lumière by Radiance</p>
       </footer>
     </div>
   );

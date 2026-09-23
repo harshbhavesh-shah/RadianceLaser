@@ -102,7 +102,7 @@ export interface Payment extends TenantScoped {
 
 export type LedgerEntryType = "cost" | "profit";
 
-// A manual bookkeeping row on Radiance Laser's own ledger (app/admin/
+// A manual bookkeeping row on Lumière by Radiance's own ledger (app/admin/
 // ledger) — platform-level, no clinicId, entirely separate from any
 // clinic's own financial data.
 export interface LedgerEntry {

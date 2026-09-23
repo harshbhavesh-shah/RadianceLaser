@@ -63,7 +63,7 @@ function renewalReminderEmailHtml(input: { clinicName: string; daysRemaining: nu
   return `
     <div style="background:#FBF8F3;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
       <div style="max-width:480px;margin:0 auto;background:#FFFFFF;border:1px solid #E8DDC9;border-radius:12px;padding:32px;">
-        <div style="font-size:22px;font-weight:bold;color:#2C1D14;">Radiance Laser</div>
+        <div style="font-size:22px;font-weight:bold;color:#2C1D14;">Lumière by Radiance</div>
         <div style="height:2px;width:32px;background:#A9812F;margin:12px 0 24px;"></div>
         <p style="font-family:Arial,sans-serif;font-size:14px;color:#4A342A;margin:0 0 16px;">
           ${clinicName}'s ${whatEnds} ends ${timing}.
@@ -95,8 +95,8 @@ export async function sendReminderForCandidate(
   await sendEmail({
     to: ownerEmail,
     subject: candidate.isTrial
-      ? `Your Radiance Laser trial ends ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`
-      : `Your Radiance Laser subscription renews ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`,
+      ? `Your Lumière by Radiance trial ends ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`
+      : `Your Lumière by Radiance subscription renews ${daysRemaining <= 1 ? "tomorrow" : `in ${daysRemaining} days`}`,
     html: renewalReminderEmailHtml({
       clinicName: candidate.name,
       daysRemaining,

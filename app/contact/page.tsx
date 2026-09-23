@@ -4,8 +4,8 @@ import SiteHeader from "@/components/marketing/SiteHeader";
 import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact us · Radiance Laser",
-  description: "Reach the Radiance Laser team, or report a problem with your account.",
+  title: "Contact us · Lumière by Radiance",
+  description: "Reach the Lumière by Radiance team, or report a problem with your account.",
 };
 
 export default function ContactPage() {
@@ -26,11 +26,11 @@ export default function ContactPage() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold-600">Direct</p>
             <a
-              href="mailto:admin@radiancelaser.in"
+              href="mailto:admin@lumiereradiance.in"
               className="mt-3 flex items-center gap-2.5 font-display text-lg font-bold text-brown-900 hover:text-gold-600"
             >
               <Mail size={18} className="text-gold-600" />
-              admin@radiancelaser.in
+              admin@lumiereradiance.in
             </a>
             <p className="mt-4 text-sm leading-relaxed text-brown-600">
               For account or billing issues, mention your clinic&apos;s name so we can find your

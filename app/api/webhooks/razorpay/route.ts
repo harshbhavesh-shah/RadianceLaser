@@ -127,9 +127,9 @@ async function handleSubscriptionCharged(payload?: {
 }
 
 const DUNNING_SUBJECTS: Record<string, string> = {
-  pending: "We couldn't process your Radiance Laser auto-renewal payment",
-  halted: "Your Radiance Laser auto-renewal has been paused",
-  cancelled: "Auto-renewal turned off for Radiance Laser",
+  pending: "We couldn't process your Lumière by Radiance auto-renewal payment",
+  halted: "Your Lumière by Radiance auto-renewal has been paused",
+  cancelled: "Auto-renewal turned off for Lumière by Radiance",
 };
 
 async function handleSubscriptionStatus(

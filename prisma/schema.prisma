@@ -506,7 +506,7 @@ model Clinic {
   id                   String  @id @default(cuid())
   name                 String
   // URL-safe, unique per clinic — powers its public booking subdomain
-  // (https://{slug}.radiancelaser.in, see middleware.ts and lib/
+  // (https://{slug}.lumiereradiance.in, see middleware.ts and lib/
   // clinicSlug.ts). Every clinic gets one at creation time
   // (createClinic() in lib/db/clinics.ts); pre-existing clinics were
   // backfilled once via scripts/backfillClinicSlugs.mjs.
@@ -668,9 +668,9 @@ model AdminAuditLog {
 
 // A single platform-wide row (id is always "global", same singleton
 // pattern as PlatformSettings) holding the OAuth grant that lets the app
-// read and send mail as admin@radiancelaser.in via the Gmail API. The
+// read and send mail as admin@lumiereradiance.in via the Gmail API. The
 // underlying mailbox is a real Gmail account (Cloudflare Email Routing
-// forwards admin@radiancelaser.in into it, and it has a verified "Send
+// forwards admin@lumiereradiance.in into it, and it has a verified "Send
 // mail as" alias for that address) — gmailAccount records which Google
 // account actually authorized this, for display only; every send uses the
 // fixed RADIANCE_EMAIL_ADDRESS constant as the From address, not this

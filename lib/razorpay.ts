@@ -58,7 +58,7 @@ export async function createAnnualPlan(amountInPaise: number) {
     period: "yearly",
     interval: 1,
     item: {
-      name: "RadianceLaser annual subscription",
+      name: "Lumière by Radiance annual subscription",
       amount: amountInPaise,
       currency: "INR",
     },

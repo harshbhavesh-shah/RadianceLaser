@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/client";
 import type { LedgerEntry as PrismaLedgerEntryRow } from "@prisma/client";
 import type { LedgerEntry, LedgerEntryType } from "@/types";
 
-// Radiance Laser's own bookkeeping — see prisma/schema.prisma's LedgerEntry
+// Lumière by Radiance's own bookkeeping — see prisma/schema.prisma's LedgerEntry
 // comment. Platform-wide, no clinicId; only reachable from /admin/ledger.
 
 function toLedgerEntry(row: PrismaLedgerEntryRow): LedgerEntry {

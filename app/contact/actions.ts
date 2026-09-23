@@ -2,7 +2,7 @@
 
 import { sendEmail } from "@/lib/email/resend";
 
-const CONTACT_INBOX = "admin@radiancelaser.in";
+const CONTACT_INBOX = "admin@lumiereradiance.in";
 
 export interface ContactFormState {
   error?: string;

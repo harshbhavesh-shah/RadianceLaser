@@ -3,12 +3,12 @@ import { verifySignedSessionToken } from "@/lib/auth/session";
 
 // The apex domain the main app (marketing site, login, dashboard) lives
 // on — every OTHER hostname this middleware sees is treated as a clinic's
-// public-booking subdomain (https://{slug}.radiancelaser.in, set up at
+// public-booking subdomain (https://{slug}.lumiereradiance.in, set up at
 // clinic-creation time — see lib/clinicSlug.ts). Overridable via env for
 // local development, where the real domain obviously isn't reachable;
 // defaults to the production value so nothing needs setting for a normal
 // deploy.
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "radiancelaser.in";
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "lumiereradiance.in";
 
 // Subdomains that must never resolve to a clinic's booking page — kept in
 // sync by hand with lib/clinicSlug.ts's own copy of this list (that file
@@ -60,7 +60,7 @@ const SESSION_COOKIE_NAME = "__session";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // A clinic's own subdomain (https://{slug}.radiancelaser.in) only ever
+  // A clinic's own subdomain (https://{slug}.lumiereradiance.in) only ever
   // serves its public booking page — rewrite straight to /book/{slug}
   // (the existing dynamic route, which already resolves a slug via
   // getClinicBySlug — see app/book/[clinicId]/page.tsx) regardless of

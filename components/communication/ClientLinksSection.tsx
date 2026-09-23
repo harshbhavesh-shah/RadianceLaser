@@ -9,7 +9,7 @@ import { Check, Copy, ExternalLink } from "lucide-react";
 // {slug}.{root} subdomain URL (production) or should fall back to the
 // old /book/{id} path (local dev, a Vercel preview deploy — neither has
 // the wildcard subdomain set up).
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "radiancelaser.in";
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "lumiereradiance.in";
 
 /** Surfaces the clinic's own public booking link — the thing to paste into
  * a website, Instagram bio, or WhatsApp broadcast. Client-only because the

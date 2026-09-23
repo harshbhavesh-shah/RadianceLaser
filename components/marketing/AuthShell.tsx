@@ -31,7 +31,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
           <div className="relative mt-10 overflow-hidden rounded-xl border border-white/10 shadow-2xl">
             <Image
               src="/screenshots/dashboard-today.png"
-              alt="Radiance Laser dashboard"
+              alt="Lumière by Radiance dashboard"
               width={1440}
               height={900}
               className="h-auto w-full"

@@ -1,18 +1,18 @@
 <div align="center">
-  <img src="public/logo.png" alt="RadianceLaser logo" width="96" />
+  <img src="public/logo.png" alt="Lumière by Radiance logo" width="96" />
 
-  <h1>RadianceLaser</h1>
+  <h1>Lumière by Radiance</h1>
   <p><b>Multi-tenant clinic management SaaS for laser &amp; aesthetics clinics</b></p>
 
   <p>
-    <a href="https://radiancelaser.in/signup">
-      <img src="https://img.shields.io/badge/Start%20Free%20Trial-radiancelaser.in%2Fsignup-A9812F?style=for-the-badge&logo=rocket&logoColor=2C1D14&labelColor=2C1D14" alt="Sign up" />
+    <a href="https://lumiereradiance.in/signup">
+      <img src="https://img.shields.io/badge/Start%20Free%20Trial-lumiereradiance.in%2Fsignup-A9812F?style=for-the-badge&logo=rocket&logoColor=2C1D14&labelColor=2C1D14" alt="Sign up" />
     </a>
-    <a href="https://radiancelaser.in/login">
-      <img src="https://img.shields.io/badge/Log%20In-radiancelaser.in%2Flogin-2C1D14?style=for-the-badge&logo=firebase&logoColor=F3E7CC" alt="Log in" />
+    <a href="https://lumiereradiance.in/login">
+      <img src="https://img.shields.io/badge/Log%20In-lumiereradiance.in%2Flogin-2C1D14?style=for-the-badge&logo=firebase&logoColor=F3E7CC" alt="Log in" />
     </a>
-    <a href="https://radiancelaser.in">
-      <img src="https://img.shields.io/badge/Visit%20Website-radiancelaser.in-4A342A?style=for-the-badge&logo=googlechrome&logoColor=F3E7CC" alt="Website" />
+    <a href="https://lumiereradiance.in">
+      <img src="https://img.shields.io/badge/Visit%20Website-lumiereradiance.in-4A342A?style=for-the-badge&logo=googlechrome&logoColor=F3E7CC" alt="Website" />
     </a>
   </p>
 
@@ -26,7 +26,7 @@
 
   <p>
     Made by
-    <a href="https://harsh.radiancelaser.in"><b>Harsh Shah</b></a>
+    <a href="https://harsh.lumiereradiance.in"><b>Harsh Shah</b></a>
   </p>
 
   <img src="https://img.shields.io/badge/-%20-E8DDC9?style=flat-square" alt="" width="800" height="4" />

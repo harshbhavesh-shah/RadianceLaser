@@ -72,18 +72,18 @@ const SECTIONS: Section[] = [
     heading: "8. Do We Collect Information From Minors?",
     inShort: "We do not knowingly collect data from or market to children under 18 years of age.",
     body: [
-      "By using the Services, you represent that you are at least 18, or that you are the parent or guardian of a minor and consent to their use of the Services. If we learn that we've collected personal information from someone under 18, we will deactivate the account and take reasonable steps to promptly delete that data. If you're aware of any such data, contact us at admin@radiancelaser.in.",
+      "By using the Services, you represent that you are at least 18, or that you are the parent or guardian of a minor and consent to their use of the Services. If we learn that we've collected personal information from someone under 18, we will deactivate the account and take reasonable steps to promptly delete that data. If you're aware of any such data, contact us at admin@lumiereradiance.in.",
     ],
   },
   {
     heading: "9. What Are Your Privacy Rights?",
     inShort: "You may review, change, or terminate your account at any time, depending on your country, province, or state of residence.",
     body: [
-      "Withdrawing your consent: where we rely on your consent to process your personal information, you may withdraw it at any time by emailing admin@radiancelaser.in. This won't affect the lawfulness of processing carried out before your withdrawal.",
+      "Withdrawing your consent: where we rely on your consent to process your personal information, you may withdraw it at any time by emailing admin@lumiereradiance.in. This won't affect the lawfulness of processing carried out before your withdrawal.",
       "Opting out of marketing: you can unsubscribe from marketing communications at any time via the link in those emails, or by contacting us directly. We may still send you service-related messages necessary for your account.",
-      "Account information: to review, change, or terminate your account, contact us at admin@radiancelaser.in. On request, we'll deactivate or delete your account and information from our active databases, though we may retain some information where needed to prevent fraud, troubleshoot, assist investigations, or comply with legal requirements.",
+      "Account information: to review, change, or terminate your account, contact us at admin@lumiereradiance.in. On request, we'll deactivate or delete your account and information from our active databases, though we may retain some information where needed to prevent fraud, troubleshoot, assist investigations, or comply with legal requirements.",
       "Cookies: most browsers accept cookies by default; you can usually set yours to remove or reject them, though this may affect certain features of our Services.",
-      "Questions about your privacy rights can be sent to admin@radiancelaser.in.",
+      "Questions about your privacy rights can be sent to admin@lumiereradiance.in.",
     ],
   },
   {
@@ -102,14 +102,14 @@ const SECTIONS: Section[] = [
   {
     heading: "12. How Can You Contact Us About This Notice?",
     body: [
-      "Email us at admin@radiancelaser.in, or write to us at:",
-      "RadianceLaser\n208 City Plaza\nYagnik Road\nRajkot, Gujarat 360001\nIndia",
+      "Email us at admin@lumiereradiance.in, or write to us at:",
+      "Lumière by Radiance\n208 City Plaza\nYagnik Road\nRajkot, Gujarat 360001\nIndia",
     ],
   },
   {
     heading: "13. How Can You Review, Update, or Delete the Data We Collect From You?",
     body: [
-      "Depending on the laws that apply to you, you may have the right to request access to the personal information we've collected, details on how we've processed it, correction of inaccuracies, or deletion of your data, and you may have the right to withdraw your consent to our processing of it. To make such a request, email admin@radiancelaser.in.",
+      "Depending on the laws that apply to you, you may have the right to request access to the personal information we've collected, details on how we've processed it, correction of inaccuracies, or deletion of your data, and you may have the right to withdraw your consent to our processing of it. To make such a request, email admin@lumiereradiance.in.",
     ],
   },
 ];
@@ -122,17 +122,17 @@ export default function PrivacyPolicyPage() {
       <main className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-600">Privacy Policy</p>
         <h1 className="mt-4 font-display text-3xl font-medium leading-tight text-brown-900 sm:text-4xl">
-          How Radiance Laser handles your personal information
+          How Lumière by Radiance handles your personal information
         </h1>
         <p className="mt-3 text-sm text-brown-400">Last updated September 5, 2026</p>
 
         <p className="mt-6 max-w-2xl text-brown-600">
-          This notice describes how and why RadianceLaser (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) may
-          access, collect, store, use, and share your personal information when you visit radiancelaser.in, use our
+          This notice describes how and why Lumière by Radiance (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) may
+          access, collect, store, use, and share your personal information when you visit lumiereradiance.in, use our
           clinic management software, or otherwise interact with us. If you don&apos;t agree with our policies and
           practices, please don&apos;t use our Services. Questions or concerns can be sent to{" "}
-          <a href="mailto:admin@radiancelaser.in" className="text-gold-600 hover:underline">
-            admin@radiancelaser.in
+          <a href="mailto:admin@lumiereradiance.in" className="text-gold-600 hover:underline">
+            admin@lumiereradiance.in
           </a>
           .
         </p>
@@ -161,7 +161,7 @@ export default function PrivacyPolicyPage() {
       </main>
 
       <footer className="border-t border-beige-300 py-8 text-center text-sm text-brown-400">
-        <p>© {new Date().getFullYear()} Radiance Laser</p>
+        <p>© {new Date().getFullYear()} Lumière by Radiance</p>
       </footer>
     </div>
   );

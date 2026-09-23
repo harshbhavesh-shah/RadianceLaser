@@ -133,7 +133,7 @@ export default function BillingSection({
         order_id: orderId,
         amount,
         currency,
-        name: "Radiance Laser",
+        name: "Lumière by Radiance",
         description: `${clinicName}: ${TIER_LABELS[selectedTier]} annual subscription`,
         prefill: { email: ownerEmail },
         theme: { color: "#b45309" },
@@ -190,7 +190,7 @@ export default function BillingSection({
       const razorpay = new window.Razorpay({
         key: keyId,
         subscription_id: subscriptionId,
-        name: "Radiance Laser",
+        name: "Lumière by Radiance",
         description: `${clinicName}: ${TIER_LABELS[selectedTier]}, auto-renewing annually`,
         prefill: { email: ownerEmail },
         theme: { color: "#b45309" },

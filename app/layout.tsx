@@ -42,7 +42,7 @@ const asimovian = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Radiance Laser",
+  title: "Lumière by Radiance",
   description: "Multi-tenant clinic management platform",
 };
 

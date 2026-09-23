@@ -18,7 +18,7 @@ const SECTIONS: Section[] = [
     body: [
       "Our intellectual property. We are the owner or licensee of all intellectual property rights in our Services, including all source code, databases, functionality, software, website designs, audio, video, text, photographs, and graphics in the Services (the “Content”), as well as the trademarks, service marks, and logos contained in them (the “Marks”). Our Content and Marks are protected by copyright and trademark laws and treaties around the world, and are provided “as is” for your personal, non-commercial use only.",
       "Your use of our Services. Subject to your compliance with these Legal Terms, including the “Prohibited Activities” section below, we grant you a non-exclusive, non-transferable, revocable license to access the Services, and to download or print a copy of any portion of the Content to which you have properly gained access, solely for your personal, non-commercial use.",
-      "Except as set out in this section, no part of the Services and no Content or Marks may be copied, reproduced, distributed, sold, or otherwise exploited for any commercial purpose without our express prior written permission. To request any other use, contact admin@radiancelaser.in. We reserve all rights not expressly granted to you. Any breach of these Intellectual Property Rights constitutes a material breach of these Legal Terms and will terminate your right to use the Services immediately.",
+      "Except as set out in this section, no part of the Services and no Content or Marks may be copied, reproduced, distributed, sold, or otherwise exploited for any commercial purpose without our express prior written permission. To request any other use, contact admin@lumiereradiance.in. We reserve all rights not expressly granted to you. Any breach of these Intellectual Property Rights constitutes a material breach of these Legal Terms and will terminate your right to use the Services immediately.",
       "Your submissions. By directly sending us any question, comment, suggestion, idea, feedback, or other information about the Services, you agree to assign to us all intellectual property rights in it, and that we may use it for any lawful purpose without compensation to you. By sending us such submissions, you confirm you've read and agree with the “Prohibited Activities” section, waive any moral rights to it (to the extent permitted by law), warrant it's original to you (or that you have the rights to submit it), and warrant it isn't confidential information. You're solely responsible for what you submit, and agree to reimburse us for any losses we suffer from your breach of this section, a third party's intellectual property rights, or applicable law.",
     ],
   },
@@ -72,7 +72,7 @@ const SECTIONS: Section[] = [
   {
     heading: "10. Governing Law",
     body: [
-      "These Legal Terms are governed by and defined following the laws of India. RadianceLaser and yourself irrevocably consent that the courts of Rajkot, Gujarat shall have exclusive jurisdiction to resolve any dispute arising in connection with these Legal Terms.",
+      "These Legal Terms are governed by and defined following the laws of India. Lumière by Radiance and yourself irrevocably consent that the courts of Rajkot, Gujarat shall have exclusive jurisdiction to resolve any dispute arising in connection with these Legal Terms.",
     ],
   },
   {
@@ -130,7 +130,7 @@ const SECTIONS: Section[] = [
     heading: "19. Contact Us",
     body: [
       "To resolve a complaint regarding the Services, or for more information about using them, contact us at:",
-      "admin@radiancelaser.in\n\nRadianceLaser\n208 City Plaza\nYagnik Road\nRajkot, Gujarat 360001\nIndia",
+      "admin@lumiereradiance.in\n\nLumière by Radiance\n208 City Plaza\nYagnik Road\nRajkot, Gujarat 360001\nIndia",
     ],
   },
 ];
@@ -148,17 +148,17 @@ export default function TermsOfServicePage() {
         <p className="mt-3 text-sm text-brown-400">Last updated September 5, 2026</p>
 
         <p className="mt-6 max-w-2xl text-brown-600">
-          We are RadianceLaser (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;). We
-          operate radiancelaser.in, as well as any other related products and services that refer or link to these
+          We are Lumière by Radiance (&ldquo;Company,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;). We
+          operate lumiereradiance.in, as well as any other related products and services that refer or link to these
           legal terms (collectively, the &ldquo;Services&rdquo;). You can contact us by email at{" "}
-          <a href="mailto:admin@radiancelaser.in" className="text-gold-600 hover:underline">
-            admin@radiancelaser.in
+          <a href="mailto:admin@lumiereradiance.in" className="text-gold-600 hover:underline">
+            admin@lumiereradiance.in
           </a>{" "}
           or by mail at 208 City Plaza, Yagnik Road, Rajkot, Gujarat 360001, India.
         </p>
         <p className="mt-4 max-w-2xl text-brown-600">
           These Legal Terms constitute a legally binding agreement between you, whether personally or on behalf of an
-          entity (&ldquo;you&rdquo;), and RadianceLaser, concerning your access to and use of the Services. By
+          entity (&ldquo;you&rdquo;), and Lumière by Radiance, concerning your access to and use of the Services. By
           accessing the Services, you agree that you have read, understood, and agreed to be bound by all of these
           Legal Terms. If you do not agree, you are expressly prohibited from using the Services and must discontinue
           use immediately.
@@ -190,7 +190,7 @@ export default function TermsOfServicePage() {
       </main>
 
       <footer className="border-t border-beige-300 py-8 text-center text-sm text-brown-400">
-        <p>© {new Date().getFullYear()} Radiance Laser</p>
+        <p>© {new Date().getFullYear()} Lumière by Radiance</p>
       </footer>
     </div>
   );

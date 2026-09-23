@@ -10,11 +10,11 @@ describe("renderConsentTemplate", () => {
   it("substitutes every known variable with its value", () => {
     const result = renderConsentTemplate("I, {{patientName}}, consent to {{treatmentType}} at {{clinicName}} on {{date}}.", {
       patientName: "Asha Rao",
-      clinicName: "Radiance Laser",
+      clinicName: "Lumière by Radiance",
       date: "22 July 2026",
       treatmentType: "Laser Hair Removal",
     });
-    expect(result).toBe("I, Asha Rao, consent to Laser Hair Removal at Radiance Laser on 22 July 2026.");
+    expect(result).toBe("I, Asha Rao, consent to Laser Hair Removal at Lumière by Radiance on 22 July 2026.");
   });
 
   it("renders an unset optional variable as an em-dash, never as blank or literally missing", () => {

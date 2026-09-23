@@ -40,7 +40,7 @@ export default function SiteHeader({ forceSolid: _forceSolid = false }: { forceS
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-6 md:px-10">
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="" width={28} height={28} className="rounded" />
-          <span className="text-xl font-extrabold tracking-tight text-brown-900">Radiance Laser</span>
+          <span className="text-xl font-extrabold tracking-tight text-brown-900">Lumière by Radiance</span>
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm font-extrabold text-brown-400 md:flex">

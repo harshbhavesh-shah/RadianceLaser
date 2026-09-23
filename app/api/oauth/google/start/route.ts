@@ -6,7 +6,7 @@ import { buildGoogleAuthUrl } from "@/lib/gmail/oauth";
 const STATE_COOKIE = "google_oauth_state";
 
 /** Kicks off the Gmail OAuth consent flow — super-admin only, since this is
- * what connects admin@radiancelaser.in's inbox (see app/admin/email). The
+ * what connects admin@lumiereradiance.in's inbox (see app/admin/email). The
  * state value is round-tripped through a short-lived cookie rather than
  * trusted from the query string alone, so the callback can confirm this
  * exact browser started the flow (a bare CSRF guard, not authentication —

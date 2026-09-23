@@ -44,7 +44,7 @@ export default function LandingHero({ trialLengthLabel }: { trialLengthLabel: st
           <div className="relative overflow-hidden rounded-[18px] border border-beige-300 shadow-soft">
             <Image
               src="/hero-screenshot.png"
-              alt="Radiance Laser dashboard showing today's schedule, appointments, revenue, and weekly performance"
+              alt="Lumière by Radiance dashboard showing today's schedule, appointments, revenue, and weekly performance"
               width={1440}
               height={960}
               className="w-full"

@@ -18,7 +18,7 @@ function resetEmailHtml(url: string): string {
   return `
     <div style="background:#FBF8F3;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
       <div style="max-width:420px;margin:0 auto;background:#FFFFFF;border:1px solid #E8DDC9;border-radius:12px;padding:32px;">
-        <div style="font-size:22px;font-weight:bold;color:#2C1D14;">Radiance Laser</div>
+        <div style="font-size:22px;font-weight:bold;color:#2C1D14;">Lumière by Radiance</div>
         <div style="height:2px;width:32px;background:#A9812F;margin:12px 0 24px;"></div>
         <p style="font-family:Arial,sans-serif;font-size:14px;color:#4A342A;margin:0 0 20px;">
           Someone requested a password reset for this account. Click below to set a new password:
@@ -52,9 +52,9 @@ export async function issuePasswordResetToken(uid: string, email: string): Promi
     },
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://radiancelaser.in";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lumiereradiance.in";
   const resetUrl = `${baseUrl}/reset-password?token=${token}`;
-  await sendEmail({ to: email, subject: "Reset your Radiance Laser password", html: resetEmailHtml(resetUrl) });
+  await sendEmail({ to: email, subject: "Reset your Lumière by Radiance password", html: resetEmailHtml(resetUrl) });
 }
 
 export type PasswordResetTokenError = "invalid" | "expired" | "used";

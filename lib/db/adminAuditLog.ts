@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/client";
 import type { AdminAuditLog as PrismaAdminAuditLogRow } from "@prisma/client";
 import type { AdminAuditAction, AdminAuditLogEntry } from "@/types";
 
-// Radiance Laser's record of every manual super-admin override — see
+// Lumière by Radiance's record of every manual super-admin override — see
 // prisma/schema.prisma's AdminAuditLog comment. Not to be confused with
 // lib/db/auditLog.ts, which is per-clinic CERT-In/DPDP compliance logging
 // for actions clinic staff take on patient data — this is the platform

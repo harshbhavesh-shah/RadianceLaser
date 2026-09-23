@@ -10,7 +10,7 @@ export default async function AdminLedgerPage() {
         Ledger
       </h1>
       <p className="mt-3 text-sm text-brown-400">
-        What running Radiance Laser itself costs and earns, separate from any clinic's own data.
+        What running Lumière by Radiance itself costs and earns, separate from any clinic's own data.
       </p>
 
       <div className="mt-8">

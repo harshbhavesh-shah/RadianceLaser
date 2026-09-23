@@ -7,11 +7,11 @@ import BookingClient from "@/components/booking/BookingClient";
 
 // The patient-facing counterpart to app/dashboard/appointments — no auth,
 // reached from a clinic's own booking subdomain
-// (https://{slug}.radiancelaser.in, rewritten here by middleware.ts) or,
+// (https://{slug}.lumiereradiance.in, rewritten here by middleware.ts) or,
 // for any link shared before subdomains existed, the old /book/{clinicId}
 // path directly — see resolveClinic() below for how both resolve to the
 // same page. Branded with the clinic's own name today; the logo/wordmark
-// stays Radiance Laser's until a client wants their own swapped in (see
+// stays Lumière by Radiance's until a client wants their own swapped in (see
 // ClinicBrandHeader below).
 //
 // Always books a consultation, never a specific treatment — see

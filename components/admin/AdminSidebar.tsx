@@ -68,7 +68,7 @@ export default function AdminSidebar({ adminEmail, hasClinicSession }: { adminEm
         </button>
         <div className="flex items-center gap-2">
           <Image src="/logo.png" alt="" width={28} height={28} className="rounded-md" />
-          <span className="font-display text-lg font-extrabold tracking-tight text-brown-900">Radiance Laser</span>
+          <span className="font-display text-lg font-extrabold tracking-tight text-brown-900">Lumière by Radiance</span>
         </div>
         <div className="w-[34px]" /> {/* balances the hamburger button for centering */}
       </div>
@@ -94,7 +94,7 @@ export default function AdminSidebar({ adminEmail, hasClinicSession }: { adminEm
           <div className="flex items-center justify-between px-5 pt-6 pb-5">
             <div className="flex items-center gap-2.5">
               <Image src="/logo.png" alt="" width={32} height={32} className="flex-shrink-0 rounded-lg" />
-              <span className="font-display text-lg font-extrabold tracking-tight text-brown-900">Radiance Laser</span>
+              <span className="font-display text-lg font-extrabold tracking-tight text-brown-900">Lumière by Radiance</span>
             </div>
             <button
               onClick={() => setMobileOpen(false)}
@@ -127,7 +127,7 @@ export default function AdminSidebar({ adminEmail, hasClinicSession }: { adminEm
       <aside className="hidden h-screen w-60 flex-shrink-0 flex-col overflow-y-auto border-r border-beige-300 bg-surface md:flex">
         <div className="flex items-center gap-2.5 px-5 pt-6 pb-5">
           <Image src="/logo.png" alt="" width={28} height={28} className="flex-shrink-0 rounded-lg" />
-          <span className="font-display text-base font-extrabold tracking-tight text-brown-900">Radiance Laser</span>
+          <span className="font-display text-base font-extrabold tracking-tight text-brown-900">Lumière by Radiance</span>
         </div>
 
         <NavLinks />
