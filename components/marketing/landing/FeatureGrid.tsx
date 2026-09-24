@@ -1,53 +1,82 @@
-const FEATURES = [
+import type { ReactNode } from "react";
+import { Eyebrow, H2_CLASS, Wrap } from "./ui";
+
+const stroke = { stroke: "currentColor", strokeWidth: 1.5 } as const;
+const accentStroke = { strokeWidth: 2 } as const;
+
+const FEATURES: { title: string; description: string; icon: ReactNode }[] = [
   {
-    title: "Prepaid Packages",
-    description: "Prepaid packages that always show what is left.",
+    title: "Prepaid packages",
+    description: "Sell six sittings at once. The remaining balance is always visible at the desk.",
+    icon: (
+      <>
+        <rect x="4" y="9" width="28" height="19" rx="3" {...stroke} />
+        <path d="M4 15h28" {...stroke} />
+        <path d="M9 22h8" className="stroke-lumi-accent" {...accentStroke} />
+      </>
+    ),
   },
   {
-    title: "Consent Forms",
-    description: "Consent signed on screen, tied to a clean receipt number.",
+    title: "Digital consent forms",
+    description: "Signed on a tablet, filed with the patient, receipt tracked.",
+    icon: (
+      <>
+        <path d="M9 4h13l6 6v22H9z" {...stroke} />
+        <path d="M13 16h11M13 21h8" {...stroke} />
+        <path d="M13 27c2-2 3 1 5-1s2 1 4 0" className="stroke-lumi-accent" {...accentStroke} />
+      </>
+    ),
   },
   {
-    title: "Before & After Photos",
-    description: "Before and after photos, blurred until you choose to view them.",
+    title: "Before / after galleries",
+    description: "Progress photos, blurred by default until someone chooses to look.",
+    icon: (
+      <>
+        <rect x="4" y="8" width="13" height="20" rx="2" {...stroke} />
+        <rect x="19" y="8" width="13" height="20" rx="2" {...stroke} />
+        <path d="M22 14l7 7M22 20l4 4M25 11l4 4" className="stroke-lumi-accent" strokeWidth="1.5" />
+      </>
+    ),
   },
   {
-    title: "Smart Inventory",
-    description: "Stock that flags itself before you run out.",
+    title: "Inventory",
+    description: "Gels, tips and consumables tracked, with a nudge before you run low.",
+    icon: (
+      <>
+        <path d="M6 12l12-6 12 6v14l-12 6-12-6z" {...stroke} />
+        <path d="M6 12l12 6 12-6M18 18v14" {...stroke} />
+        <circle cx="28" cy="8" r="4" className="fill-lumi-accent" />
+      </>
+    ),
   },
 ];
 
-/** Four small feature cards, title + description only — no icons or
- * mockups. Each title gets the same short rust-600 underline the real
- * product's own page titles use (see app/dashboard/page.tsx's "Today at
- * a glance" and WeekAgenda's "This Week"), so the marketing page visually
- * echoes the actual software instead of inventing its own card language. */
+/** "The smaller things that add up": four short feature cards. */
 export default function FeatureGrid() {
   return (
-    <section className="mx-auto mb-24 flex w-full max-w-[1200px] flex-col items-center px-4 md:mb-32 md:px-6">
-      <div className="mb-12 max-w-2xl text-center md:mb-16">
-        <h2 className="mb-4 text-3xl font-extrabold tracking-tight text-brown-900 md:text-4xl">
-          The smaller things that add up.
-        </h2>
-        <p className="text-lg font-medium leading-relaxed text-brown-400 md:text-xl">
-          Every detail is designed to solve a specific, real-world friction point for your staff.
-        </p>
-      </div>
-
-      <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {FEATURES.map(({ title, description }) => (
-          <div
-            key={title}
-            className="flex flex-col rounded-[18px] border border-beige-300 bg-white p-6 shadow-soft md:p-8"
-          >
-            <div className="inline-block self-start">
-              <h3 className="text-lg font-extrabold tracking-tight text-brown-900">{title}</h3>
-              <div className="mt-1.5 h-[3px] w-full rounded-full bg-rust-600" />
+    <section>
+      <Wrap className="flex flex-col gap-10 pb-16 pt-2 md:gap-14 md:pb-[140px] md:pt-10">
+        <div className="flex flex-col gap-7">
+          <Eyebrow>DETAILS</Eyebrow>
+          <h2 className={H2_CLASS}>The smaller things that add up.</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              className="flex flex-col gap-10 rounded-2xl border border-lumi-ink/10 bg-lumi-card p-7 md:gap-14"
+            >
+              <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" className="text-lumi-ink">
+                {f.icon}
+              </svg>
+              <div className="flex flex-col gap-2.5">
+                <h3 className="text-xl font-semibold tracking-[-0.015em]">{f.title}</h3>
+                <p className="text-[15px] leading-normal text-lumi-soft">{f.description}</p>
+              </div>
             </div>
-            <p className="mt-4 text-sm font-medium leading-relaxed text-brown-400">{description}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </Wrap>
     </section>
   );
 }

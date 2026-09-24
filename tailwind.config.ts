@@ -48,6 +48,25 @@ const config: Config = {
           600: "#C1694F",
           100: "#F7E4DC",
         },
+        // The landing page's own palette (components/marketing/landing/*),
+        // from the 2026-09-24 landing redesign. Deliberately separate from
+        // the app's rust-on-cream tokens above: the marketing page has its
+        // own ink/paper/clay look, so changing one never shifts the other.
+        lumi: {
+          paper: "#F4EFE6",
+          card: "#FBF8F2",
+          sand: "#EAE2D4",
+          tint: "#FFF4EC",
+          ink: "#17140F",
+          soft: "#4A443C",
+          mute: "#6B645A",
+          dust: "#CFC6B8",
+          stone: "#A89F92",
+          faint: "#8F877B",
+          accent: "#B5532E",
+          "accent-dark": "#9E3F1E",
+          ember: "#E08A62",
+        },
       },
       fontFamily: {
         // Default heading face everywhere, including the landing page as
@@ -66,6 +85,11 @@ const config: Config = {
         // app/layout.tsx. The site header's own wordmark (components/
         // marketing/SiteHeader.tsx) uses plain Manrope, not this.
         logo: ["var(--font-asimovian)", "sans-serif"],
+        // Landing page only; the CSS variables are set on the landing
+        // page's root element (see components/marketing/landing/fonts.ts).
+        landing: ["var(--font-geist-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        "landing-mono": ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+        "landing-serif": ["var(--font-instrument-serif)", "Georgia", "serif"],
       },
       boxShadow: {
         soft: "0 2px 12px -2px rgba(44, 29, 20, 0.08)",

@@ -1,57 +1,96 @@
+import { Eyebrow, H2_CLASS, Wrap } from "./ui";
+
 // Written after an actual line-by-line compliance review (see
 // docs/incident-response-runbook.md and the AuditLog/erasure work it
-// describes), not aspirational copy — doesn't claim a certification
-// (HIPAA, SOC 2) that hasn't actually been obtained.
-const LAW_TABLE: { law: string; whatWeDo: string }[] = [
+// describes), not aspirational copy. The "what we do" lines are the
+// original, precise wording; they don't claim a certification (HIPAA,
+// SOC 2) that hasn't actually been obtained.
+const REGISTER: { name: string; what: string; status: "COMPLIANT" | "ENFORCED" }[] = [
   {
-    law: "DPDP Act, 2023",
-    whatWeDo: "Consent captured at intake. Patients can request correction or permanent erasure at any time.",
+    name: "DPDP Act 2023",
+    what: "Consent captured at intake. Patients can request correction or permanent erasure at any time.",
+    status: "COMPLIANT",
   },
   {
-    law: "IT Act, SPDI Rules",
-    whatWeDo: "Data encrypted in transit. Two-factor sign-in available for every staff account.",
+    name: "IT Act · SPDI Rules",
+    what: "Data encrypted in transit. Two-factor sign-in available for every staff account.",
+    status: "COMPLIANT",
   },
   {
-    law: "Per-clinic isolation",
-    whatWeDo: "Every request checked against the clinic before anything loads. No shared views between clinics, ever.",
+    name: "CERT-In Directions",
+    what: "Sensitive actions are logged with who did it and when, kept indefinitely.",
+    status: "COMPLIANT",
   },
   {
-    law: "CERT-In Directions",
-    whatWeDo: "Sensitive actions are logged with who did it and when, kept indefinitely.",
+    name: "Medical records retention",
+    what: "A record cannot be erased until three years after the patient's last visit, enforced automatically.",
+    status: "ENFORCED",
   },
   {
-    law: "Medical records retention",
-    whatWeDo: "A record cannot be erased until three years after the patient's last visit, enforced automatically.",
+    name: "Per-clinic isolation",
+    what: "Every request checked against the clinic before anything loads. No shared views between clinics, ever.",
+    status: "ENFORCED",
   },
+];
+
+const HOSTING = [
+  { label: "Databases", value: "AWS ap-south-1 · Mumbai" },
+  { label: "Application", value: "Functions pinned · Mumbai" },
 ];
 
 export default function SecuritySection() {
   return (
-    <section id="security" className="mx-auto mb-24 w-full max-w-[1200px] scroll-mt-24 px-4 text-left md:mb-32 md:px-6">
-      <div className="mb-12 max-w-3xl md:mb-16">
-        <h2 className="mb-5 text-3xl font-extrabold leading-tight tracking-tight text-brown-900 md:text-4xl lg:text-[40px]">
-          Your patients&apos; data stays in India.
-        </h2>
-        <p className="text-lg font-medium leading-relaxed text-brown-400 md:text-xl">
-          Patient data is sensitive, and a clinic in India is bound by real legal requirements,
-          not just good intentions. Every consent is captured at intake. Every record can be
-          corrected or erased on request. Every database runs in Mumbai.
-        </p>
-      </div>
-
-      <div className="flex flex-col divide-y divide-beige-300/60 overflow-hidden rounded-[18px] border border-beige-300 bg-white shadow-soft">
-        {LAW_TABLE.map((row) => (
-          <div
-            key={row.law}
-            className="flex flex-col gap-3 p-6 transition-colors hover:bg-beige-100/30 md:flex-row md:items-start md:gap-8 md:p-8"
-          >
-            <span className="shrink-0 pt-0.5 text-xs font-extrabold uppercase tracking-wide text-rust-600 md:w-64">
-              {row.law}
-            </span>
-            <p className="font-medium leading-relaxed text-brown-900">{row.whatWeDo}</p>
+    <section id="security" className="mt-20 scroll-mt-20 bg-lumi-ink text-lumi-paper md:mt-[120px]">
+      <Wrap className="flex flex-col gap-12 py-16 md:py-[120px] lg:flex-row lg:gap-24">
+        <div className="flex flex-col gap-7 lg:w-[470px] lg:shrink-0">
+          <Eyebrow className="text-lumi-ember">SECURITY</Eyebrow>
+          <h2 className={H2_CLASS}>
+            Your patients&apos; data{" "}
+            <span className="font-landing-serif font-normal italic">stays in India.</span>
+          </h2>
+          <p className="text-base leading-relaxed text-[#BDB4A6] md:text-lg md:leading-[1.6]">
+            Patient records live on servers in Mumbai, isolated clinic by clinic and encrypted in transit. Lumière was
+            built around India&apos;s data-protection and medical-records rules, not retrofitted to them.
+          </p>
+          <div className="mt-3 flex flex-col gap-3.5 rounded-xl border border-lumi-paper/[0.14] px-6 py-5">
+            <span className="font-landing-mono text-[11px] tracking-[0.12em] text-lumi-faint">HOSTING</span>
+            {HOSTING.map((h, i) => (
+              <div key={h.label}>
+                {i > 0 && <div className="mb-3.5 h-px bg-lumi-paper/10" />}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[15px]">
+                  <span>{h.label}</span>
+                  <span className="font-landing-mono text-[13px] text-lumi-ember">{h.value}</span>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+
+        <div className="flex flex-grow flex-col">
+          <div className="flex justify-between border-b border-lumi-paper/30 pb-4 font-landing-mono text-[11px] tracking-[0.12em] text-lumi-faint">
+            <span>COMPLIANCE REGISTER</span>
+            <span>STATUS</span>
+          </div>
+          {REGISTER.map((row, i) => (
+            <div
+              key={row.name}
+              className="flex flex-wrap items-start gap-x-6 gap-y-3 border-b border-lumi-paper/[0.12] py-6 md:items-center md:py-[26px]"
+            >
+              <span className="w-7 pt-1 font-landing-mono text-xs text-lumi-faint md:pt-0">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div className="flex min-w-[200px] flex-1 flex-col gap-1.5">
+                <span className="text-xl font-medium tracking-[-0.015em] md:text-[22px]">{row.name}</span>
+                <span className="text-[15px] leading-relaxed text-lumi-stone">{row.what}</span>
+              </div>
+              <span className="ml-[52px] flex items-center gap-2 rounded-full border border-lumi-paper/20 px-3 py-[7px] font-landing-mono text-[11px] tracking-[0.1em] md:ml-0">
+                <span className="h-1.5 w-1.5 rounded-full bg-lumi-ember" />
+                {row.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Wrap>
     </section>
   );
 }

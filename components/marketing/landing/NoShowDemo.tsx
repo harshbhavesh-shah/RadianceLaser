@@ -1,25 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Eyebrow, H2_CLASS, Wrap } from "./ui";
 
-// Four canned 8-week trend lines, one per possible count of enabled
-// follow-ups (0-3) — illustrative, not computed from anything real, same
-// as the reference this is built from. Purely a "here's the idea" demo on
-// a marketing page, not a claim about any specific clinic's numbers.
-const NO_SHOW_TRENDS = [
-  [18, 18, 19, 19, 20, 20, 21, 21],
-  [18, 17, 17, 16, 15, 15, 14, 14],
-  [18, 16, 15, 14, 12, 11, 10, 9],
-  [18, 16, 17, 12, 14, 9, 8, 5],
-].map((values) => values.map((value, i) => ({ week: `W${i + 1}`, value })));
-
+// Twelve weekly no-show counts: the first six are the "before" baseline,
+// the last six depend on how many follow-ups are switched on (0 to 3).
+// Illustrative, not computed from anything real; the percentages below are
+// the canned headline for each state. The whole chart is plain divs, so the
+// landing page doesn't ship a charting library.
+const BEFORE = [9, 11, 8, 10, 12, 9];
+const AFTER_BY_ACTIVE_COUNT = [
+  [10, 9, 11, 10, 9, 10],
+  [9, 9, 8, 8, 8, 8],
+  [8, 7, 7, 7, 7, 6],
+  [7, 6, 6, 5, 5, 5],
+];
 const TARGET_PERCENT = [0, 15, 28, 42];
+const BAR_PX_PER_UNIT = 13;
 
-const TOGGLES = [
-  { label: "Ask why" },
-  { label: "Win-back offer" },
-  { label: "Reschedule nudge" },
+const FOLLOW_UPS = [
+  { name: "Ask why", what: "A gentle note the same evening" },
+  { name: "Win-back offer", what: "Sent after two missed sittings" },
+  { name: "Reschedule nudge", what: "Three open slots, one tap to book" },
 ];
 
 function AnimatedPercentage({ value }: { value: number }) {
@@ -27,121 +29,136 @@ function AnimatedPercentage({ value }: { value: number }) {
 
   useEffect(() => {
     const start = displayValue;
-    const end = value;
-    if (start === end) return;
+    if (start === value) return;
 
     const duration = 600;
     const startTime = performance.now();
     let frame: number;
 
-    function animate(currentTime: number) {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+    function animate(now: number) {
+      const progress = Math.min((now - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 4);
-      setDisplayValue(Math.round(start + (end - start) * eased));
+      setDisplayValue(Math.round(start + (value - start) * eased));
       if (progress < 1) frame = requestAnimationFrame(animate);
     }
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
+    // Only restarts when the target changes; displayValue is the animation's own output.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  return <span>-{displayValue}%</span>;
+  return <span>{displayValue === 0 ? "0%" : `−${displayValue}%`}</span>;
 }
 
-/** The "turn on a follow-up, watch the no-show rate drop" demo — every
- * number here is canned (see NO_SHOW_TRENDS above), but the toggle state
- * and chart swap are real interactivity, not a static image. */
+/** "Turn on a follow-up, watch the no-show rate drop": every number is
+ * canned (see above), but the toggles and the chart are real interactivity,
+ * not a static image. */
 export default function NoShowDemo() {
-  const [toggles, setToggles] = useState([true, false, true]);
-  const activeCount = toggles.filter(Boolean).length;
-  const data = NO_SHOW_TRENDS[activeCount];
+  const [enabled, setEnabled] = useState([true, false, true]);
+  const activeCount = enabled.filter(Boolean).length;
+  const bars = [
+    ...BEFORE.map((v) => ({ v, after: false })),
+    ...AFTER_BY_ACTIVE_COUNT[activeCount].map((v) => ({ v, after: true })),
+  ];
   const targetPercent = TARGET_PERCENT[activeCount];
 
   function toggle(index: number) {
-    setToggles((prev) => prev.map((v, i) => (i === index ? !v : v)));
+    setEnabled((prev) => prev.map((on, i) => (i === index ? !on : on)));
   }
 
   return (
-    <section
-      id="product"
-      className="mx-auto mb-24 flex w-full max-w-[1200px] scroll-mt-24 flex-col items-center gap-12 px-4 md:mb-32 md:flex-row md:px-6 lg:gap-16"
-    >
-      <div className="w-full flex-1 lg:max-w-md">
-        <div className="flex flex-col gap-8 rounded-[18px] border border-beige-300 bg-white p-6 shadow-soft md:p-8">
-          <div className="flex flex-col">
-            <span className="text-5xl font-extrabold tracking-tight text-rust-600 transition-all duration-500 md:text-6xl">
+    <section className="bg-lumi-sand">
+      <Wrap className="flex flex-col gap-10 py-16 md:gap-14 md:py-[120px]">
+        <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end lg:gap-16">
+          <div className="flex max-w-[700px] flex-col gap-7">
+            <Eyebrow>NO-SHOWS</Eyebrow>
+            <h2 className={H2_CLASS}>Know who is missing appointments. Do something about it.</h2>
+          </div>
+          <div className="flex flex-col gap-1 lg:items-end">
+            <span
+              aria-live="polite"
+              className="text-[80px] font-medium leading-[0.9] tracking-[-0.06em] text-lumi-accent sm:text-[104px] lg:text-[120px]"
+            >
               <AnimatedPercentage value={targetPercent} />
             </span>
-            <span className="mt-2 max-w-[220px] text-sm font-bold leading-relaxed text-brown-400 transition-all duration-500">
+            <span className="max-w-[300px] font-landing-mono text-[11px] tracking-[0.1em] text-lumi-soft lg:text-right">
               {targetPercent === 0
-                ? "Turn on a follow-up to see the effect."
-                : "average no-show rate after enabling follow-ups."}
+                ? "TURN ON A FOLLOW-UP TO SEE THE EFFECT"
+                : "AVERAGE NO-SHOW RATE AFTER ENABLING FOLLOW-UPS"}
             </span>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-brown-900">
-              No-shows, last 8 weeks
-            </span>
-            <div style={{ height: 180, minHeight: 180, minWidth: 0 }} className="w-full">
-              <ResponsiveContainer width="99%" height={180} minWidth={0} minHeight={0}>
-                <LineChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                  <XAxis
-                    dataKey="week"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#9C8672", fontSize: 10, fontWeight: 700 }}
-                    dy={10}
-                  />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9C8672", fontSize: 10, fontWeight: 700 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#C1694F"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "#FFFFFF", stroke: "#C1694F", strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex w-full flex-1 flex-col text-left">
-        <h2 className="mb-5 text-3xl font-extrabold leading-tight tracking-tight text-brown-900 md:text-4xl lg:text-[40px]">
-          Know who is missing appointments. Do something about it.
-        </h2>
-        <p className="text-lg font-medium leading-relaxed text-brown-400 md:text-xl">
-          The No Shows page tracks how often it happens, by week and by month, so you know if it
-          is actually getting better. When someone misses an appointment, Radiance can follow up
-          on its own. A message asking why, an offer to win them back, or a nudge to reschedule.
-        </p>
-
-        <div className="mt-8 flex flex-col gap-3">
-          {TOGGLES.map((t, index) => (
-            <div
-              key={t.label}
-              onClick={() => toggle(index)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggle(index)}
-              className="flex max-w-sm cursor-pointer select-none items-center justify-between rounded-[16px] border border-beige-300 bg-white px-5 py-4 shadow-soft transition-colors hover:border-rust-600/40"
-            >
-              <span className="text-sm font-bold text-brown-900">{t.label}</span>
-              <div
-                className={`relative flex h-6 w-11 items-center rounded-full px-1 shadow-inner transition-colors ${
-                  toggles[index] ? "justify-end bg-rust-600" : "justify-start border border-beige-300 bg-beige-200"
-                }`}
-              >
-                <div className="h-4 w-4 rounded-full bg-white shadow-sm" />
+        <div className="flex flex-col gap-5 lg:flex-row">
+          <div className="flex flex-grow flex-col gap-6 rounded-2xl bg-lumi-card px-5 py-6 sm:px-8 sm:py-7">
+            <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
+              <span className="text-base font-semibold">No-shows by week</span>
+              <div className="flex gap-5 font-landing-mono text-[10px] tracking-[0.08em] text-lumi-mute">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-[#C9BFAE]" />
+                  BEFORE
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-lumi-accent" />
+                  WITH FOLLOW-UPS
+                </span>
               </div>
             </div>
-          ))}
+            <div
+              role="img"
+              aria-label={`Weekly no-shows: about ${BEFORE[0]} a week before follow-ups, dropping to about ${
+                AFTER_BY_ACTIVE_COUNT[activeCount][5]
+              } with them`}
+              className="flex h-[200px] items-end gap-1.5 border-b border-lumi-ink/15 sm:gap-3.5"
+            >
+              {bars.map((b, i) => (
+                <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
+                  <span className="font-landing-mono text-[10px] text-lumi-mute">{b.v}</span>
+                  <div
+                    className={`w-full rounded-t transition-[height] duration-500 ease-out ${
+                      b.after ? "bg-lumi-accent" : "bg-[#C9BFAE]"
+                    }`}
+                    style={{ height: b.v * BAR_PX_PER_UNIT }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between font-landing-mono text-[10px] tracking-[0.08em] text-lumi-faint">
+              <span>WK 01</span>
+              <span className="hidden sm:inline">FOLLOW-UPS ON &uarr; WK 07</span>
+              <span>WK 12</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 rounded-2xl bg-lumi-ink p-7 text-lumi-paper lg:w-[400px] lg:shrink-0">
+            <span className="pb-3.5 font-landing-mono text-[11px] tracking-[0.12em] text-lumi-faint">
+              AUTOMATIC FOLLOW-UP
+            </span>
+            {FOLLOW_UPS.map((f, i) => (
+              <button
+                key={f.name}
+                type="button"
+                role="switch"
+                aria-checked={enabled[i]}
+                onClick={() => toggle(i)}
+                className="flex items-center gap-4 border-t border-lumi-paper/[0.12] py-[18px] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-lumi-ember"
+              >
+                <span className="flex flex-grow flex-col gap-1">
+                  <span className="text-[17px] font-medium">{f.name}</span>
+                  <span className="text-[13px] text-lumi-stone">{f.what}</span>
+                </span>
+                <span
+                  className={`flex h-6 w-10 shrink-0 items-center rounded-full px-[3px] transition-colors ${
+                    enabled[i] ? "justify-end bg-lumi-ember" : "justify-start bg-lumi-soft"
+                  }`}
+                >
+                  <span className="h-[18px] w-[18px] rounded-full bg-lumi-paper" />
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </Wrap>
     </section>
   );
 }
